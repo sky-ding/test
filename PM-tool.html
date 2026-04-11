@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>项目管理登记</title>
+  <style>
+    :root {
+      --bg: #f2f1ee;
+      --surface: #ffffff;
+      --border: #e0ddd8;
+      --border-light: #eceae6;
+      --text: #2a2a2a;
+      --text-muted: #6f6d6a;
+      --accent: #5a6b5c;
+      --accent-soft: #eef1ee;
+      --header-bg: #ebe8e3;
+      --header-bg-sub: #f4f2ef;
+      --dept-tech-bg: #dfe8eb;
+      --dept-market-bg: #e8e3dc;
+      --set-row-divider: #c9c4be;
+      --danger: #9a4a4a;
+      --danger-soft: #faf6f6;
+      --radius: 10px;
+      --radius-sm: 6px;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --font: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 28px 16px 18px;
+      letter-spacing: 0.04em;
+    }
+
+    .app-wrap {
+      width: 100%;
+      max-width: 1240px;
+      padding: 0 16px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .tabs {
+      display: inline-flex;
+      gap: 2px;
+      margin-top: 24px;
+      padding: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .tabs .tab {
+      padding: 10px 22px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .tabs .tab:hover {
+      color: var(--text);
+      background: var(--header-bg-sub);
+    }
+
+    .tabs .tab.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .tab-panel {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .tab-panel.active {
+      display: flex;
+    }
+
+    .table-shell {
+      width: 100%;
+      overflow-x: auto;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    table {
+      border-collapse: collapse;
+      margin: 0;
+      min-width: 880px;
+      width: 100%;
+      background: var(--surface);
+    }
+
+    th, td {
+      border: 1px solid var(--border-light);
+      text-align: center;
+      padding: 11px 10px;
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    th.main, td.main {
+      font-weight: 600;
+      background: var(--header-bg) !important;
+      color: var(--text);
+    }
+
+    th.sub, td.sub {
+      font-weight: 600;
+      background: var(--header-bg-sub) !important;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    #register-table {
+      table-layout: fixed;
+    }
+
+    #register-table .col-set,
+    #register-table .col-proj {
+      width: 6.75rem;
+      max-width: 7.5rem;
+      min-width: 5.5rem;
+      padding: 9px 6px;
+      vertical-align: middle;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+    }
+
+    #register-table .col-proj {
+      width: 6.25rem;
+      max-width: 7rem;
+    }
+
+    #register-table td.center-cell {
+      min-width: 0;
+      width: auto;
+      padding: 9px 8px;
+    }
+
+    #register-table thead th.dept-l1-tech {
+      background: var(--dept-tech-bg) !important;
+      color: var(--text);
+    }
+
+    #register-table thead th.dept-l1-tech.sub {
+      color: var(--text-muted);
+    }
+
+    #register-table thead th.dept-l1-market {
+      background: var(--dept-market-bg) !important;
+      color: var(--text);
+    }
+
+    #register-table thead th.dept-l1-market.sub {
+      color: var(--text-muted);
+    }
+
+    #register-table tbody tr.row-set-boundary td {
+      border-top: 1px solid var(--set-row-divider);
+    }
+
+    td.center-cell {
+      background: #fafaf9;
+      color: var(--text);
+      min-width: 120px;
+      position: relative;
+    }
+
+    .editable-text {
+      cursor: pointer;
+      border-bottom: 1px dashed transparent;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .editable-text:hover {
+      border-bottom-color: var(--border);
+      color: var(--accent);
+    }
+
+    .cell-head-inline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      column-gap: 8px;
+      row-gap: 2px;
+    }
+
+    .cell-head-inline .editable-text {
+      text-align: center;
+    }
+
+    .cell-head-inline .actions {
+      margin-top: 0;
+    }
+
+    .actions {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .actions.inline {
+      display: inline-flex;
+      margin-top: 0;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .icon-btn.danger:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .text-action {
+      padding: 2px 6px;
+      font-size: 12px;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+      border-radius: 4px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .text-action:hover {
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .input-p {
+      width: 78px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      background: var(--surface);
+      color: var(--text);
+      margin-top: 2px;
+      text-align: center;
+      font-family: inherit;
+    }
+
+    .input-p:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(90, 107, 92, 0.15);
+    }
+
+    .panel-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0 8px;
+    }
+
+    .btn-add {
+      font-size: 14px;
+      padding: 9px 22px;
+      border-radius: var(--radius-sm);
+      background: var(--text);
+      color: var(--surface);
+      border: 1px solid var(--text);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.2s, transform 0.12s;
+    }
+
+    .btn-add:hover {
+      opacity: 0.88;
+    }
+
+    .btn-add:active {
+      transform: scale(0.98);
+    }
+
+    .btn-save-panel {
+      font-size: 14px;
+      padding: 9px 22px;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+
+    .btn-save-panel:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .btn-save-panel:active {
+      transform: scale(0.98);
+    }
+
+    .risk-table-wrap {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 0 8px;
+    }
+
+    .risk-table-wrap .table-shell {
+      margin-bottom: 0;
+    }
+
+    table#risk-table {
+      min-width: 1060px;
+      margin-bottom: 0;
+    }
+
+    table#risk-table th.seq,
+    table#risk-table td.seq {
+      width: 52px;
+      white-space: nowrap;
+    }
+
+    table#risk-table td.risk-cell {
+      text-align: left;
+      vertical-align: middle;
+      min-width: 90px;
+      max-width: 240px;
+    }
+
+    table#risk-table td.risk-cell.w-wide {
+      min-width: 140px;
+      max-width: 280px;
+    }
+
+    .risk-input,
+    .risk-select {
+      width: 100%;
+      min-width: 64px;
+      padding: 7px 9px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+    }
+
+    .risk-input:focus,
+    .risk-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(90, 107, 92, 0.12);
+    }
+
+    textarea.risk-input {
+      min-height: 44px;
+      resize: vertical;
+    }
+
+    table#risk-table .delete-btn,
+    td.center-cell .delete-btn {
+      padding: 5px 12px;
+      font-size: 13px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+
+    table#risk-table .delete-btn:hover,
+    td.center-cell .delete-btn:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .modal-mask {
+      z-index: 100;
+      background: rgba(45, 42, 38, 0.35);
+      position: fixed;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-mask.active {
+      display: flex;
+    }
+
+    .modal-box {
+      background: var(--surface);
+      color: var(--text);
+      padding: 28px 32px 24px;
+      border-radius: var(--radius);
+      min-width: 280px;
+      max-width: 90vw;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .modal-box #modal-msg {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+
+    .modal-box button {
+      background: var(--text);
+      color: var(--surface);
+      border: 1px solid var(--text);
+      padding: 8px 20px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 18px 8px 0;
+      font-family: inherit;
+      transition: opacity 0.2s;
+    }
+
+    .modal-box button:hover {
+      opacity: 0.9;
+    }
+
+    .modal-box button.cancel-btn {
+      background: var(--surface);
+      color: var(--text-muted);
+      border-color: var(--border);
+      font-weight: 500;
+    }
+
+    .modal-box button.cancel-btn:hover {
+      border-color: var(--text-muted);
+      color: var(--text);
+      opacity: 1;
+    }
+
+    .save-toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(72px);
+      padding: 10px 20px;
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 200;
+    }
+
+    .save-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 1000px) {
+      table { min-width: 540px; font-size: 13px; }
+      th, td { padding: 8px 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrap">
+  <div class="tabs" role="tablist" aria-label="功能切换">
+    <button type="button" class="tab active" role="tab" aria-selected="true" data-target="panel-manpower">部门项目人力登记</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-risk">项目风险登记</button>
+  </div>
+  <div id="panel-manpower" class="tab-panel active" role="tabpanel">
+  <h1>部门项目人力登记</h1>
+  <div class="table-shell">
+  <table id="register-table">
+    <thead>
+      <tr>
+        <th class="main col-set" rowspan="2">项目集</th>
+        <th class="sub col-proj" rowspan="2">项目</th>
+        <th class="main dept-l1-tech" colspan="2">技术部</th>
+        <th class="main dept-l1-market" colspan="2">市场部</th>
+      </tr>
+      <tr>
+        <th class="sub dept-l1-tech">前端</th>
+        <th class="sub dept-l1-tech">后端</th>
+        <th class="sub dept-l1-market">销售</th>
+        <th class="sub dept-l1-market">策划</th>
+      </tr>
+    </thead>
+    <tbody id="table-body">
+      <!-- 动态插入内容 -->
+    </tbody>
+  </table>
+  </div>
+  <div class="panel-actions">
+    <button type="button" class="btn-add" onclick="addProjectSet()">+ 新项目集</button>
+    <button type="button" class="btn-save-panel" onclick="saveManpowerData()" title="仅保存本页人力登记到本机浏览器">保存</button>
+  </div>
+  </div>
+  <div id="panel-risk" class="tab-panel" role="tabpanel" aria-label="项目风险登记">
+    <h1>项目风险登记</h1>
+    <div class="risk-table-wrap">
+      <div class="table-shell">
+      <table id="risk-table">
+        <thead>
+          <tr>
+            <th class="main seq">序号</th>
+            <th class="sub">风险登记时间</th>
+            <th class="sub">风险登记人</th>
+            <th class="sub">风险说明</th>
+            <th class="sub">风险评估</th>
+            <th class="sub">风险等级</th>
+            <th class="sub">目前状态</th>
+            <th class="sub">预计解除时间</th>
+            <th class="sub">操作</th>
+          </tr>
+        </thead>
+        <tbody id="risk-table-body"></tbody>
+      </table>
+      </div>
+    </div>
+    <div class="panel-actions">
+      <button type="button" class="btn-add" onclick="addRiskRow()">+ 新增风险</button>
+      <button type="button" class="btn-save-panel" onclick="saveRiskData()" title="仅保存本页风险登记到本机浏览器">保存</button>
+    </div>
+  </div>
+  </div>
+
+  <div id="save-toast" class="save-toast" aria-live="polite"></div>
+
+  <!-- 删除确认弹窗 -->
+  <div class="modal-mask" id="modal-mask" aria-hidden="true">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modal-msg">
+      <div id="modal-msg">确认删除？</div>
+      <button type="button" id="modal-btn-confirm" onclick="confirmDelete()">确认</button>
+      <button type="button" id="modal-btn-cancel" class="cancel-btn" onclick="closeModal()">取消</button>
+    </div>
+  </div>
+
+  <script>
+    // 基础数据结构
+    let data = [
+      {
+        name: '项目集A',
+        projects: [
+          { name: '项目A-1', manpower: [2, 3, 0, 1] },
+          { name: '项目A-2', manpower: [1, 0, 0, 1] }
+        ]
+      },
+      {
+        name: '项目集B',
+        projects: [
+          { name: '项目B-1', manpower: [0, 2, 3, 0] }
+        ]
+      }
+    ];
+    // 用于弹窗时定位删除内容
+    let delCtx = null; // {type: 'set'|'project'|'risk', ...}
+    let modalFocusReturn = null;
+
+    function openDeleteModal() {
+      const mask = document.getElementById('modal-mask');
+      modalFocusReturn = document.activeElement;
+      mask.classList.add('active');
+      mask.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(function () {
+        const btn = document.getElementById('modal-btn-confirm');
+        if (btn) btn.focus();
+      });
+    }
+
+    // —— 项目风险登记 ——
+    let riskRows = [];
+
+    const STORAGE_KEY_MANPOWER = 'PM-tool-manpower-v1';
+    const STORAGE_KEY_RISK = 'PM-tool-risk-v1';
+    const STORAGE_KEY_LEGACY = 'PM-tool-data-v1';
+    /** 与 renderRiskTable 中控件顺序一致，供 syncRiskRowsFromDom 使用 */
+    const RISK_FIELD_ORDER = ['regTime', 'registrant', 'desc', 'assessment', 'level', 'status', 'resolveEta'];
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function fixManpowerInData(arr) {
+      if (!Array.isArray(arr)) return;
+      arr.forEach(function (set) {
+        if (!set || !Array.isArray(set.projects)) return;
+        set.projects.forEach(function (p) {
+          if (!p || !Array.isArray(p.manpower) || p.manpower.length !== 4) {
+            p.manpower = [0, 0, 0, 0];
+          } else {
+            p.manpower = p.manpower.map(function (x) {
+              const n = Number(x);
+              return isNaN(n) ? 0 : n;
+            });
+          }
+        });
+      });
+    }
+
+    function mapRiskRowsFromStorage(arr) {
+      if (!Array.isArray(arr)) return [];
+      return arr.map(function (r) {
+        return {
+          regTime: r.regTime != null ? String(r.regTime) : '',
+          registrant: r.registrant != null ? String(r.registrant) : '',
+          desc: r.desc != null ? String(r.desc) : '',
+          assessment: r.assessment != null ? String(r.assessment) : '',
+          level: r.level != null ? String(r.level) : '',
+          status: r.status != null ? String(r.status) : '',
+          resolveEta: r.resolveEta != null ? String(r.resolveEta) : ''
+        };
+      });
+    }
+
+    function syncRiskRowsFromDom() {
+      const tb = document.getElementById('risk-table-body');
+      if (!tb || riskRows.length === 0) return;
+      const trList = tb.querySelectorAll('tr');
+      let i = 0;
+      trList.forEach(function (tr) {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length < 9) return;
+        const fields = tr.querySelectorAll('input, select, textarea');
+        if (fields.length < RISK_FIELD_ORDER.length || !riskRows[i]) return;
+        RISK_FIELD_ORDER.forEach(function (key, j) {
+          riskRows[i][key] = fields[j].value;
+        });
+        i++;
+      });
+    }
+
+    function loadSavedData() {
+      try {
+        const rawM = localStorage.getItem(STORAGE_KEY_MANPOWER);
+        const rawR = localStorage.getItem(STORAGE_KEY_RISK);
+        const rawL = localStorage.getItem(STORAGE_KEY_LEGACY);
+
+        if (!rawM && !rawR && rawL) {
+          const leg = JSON.parse(rawL);
+          if (leg && typeof leg === 'object') {
+            if (Array.isArray(leg.data)) {
+              fixManpowerInData(leg.data);
+              data = leg.data;
+            }
+            if (Array.isArray(leg.riskRows)) {
+              riskRows = mapRiskRowsFromStorage(leg.riskRows);
+            }
+          }
+          try {
+            localStorage.setItem(STORAGE_KEY_MANPOWER, JSON.stringify({ data: data, savedAt: new Date().toISOString() }));
+            localStorage.setItem(STORAGE_KEY_RISK, JSON.stringify({ riskRows: riskRows, savedAt: new Date().toISOString() }));
+            localStorage.removeItem(STORAGE_KEY_LEGACY);
+          } catch (e2) {}
+          return;
+        }
+
+        if (rawM) {
+          const obj = JSON.parse(rawM);
+          if (obj && Array.isArray(obj.data)) {
+            fixManpowerInData(obj.data);
+            data = obj.data;
+          }
+        }
+        if (rawR) {
+          const obj = JSON.parse(rawR);
+          if (obj && Array.isArray(obj.riskRows)) {
+            riskRows = mapRiskRowsFromStorage(obj.riskRows);
+          }
+        }
+      } catch (e) {
+        console.warn('[PM-tool] 本地数据解析失败，已保留当前默认或已加载数据：', e);
+      }
+    }
+
+    function saveManpowerData() {
+      try {
+        localStorage.setItem(STORAGE_KEY_MANPOWER, JSON.stringify({
+          data: data,
+          savedAt: new Date().toISOString()
+        }));
+        showSaveToast('人力登记已保存到本机');
+      } catch (e) {
+        alert('保存失败：' + (e && e.message ? e.message : '请检查浏览器是否允许本地存储或空间是否已满'));
+      }
+    }
+
+    function saveRiskData() {
+      syncRiskRowsFromDom();
+      try {
+        localStorage.setItem(STORAGE_KEY_RISK, JSON.stringify({
+          riskRows: riskRows,
+          savedAt: new Date().toISOString()
+        }));
+        showSaveToast('风险登记已保存到本机');
+      } catch (e) {
+        alert('保存失败：' + (e && e.message ? e.message : '请检查浏览器是否允许本地存储或空间是否已满'));
+      }
+    }
+
+    function showSaveToast(msg) {
+      const el = document.getElementById('save-toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(el._hideTimer);
+      el._hideTimer = setTimeout(function () {
+        el.classList.remove('show');
+      }, 2200);
+    }
+
+    loadSavedData();
+
+    function formatRiskRegTime(d) {
+      const pad = function (n) { return String(n).padStart(2, '0'); };
+      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    function addRiskRow() {
+      riskRows.push({
+        regTime: formatRiskRegTime(new Date()),
+        registrant: '',
+        desc: '',
+        assessment: '',
+        level: '',
+        status: '',
+        resolveEta: ''
+      });
+      renderRiskTable();
+    }
+
+    function updateRisk(idx, field, value) {
+      if (riskRows[idx]) riskRows[idx][field] = value;
+    }
+
+    function renderRiskTable() {
+      const tb = document.getElementById('risk-table-body');
+      tb.innerHTML = '';
+      if (riskRows.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 9;
+        td.className = 'center-cell';
+        td.style.padding = '24px';
+        td.textContent = '暂无风险记录，请点击「+ 新增风险」添加。';
+        tr.appendChild(td);
+        tb.appendChild(tr);
+        return;
+      }
+      riskRows.forEach(function (row, idx) {
+        const tr = document.createElement('tr');
+
+        const tdSeq = document.createElement('td');
+        tdSeq.className = 'main seq';
+        tdSeq.textContent = String(idx + 1);
+        tr.appendChild(tdSeq);
+
+        function tdTextInput(field, cls) {
+          const td = document.createElement('td');
+          td.className = 'risk-cell' + (cls ? ' ' + cls : '');
+          const inp = document.createElement('input');
+          inp.type = 'text';
+          inp.className = 'risk-input';
+          inp.value = row[field] || '';
+          inp.addEventListener('change', function () { updateRisk(idx, field, inp.value); });
+          td.appendChild(inp);
+          return td;
+        }
+
+        tr.appendChild(tdTextInput('regTime'));
+        tr.appendChild(tdTextInput('registrant'));
+
+        const tdDesc = document.createElement('td');
+        tdDesc.className = 'risk-cell w-wide';
+        const ta = document.createElement('textarea');
+        ta.className = 'risk-input';
+        ta.rows = 2;
+        ta.value = row.desc || '';
+        ta.addEventListener('change', function () { updateRisk(idx, 'desc', ta.value); });
+        tdDesc.appendChild(ta);
+        tr.appendChild(tdDesc);
+
+        tr.appendChild(tdTextInput('assessment', 'w-wide'));
+
+        const tdLevel = document.createElement('td');
+        tdLevel.className = 'risk-cell';
+        const sel = document.createElement('select');
+        sel.className = 'risk-select';
+        [['', '请选择'], ['低', '低'], ['中', '中'], ['高', '高'], ['极高', '极高']].forEach(function (opt) {
+          const o = document.createElement('option');
+          o.value = opt[0];
+          o.textContent = opt[1];
+          if (row.level === opt[0]) o.selected = true;
+          sel.appendChild(o);
+        });
+        sel.addEventListener('change', function () { updateRisk(idx, 'level', sel.value); });
+        tdLevel.appendChild(sel);
+        tr.appendChild(tdLevel);
+
+        tr.appendChild(tdTextInput('status'));
+
+        const tdDate = document.createElement('td');
+        tdDate.className = 'risk-cell';
+        const din = document.createElement('input');
+        din.type = 'date';
+        din.className = 'risk-input';
+        din.value = row.resolveEta || '';
+        din.addEventListener('change', function () { updateRisk(idx, 'resolveEta', din.value); });
+        tdDate.appendChild(din);
+        tr.appendChild(tdDate);
+
+        const tdAct = document.createElement('td');
+        tdAct.className = 'center-cell';
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'delete-btn';
+        delBtn.textContent = '删除';
+        delBtn.onclick = function () { showRiskDeleteModal(idx); };
+        tdAct.appendChild(delBtn);
+        tr.appendChild(tdAct);
+
+        tb.appendChild(tr);
+      });
+    }
+
+    function showRiskDeleteModal(riskIdx) {
+      delCtx = { type: 'risk', riskIdx: riskIdx };
+      document.getElementById('modal-msg').textContent = '确认删除序号为 ' + (riskIdx + 1) + ' 的风险登记？';
+      openDeleteModal();
+    }
+
+    // 渲染表格主体
+    function renderTable() {
+      const $body = document.getElementById('table-body');
+      $body.innerHTML = '';
+      data.forEach((set, setIdx) => {
+        set.projects.forEach((proj, projIdx) => {
+          // 表头左侧: 项目集与项目 合并单元格
+          const tr = document.createElement('tr');
+          if (setIdx > 0 && projIdx === 0) {
+            tr.classList.add('row-set-boundary');
+          }
+
+          // 项目集名
+          if (projIdx === 0) {
+            const tdSet = document.createElement('td');
+            tdSet.className = 'main col-set';
+            tdSet.rowSpan = set.projects.length || 1;
+            tdSet.innerHTML = `
+              <div class="cell-head-inline">
+                <span class="editable-text" onclick="editSetName(${setIdx})">${escapeHtml(set.name)}</span>
+                <div class="actions">
+                  <button type="button" class="icon-btn" title="添加子项目" onclick="addProject(${setIdx})">+</button>
+                  <button type="button" class="icon-btn danger" title="删除项目集" onclick="showDeleteModal('set',${setIdx})">×</button>
+                </div>
+              </div>`;
+            tr.appendChild(tdSet);
+          }
+          // 项目名
+          const tdProj = document.createElement('td');
+          tdProj.className = 'sub col-proj';
+          tdProj.innerHTML = `
+            <div class="cell-head-inline">
+              <span class="editable-text" onclick="editProjectName(${setIdx},${projIdx})">${escapeHtml(proj.name)}</span>
+              <div class="actions">
+                <button type="button" class="icon-btn danger" title="删除项目" onclick="showDeleteModal('project',${setIdx},${projIdx})">×</button>
+              </div>
+            </div>`;
+          tr.appendChild(tdProj);
+
+          // 人力登记格
+          for (let i = 0; i < 4; ++i) {
+            const tdC = document.createElement('td');
+            tdC.className = 'center-cell';
+            tdC.innerHTML = `
+              <span id="v-${setIdx}-${projIdx}-${i}" ondblclick="editManpower(${setIdx},${projIdx},${i})">${proj.manpower[i]}</span>
+              <div class="actions inline">
+                <button type="button" class="text-action" title="编辑" onclick="editManpower(${setIdx},${projIdx},${i})">编辑</button>
+              </div>`;
+            tr.appendChild(tdC);
+          }
+          $body.appendChild(tr);
+        });
+      });
+    }
+
+    // 编辑项目集名称
+    function editSetName(setIdx) {
+      const set = data[setIdx];
+      const name = prompt('输入新的项目集名称：', set.name);
+      if (name && name.trim()) {
+        set.name = name.trim();
+        renderTable();
+      }
+    }
+    // 编辑项目名称
+    function editProjectName(setIdx, projIdx) {
+      const proj = data[setIdx].projects[projIdx];
+      const name = prompt('输入新的项目名称：', proj.name);
+      if (name && name.trim()) {
+        proj.name = name.trim();
+        renderTable();
+      }
+    }
+    // 新增项目集
+    function addProjectSet() {
+      const name = prompt('输入新项目集的名称：');
+      if (name && name.trim()) {
+        data.push({
+          name: name.trim(),
+          projects: [{
+            name: "新项目",
+            manpower: [0,0,0,0]
+          }]
+        });
+        renderTable();
+      }
+    }
+    // 新增项目
+    function addProject(setIdx) {
+      const name = prompt('输入新项目名称：');
+      if (name && name.trim()) {
+        data[setIdx].projects.push({
+          name: name.trim(),
+          manpower: [0,0,0,0]
+        });
+        renderTable();
+      }
+    }
+
+    // 编辑人力格子
+    function editManpower(setIdx, projIdx, col) {
+      const key = `v-${setIdx}-${projIdx}-${col}`;
+      const el = document.getElementById(key);
+      if (!el) return;
+      const oldVal = data[setIdx].projects[projIdx].manpower[col];
+      el.innerHTML = `<input type="number" class="input-p" id="input-${key}" min="0" max="99" value="${oldVal}" 
+        onblur="saveManpower(${setIdx},${projIdx},${col}, this.value)"
+        onkeydown="if(event.key==='Enter'){this.blur()}else if(event.key==='Escape'){this.parentNode.innerHTML='${oldVal}' }"
+      >`;
+      document.getElementById(`input-${key}`).focus();
+    }
+    function saveManpower(setIdx, projIdx, col, val) {
+      const v = Number(val);
+      if (!isNaN(v) && v>=0 && v<100) {
+        data[setIdx].projects[projIdx].manpower[col] = v;
+        renderTable();
+      } else {
+        alert('请输入0-99的人力人数');
+        renderTable();
+      }
+    }
+
+    // 删除弹窗
+    function showDeleteModal(type, setIdx, projIdx=null) {
+      delCtx = {type, setIdx, projIdx};
+      const msgEl = document.getElementById('modal-msg');
+      if (type === 'set') {
+        msgEl.textContent = `确认删除项目集 "${data[setIdx].name}"？其下所有项目也会一并删除。`;
+      } else {
+        msgEl.textContent = `确认删除项目 "${data[setIdx].projects[projIdx].name}"？`;
+      }
+      openDeleteModal();
+    }
+    function closeModal() {
+      delCtx = null;
+      const mask = document.getElementById('modal-mask');
+      mask.classList.remove('active');
+      mask.setAttribute('aria-hidden', 'true');
+      if (modalFocusReturn && typeof modalFocusReturn.focus === 'function') {
+        try { modalFocusReturn.focus(); } catch (err) {}
+      }
+      modalFocusReturn = null;
+    }
+    function confirmDelete() {
+      if (!delCtx) return;
+      const kind = delCtx.type;
+      if (kind === 'set') {
+        data.splice(delCtx.setIdx, 1);
+      }
+      else if (kind === 'project') {
+        data[delCtx.setIdx].projects.splice(delCtx.projIdx, 1);
+        if (data[delCtx.setIdx].projects.length === 0) {
+          data.splice(delCtx.setIdx, 1);
+        }
+      }
+      else if (kind === 'risk') {
+        riskRows.splice(delCtx.riskIdx, 1);
+      }
+      closeModal();
+      if (kind === 'risk') renderRiskTable();
+      else renderTable();
+    }
+    renderTable();
+    renderRiskTable();
+
+    document.querySelectorAll('.tabs .tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var target = btn.getAttribute('data-target');
+        document.querySelectorAll('.tabs .tab').forEach(function (b) {
+          var on = b === btn;
+          b.classList.toggle('active', on);
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        document.querySelectorAll('.tab-panel').forEach(function (p) {
+          p.classList.toggle('active', p.id === target);
+        });
+      });
+    });
+
+    (function setupModalA11y() {
+      var mask = document.getElementById('modal-mask');
+      mask.addEventListener('keydown', function (e) {
+        if (!mask.classList.contains('active')) return;
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closeModal();
+          return;
+        }
+        if (e.key !== 'Tab') return;
+        var buttons = mask.querySelectorAll('.modal-box button');
+        if (buttons.length === 0) return;
+        var first = buttons[0];
+        var last = buttons[buttons.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus(); 
+        }
+      });
+    })();
+  </script>
+</body>
+</html> 
