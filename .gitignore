@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+backend/.venv/
+
+# SQLite（运行时生成）
+backend/data/*.db
+backend/data/*.db-journal
+
+# Node（若使用根目录 npm 脚本）
+node_modules/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+*.log
