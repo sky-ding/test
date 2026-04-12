@@ -6,16 +6,43 @@
 
 | 路径 | 说明 |
 |------|------|
-| `frontend/index.html` | 当前主页面（单文件，后续可拆 CSS/JS） |
+| `frontend/index.html` | 主应用（需先登录） |
+| `frontend/login.html` | 登录页 |
 | `backend/` | Python FastAPI 服务与持久化 |
-| `docs/` | PRD、技术设计、用户操作指南 |
+| `docs/` | PRD、技术设计、用户操作指南（**当前文档版本 v1.2**，与登录鉴权等实现一致） |
 
 ## 重要提示
 
-- **不要用 `file://` 直接双击打开** `index.html` 调用后端 API（浏览器会限制跨域与协议）。请用 **HTTP 静态服务** 访问前端，例如：  
+- **不要用 `file://` 直接双击打开** `index.html`（无法携带登录 Cookie）。请用 **HTTP 静态服务** 访问前端，例如：  
   `npx serve frontend -l 3000`  
-  然后浏览器打开 <http://127.0.0.1:3000>。
-- 前端当前仍主要使用 **浏览器 localStorage** 保存数据；对接服务端需将保存/加载改为调用 `http://127.0.0.1:8000/api/v1/...`（后续迭代）。
+  然后打开 <http://127.0.0.1:3000/login.html> 登录，或访问 <http://127.0.0.1:3000> 时未登录会自动跳转到登录页。
+- 前端默认 API 地址为 `http://127.0.0.1:8000`，可在页面加载前设置 `window.PM_API_BASE`（见 `index.html` / `login.html` 内脚本）。
+- **会话 Cookie**：登录后浏览器会保存 `pm_session`。开发环境下前端在 **3000** 端口、API 在 **8000** 端口属于**跨站**，部分浏览器对第三方 Cookie 较严格；若登录后仍被反复踢回登录页，请使用 **反向代理将前端与 `/api` 配成同源**，或查阅下文环境变量调整 `PM_SESSION_SAME_SITE` / `PM_SESSION_HTTPS_ONLY`（生产环境务必 HTTPS + 同源）。
+- 业务数据仍主要保存在 **localStorage**；服务端 `registry` API 已需登录，**写操作仅管理员**。
+
+## 鉴权与环境变量（首次部署必读）
+
+在 **`backend` 目录**首次启动前建议设置（Windows 可用 `set`，Linux/macOS 用 `export`）：
+
+| 变量 | 说明 |
+|------|------|
+| `PM_SESSION_SECRET` | 会话签名密钥，**生产必填**（勿使用仓库默认值） |
+| `PM_SKY_INITIAL_PASSWORD` | 可选。覆盖首次创建 **`Sky`** 的初始密码；**不设置时默认为 `123123`**（生产请改为强密码并建议设置本变量） |
+| `PM_AUTH_DISABLED` | 设为 `true` 时关闭鉴权（**仅本地调试**，勿用于生产） |
+| `PM_SESSION_SAME_SITE` | Cookie `SameSite`，默认 `lax`；跨站调试可试 `none`（常需配合 HTTPS） |
+| `PM_SESSION_HTTPS_ONLY` | Cookie 是否仅 HTTPS，默认 `false`（本地 HTTP 开发） |
+
+示例（PowerShell）：
+
+```powershell
+cd backend
+$env:PM_SESSION_SECRET="your-long-random-secret"
+# 可选：覆盖 Sky 初始密码（默认 123123）
+# $env:PM_SKY_INITIAL_PASSWORD="YourSecurePwd123"
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+首次启动后可用用户名 **Sky**、密码 **123123** 登录（若未设置 `PM_SKY_INITIAL_PASSWORD`）。若库中已有旧 Sky 账号，需删除 `backend/data/app.db` 重建或请管理员重置密码。
 
 ## 启动后端
 

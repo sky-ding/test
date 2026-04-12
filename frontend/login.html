@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>登录 · ProjectGuard</title>
+  <style>
+    :root {
+      --bg: #f2f1ee;
+      --surface: #ffffff;
+      --border: #e0ddd8;
+      --text: #2a2a2a;
+      --text-muted: #6f6d6a;
+      --accent: #5a6b5c;
+      --accent-soft: #eef1ee;
+      --danger: #9a4a4a;
+      --radius: 10px;
+      --font: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      font-family: var(--font);
+      color: var(--text);
+      padding: 24px;
+    }
+    .card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 26px 26px;
+      box-shadow: 0 2px 12px rgba(45, 42, 38, 0.08);
+    }
+    h1 {
+      font-size: 1.2rem;
+      margin: 0 0 6px;
+      font-weight: 600;
+    }
+    .sub {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin: 0 0 22px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      margin-bottom: 16px;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-soft);
+    }
+    button {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    button:hover { opacity: 0.92; }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .err {
+      font-size: 13px;
+      color: var(--danger);
+      margin: 0 0 12px;
+      min-height: 1.2em;
+    }
+    .hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 18px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>ProjectGuard</h1>
+    <p class="sub">项目管理登记 · 登录</p>
+    <div class="err" id="login-err" role="alert"></div>
+    <form id="login-form">
+      <label for="username">用户名</label>
+      <input id="username" name="username" type="text" autocomplete="username" required autofocus>
+      <label for="password">密码</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Sky 默认 123123">
+      <button type="submit" id="login-submit">登录</button>
+    </form>
+    <p class="hint">API 地址可在上一页通过 <code>window.PM_API_BASE</code> 配置；默认 <code>http://127.0.0.1:8000</code>。前后端需允许携带 Cookie（同源或正确配置 CORS）。</p>
+  </div>
+  <script>
+    (function () {
+      var PM_API_BASE = (typeof window.PM_API_BASE === 'string' && window.PM_API_BASE) || 'http://127.0.0.1:8000';
+      function pmApiUrl(path) {
+        var base = PM_API_BASE.replace(/\/$/, '');
+        return base + (path.indexOf('/') === 0 ? path : '/' + path);
+      }
+      var errEl = document.getElementById('login-err');
+      var form = document.getElementById('login-form');
+      var submitBtn = document.getElementById('login-submit');
+
+      var LOGIN_FETCH_TIMEOUT_MS = 10000;
+
+      function fetchWithTimeout(url, options, timeoutMs) {
+        var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        var tid = null;
+        if (ctrl) {
+          tid = setTimeout(function () {
+            try { ctrl.abort(); } catch (a) {}
+          }, timeoutMs);
+        }
+        var opts = Object.assign({}, options || {}, ctrl ? { signal: ctrl.signal } : {});
+        return fetch(url, opts).finally(function () {
+          if (tid) clearTimeout(tid);
+        });
+      }
+
+      function formatApiDetail(data) {
+        if (!data || data.detail == null) return '';
+        var d = data.detail;
+        if (typeof d === 'string') return d;
+        if (Array.isArray(d) && d[0] && d[0].msg) return String(d[0].msg);
+        return '登录失败，请检查用户名或密码';
+      }
+
+      async function checkLoggedIn() {
+        try {
+          var r = await fetchWithTimeout(
+            pmApiUrl('/api/v1/auth/me'),
+            { method: 'GET', credentials: 'include' },
+            LOGIN_FETCH_TIMEOUT_MS
+          );
+          if (r.ok) {
+            window.location.href = 'index.html';
+            return true;
+          }
+        } catch (e) {}
+        return false;
+      }
+
+      checkLoggedIn();
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        errEl.textContent = '';
+        var u = document.getElementById('username').value.trim();
+        var p = document.getElementById('password').value;
+        if (!u || !p) {
+          errEl.textContent = '请输入用户名和密码';
+          return;
+        }
+        submitBtn.disabled = true;
+        try {
+          var r = await fetchWithTimeout(
+            pmApiUrl('/api/v1/auth/login'),
+            {
+              method: 'POST',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ username: u, password: p })
+            },
+            LOGIN_FETCH_TIMEOUT_MS
+          );
+          if (r.status === 503) {
+            errEl.textContent = '服务端已关闭登录（PM_AUTH_DISABLED），请直接打开 index.html';
+            submitBtn.disabled = false;
+            return;
+          }
+          if (!r.ok) {
+            var data = await r.json().catch(function () { return {}; });
+            errEl.textContent = formatApiDetail(data) || '登录失败，请检查用户名或密码';
+            submitBtn.disabled = false;
+            return;
+          }
+          window.location.href = 'index.html';
+        } catch (ex) {
+          if (ex && ex.name === 'AbortError') {
+            errEl.textContent =
+              '连接超时（' +
+              PM_API_BASE +
+              '）。请确认本机 API 已启动且端口未被占用；若端口异常可先结束占用进程再启动 uvicorn。';
+          } else {
+            errEl.textContent = '无法连接服务器（' + PM_API_BASE + '），请确认后端已启动';
+          }
+          submitBtn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

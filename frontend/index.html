@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>项目管理登记</title>
+  <title>ProjectGuard · 项目管理登记</title>
   <style>
     :root {
       --bg: #f2f1ee;
@@ -66,45 +66,106 @@
     }
 
     .tabs-sticky {
+      /* 顶栏与 LOGO 目标高度 = 可视视口高度的 1/8（支持 dvh 时优先，更接近移动端可视区） */
+      --nav-vh-eighth: calc(100vh / 8);
+      /* 中间导航菜单条 = 顶栏高度的 2/3，在 tabs-nav-center 内垂直居中 */
+      --tabs-menu-height: calc(var(--nav-vh-eighth) * 2 / 3);
+      --tabs-rail-pad-x: clamp(4px, 0.55vw, 8px);
+      --tab-font-size: clamp(10px, calc(var(--tabs-menu-height) * 0.38), 16px);
+      --tab-line-height: 1.2;
+
       position: sticky;
       top: 0;
       z-index: 40;
       align-self: stretch;
       width: 100%;
       display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 12px 0 14px;
-      margin: 0 0 12px;
+      flex-direction: row;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 10px;
+      padding: 0;
+      height: var(--nav-vh-eighth);
+      min-height: var(--nav-vh-eighth);
+      margin: 0 0 10px;
       background: var(--bg);
       border-bottom: 1px solid var(--border-light);
       box-shadow: 0 2px 10px rgba(45, 42, 38, 0.06);
+      box-sizing: border-box;
+    }
+
+    @supports (height: 100dvh) {
+      .tabs-sticky {
+        --nav-vh-eighth: calc(100dvh / 8);
+      }
+    }
+
+    .app-brand {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      align-self: stretch;
+      min-height: 0;
+      line-height: 0;
+    }
+
+    .app-brand img {
+      height: 100%;
+      max-height: var(--nav-vh-eighth);
+      width: auto;
+      max-width: min(42vw, 380px);
+      object-fit: contain;
+      object-position: left center;
+      display: block;
+    }
+
+    .tabs-nav-center {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: stretch;
+      min-width: 0;
+      min-height: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
     .tabs {
       display: inline-flex;
       gap: 2px;
       margin-top: 0;
-      padding: 4px;
+      height: var(--tabs-menu-height);
+      min-height: var(--tabs-menu-height);
+      max-height: var(--tabs-menu-height);
+      padding: 0 var(--tabs-rail-pad-x);
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      align-items: center;
       justify-content: center;
+      box-sizing: border-box;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
     }
 
     .tabs .tab {
-      padding: 10px 22px;
+      padding: 0 clamp(10px, 2.2vw, 22px);
       border: none;
       border-radius: var(--radius-sm);
       background: transparent;
       color: var(--text-muted);
-      font-size: 14px;
+      font-size: var(--tab-font-size);
+      line-height: var(--tab-line-height);
       font-weight: 500;
       cursor: pointer;
       font-family: inherit;
       transition: color 0.2s, background 0.2s;
+      box-sizing: border-box;
     }
 
     .tabs .tab:hover {
@@ -1602,18 +1663,140 @@
     @media (max-width: 1000px) {
       table { min-width: 540px; font-size: 13px; }
       th, td { padding: 8px 6px; }
+      .tabs-sticky {
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .app-brand img { max-width: min(260px, 55vw); }
+    }
+
+    .tabs-sticky-actions {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .pm-nav-user-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      max-width: 9em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pm-logout-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+    }
+    .pm-logout-btn:hover {
+      background: var(--header-bg-sub);
+    }
+    .settings-session-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      background: var(--header-bg-sub);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-light);
+    }
+    .settings-users-wrap {
+      margin-top: 20px;
+    }
+    .settings-users-wrap h3 {
+      font-size: 1.05rem;
+      margin: 0 0 12px;
+    }
+    .settings-users-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+      margin-bottom: 14px;
+    }
+    .settings-users-toolbar label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .settings-users-toolbar input,
+    .settings-users-toolbar select {
+      min-width: 8em;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+    }
+    .settings-users-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+    }
+    .settings-users-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .settings-users-table th,
+    .settings-users-table td {
+      border: 1px solid var(--border-light);
+      padding: 8px 10px;
+      text-align: left;
+    }
+    .settings-users-table th {
+      background: var(--header-bg);
+      font-weight: 600;
+    }
+    .settings-users-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .settings-users-actions button {
+      font-size: 12px;
+      padding: 4px 8px;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: inherit;
+    }
+    .settings-users-actions button.danger {
+      border-color: var(--danger);
+      color: var(--danger);
     }
   </style>
 </head>
 <body>
   <div class="app-wrap">
   <div class="tabs-sticky">
-    <div class="tabs" role="tablist" aria-label="功能切换">
-      <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-phase">项目阶段状态</button>
-      <button type="button" class="tab active" role="tab" aria-selected="true" data-target="panel-manpower">部门项目人力登记</button>
-      <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-risk">项目风险登记</button>
-      <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-guide">PM操作指引</button>
-      <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-settings">设置</button>
+    <div class="app-brand" aria-label="ProjectGuard 系统标识">
+      <img src="projectguard-logo.png" alt="ProjectGuard" decoding="async">
+    </div>
+    <div class="tabs-nav-center">
+      <div class="tabs" role="tablist" aria-label="功能切换">
+        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-phase">项目阶段状态</button>
+        <button type="button" class="tab active" role="tab" aria-selected="true" data-target="panel-manpower">部门项目人力登记</button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-risk">项目风险登记</button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-guide">PM操作指引</button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-settings">设置</button>
+      </div>
+    </div>
+    <div class="tabs-sticky-actions">
+      <span id="pm-nav-user-hint" class="pm-nav-user-hint" aria-live="polite"></span>
+      <button type="button" class="pm-logout-btn" id="pm-btn-logout-nav" title="退出登录">退出</button>
     </div>
   </div>
   <div id="panel-phase" class="tab-panel" role="tabpanel" aria-label="项目阶段状态">
@@ -1716,16 +1899,41 @@
       <div class="settings-main">
         <section id="settings-module-perm" class="settings-module active" aria-labelledby="settings-perm-heading">
           <h2 id="settings-perm-heading">权限管理</h2>
-          <p class="settings-desc">按功能菜单配置两类用户权限。本工具为单机版，身份仅保存在本机浏览器，用于演示与约定操作范围。</p>
-          <div class="settings-perm-grid">
-            <div class="settings-role-bar">
-              <label for="settings-role-select">当前使用身份</label>
-              <select id="settings-role-select" aria-label="切换用户身份">
-                <option value="admin">管理员</option>
-                <option value="viewer">普通用户</option>
-              </select>
-              <span id="settings-role-badge" role="status"></span>
+          <p class="settings-desc">权限由服务端登录账号决定：管理员可编辑、保存业务数据并管理用户；普通用户仅可查看。未来可对接公司 OA 统一认证。</p>
+          <div class="settings-session-bar">
+            <span id="settings-role-badge" role="status"></span>
+            <button type="button" class="pm-logout-btn" id="pm-btn-logout-settings">退出登录</button>
+          </div>
+          <div id="settings-users-viewer-note" class="settings-placeholder" style="display:none;">人员账号由系统管理员在「人员账号」中维护。如需调整权限请联系管理员。</div>
+          <div id="settings-users-admin" class="settings-users-wrap" style="display:none;">
+            <h3>人员账号</h3>
+            <div class="settings-users-toolbar">
+              <label>用户名 <input type="text" id="settings-new-user-name" autocomplete="username" placeholder="登录名"></label>
+              <label>初始密码 <input type="password" id="settings-new-user-pass" autocomplete="new-password" placeholder="至少 6 位"></label>
+              <label>角色
+                <select id="settings-new-user-role" aria-label="新用户角色">
+                  <option value="viewer">普通用户</option>
+                  <option value="admin">管理员</option>
+                </select>
+              </label>
+              <button type="button" class="btn-add" id="settings-btn-user-create">添加用户</button>
             </div>
+            <div class="settings-users-table-wrap">
+              <table class="settings-users-table" id="settings-users-table" aria-label="用户列表">
+                <thead>
+                  <tr>
+                    <th>用户名</th>
+                    <th>角色</th>
+                    <th>状态</th>
+                    <th>来源</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="settings-users-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="settings-perm-grid">
             <div class="settings-perm-table-wrap">
           <table class="perm-menu-table" role="grid" aria-label="功能菜单权限说明">
             <colgroup>
@@ -1763,8 +1971,8 @@
               </tr>
               <tr>
                 <td>设置</td>
-                <td class="perm-col-muted"><span class="perm-tag admin">可访问</span>含本页权限说明与身份切换</td>
-                <td class="perm-col-muted"><span class="perm-tag viewer">可访问</span>查看权限说明；可切换身份以便演示（单机环境）</td>
+                <td class="perm-col-muted"><span class="perm-tag admin">可访问</span>含本页说明与人员账号管理</td>
+                <td class="perm-col-muted"><span class="perm-tag viewer">可访问</span>查看权限说明；不可管理人员账号</td>
               </tr>
             </tbody>
           </table>
@@ -1929,17 +2137,25 @@
       }
     ];
 
-    /** 部门分组：每组下多列人力；列数与每行 manpower 数组长度一致 */
-    let deptGroups = [
-      { name: '技术部', depts: ['前端', '后端'] },
-      { name: '市场部', depts: ['销售', '策划'] }
-    ];
-
+    /** 部门分组默认结构（与初始 deptGroups、normalize 空值回退共用） */
     function defaultDeptGroups() {
       return [
         { name: '技术部', depts: ['前端', '后端'] },
         { name: '市场部', depts: ['销售', '策划'] }
       ];
+    }
+
+    /** 部门分组：每组下多列人力；列数与每行 manpower 数组长度一致 */
+    let deptGroups = defaultDeptGroups();
+
+    function scrollMainToTop() {
+      try {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      } catch (e) {
+        window.scrollTo(0, 0);
+      }
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
     }
 
     function normalizeDeptGroups(g) {
@@ -2520,6 +2736,7 @@
             el.setAttribute('aria-hidden', active ? 'false' : 'true');
           });
           renderTable();
+          scrollMainToTop();
         });
       });
       var ym = document.getElementById('manpower-year-month');
@@ -2735,13 +2952,81 @@
     const STORAGE_KEY_LEGACY = 'PM-tool-data-v1';
     const STORAGE_KEY_APP_SETTINGS = 'PM-tool-app-settings-v1';
 
-    let appUserRole = 'admin';
+    var PM_API_BASE = (typeof window.PM_API_BASE === 'string' && window.PM_API_BASE) || 'http://127.0.0.1:8000';
+
+    function pmApiUrl(path) {
+      var base = PM_API_BASE.replace(/\/$/, '');
+      return base + (path.indexOf('/') === 0 ? path : '/' + path);
+    }
+
+    function pmFetch(path, options) {
+      var opts = options || {};
+      var h = Object.assign({}, opts.headers || {});
+      if (opts.body && typeof opts.body === 'string' && !h['Content-Type']) {
+        h['Content-Type'] = 'application/json';
+      }
+      return fetch(pmApiUrl(path), Object.assign({}, opts, { credentials: 'include', headers: h }));
+    }
+
+    async function fetchAuthMe() {
+      var authAbortTid = null;
+      var ctrl = null;
+      try {
+        ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        if (ctrl) {
+          authAbortTid = setTimeout(function () {
+            try { ctrl.abort(); } catch (abErr) {}
+          }, 8000);
+        }
+        var r = await pmFetch('/api/v1/auth/me', { method: 'GET', signal: ctrl ? ctrl.signal : undefined });
+        if (authAbortTid) clearTimeout(authAbortTid);
+        if (r.status === 401) {
+          window.__pmAuthRedirecting = true;
+          window.location.href = 'login.html';
+          return null;
+        }
+        if (!r.ok) {
+          alert('认证服务暂时不可用（HTTP ' + r.status + '），已按普通用户权限进入（仅本地数据）。');
+          return { id: 0, username: 'unknown', role: 'viewer' };
+        }
+        return await r.json();
+      } catch (e) {
+        if (authAbortTid) clearTimeout(authAbortTid);
+        alert('无法连接认证后端（' + PM_API_BASE + '）。请先启动 API 服务；已按普通用户权限进入（仅本地）。');
+        return { id: 0, username: 'offline', role: 'viewer' };
+      }
+    }
+
+    function pmLogout() {
+      pmFetch('/api/v1/auth/logout', { method: 'POST', body: '{}' }).catch(function () {});
+      window.location.href = 'login.html';
+    }
+
+    async function applyMeFromServer() {
+      try {
+        var mr = await pmFetch('/api/v1/auth/me', { method: 'GET' });
+        if (!mr.ok) return;
+        var nm = await mr.json();
+        window.__pmCurrentUser = nm;
+        appUserRole = nm.role === 'admin' ? 'admin' : 'viewer';
+        syncPmRoleGlobal();
+        applyPermissionToAllUI();
+        renderTable();
+        renderRiskTable();
+        renderPhaseTable();
+        updateSettingsPanelRoleUi();
+        var pg = document.getElementById('panel-guide');
+        if (pg && pg.classList.contains('active') && typeof window.__renderGuideMenu === 'function') {
+          window.__renderGuideMenu();
+        }
+      } catch (e) {}
+    }
+
+    let appUserRole = 'viewer';
 
     function syncPmRoleGlobal() {
       window.pmIsAdmin = function () { return appUserRole === 'admin'; };
     }
-
-    syncPmRoleGlobal();
 
     /** 与 renderRiskTable 中控件顺序一致，供 syncRiskRowsFromDom 使用 */
     const RISK_FIELD_ORDER = ['project', 'regTime', 'registrant', 'desc', 'assessment', 'level', 'status', 'resolveEta'];
@@ -3038,9 +3323,7 @@
       try {
         const raw = localStorage.getItem(STORAGE_KEY_APP_SETTINGS);
         if (raw) {
-          const o = JSON.parse(raw);
-          if (o && o.role === 'viewer') appUserRole = 'viewer';
-          else appUserRole = 'admin';
+          JSON.parse(raw);
         }
       } catch (e) {}
       syncPmRoleGlobal();
@@ -3049,7 +3332,6 @@
     function saveAppSettings() {
       try {
         localStorage.setItem(STORAGE_KEY_APP_SETTINGS, JSON.stringify({
-          role: appUserRole,
           savedAt: new Date().toISOString()
         }));
       } catch (e) {}
@@ -3057,26 +3339,10 @@
 
     function requireAdminOrAlert() {
       if (!window.pmIsAdmin || !window.pmIsAdmin()) {
-        alert('当前为普通用户身份，仅可查看。请在「设置 → 权限管理」中切换为管理员后再操作。');
+        alert('当前为普通用户身份，仅可查看。如需编辑或保存，请使用管理员账号登录。');
         return false;
       }
       return true;
-    }
-
-    function setAppUserRole(role) {
-      if (role !== 'admin' && role !== 'viewer') return;
-      appUserRole = role;
-      syncPmRoleGlobal();
-      saveAppSettings();
-      applyPermissionToAllUI();
-      renderTable();
-      renderRiskTable();
-      renderPhaseTable();
-      const pg = document.getElementById('panel-guide');
-      if (pg && pg.classList.contains('active') && typeof window.__renderGuideMenu === 'function') {
-        window.__renderGuideMenu();
-      }
-      updateSettingsPanelRoleUi();
     }
 
     function applyPermissionToAllUI() {
@@ -3091,19 +3357,187 @@
     }
 
     function updateSettingsPanelRoleUi() {
-      const sel = document.getElementById('settings-role-select');
       const badge = document.getElementById('settings-role-badge');
-      if (sel) sel.value = appUserRole;
+      const me = window.__pmCurrentUser || {};
+      const un = me.username != null ? String(me.username) : '';
       if (badge) {
-        badge.textContent = appUserRole === 'admin'
-          ? '当前为管理员：可进行增删改查与保存。'
-          : '当前为普通用户：各页仅可查看，不可编辑或保存。';
+        if (appUserRole === 'admin') {
+          badge.textContent = '当前账号「' + un + '」为管理员：可进行增删改查、保存与人员管理。';
+        } else {
+          badge.textContent = '当前账号「' + un + '」为普通用户：各页仅可查看，不可编辑或保存。';
+        }
+      }
+      const navHint = document.getElementById('pm-nav-user-hint');
+      if (navHint) {
+        navHint.textContent = un ? (un + ' · ' + (appUserRole === 'admin' ? '管理员' : '普通用户')) : '';
+      }
+      const adminWrap = document.getElementById('settings-users-admin');
+      const viewerNote = document.getElementById('settings-users-viewer-note');
+      if (adminWrap && viewerNote) {
+        if (window.pmIsAdmin && window.pmIsAdmin()) {
+          adminWrap.style.display = '';
+          viewerNote.style.display = 'none';
+          refreshUsersTable();
+        } else {
+          adminWrap.style.display = 'none';
+          viewerNote.style.display = '';
+        }
+      }
+    }
+
+    async function refreshUsersTable() {
+      if (!window.pmIsAdmin || !window.pmIsAdmin()) return;
+      const tb = document.getElementById('settings-users-tbody');
+      if (!tb) return;
+      try {
+        var r = await pmFetch('/api/v1/users', { method: 'GET' });
+        if (!r.ok) {
+          tb.innerHTML = '<tr><td colspan="5">加载用户列表失败（HTTP ' + r.status + '）</td></tr>';
+          return;
+        }
+        var list = await r.json();
+        tb.innerHTML = '';
+        list.forEach(function (u) {
+          var tr = document.createElement('tr');
+          var roleLabel = u.role === 'admin' ? '管理员' : '普通用户';
+          var activeLabel = u.is_active ? '正常' : '已停用';
+          tr.innerHTML =
+            '<td>' + escapeHtml(u.username) + '</td>' +
+            '<td><select class="settings-user-role-sel" data-user-id="' + u.id + '" aria-label="角色">' +
+            '<option value="viewer"' + (u.role === 'viewer' ? ' selected' : '') + '>普通用户</option>' +
+            '<option value="admin"' + (u.role === 'admin' ? ' selected' : '') + '>管理员</option></select></td>' +
+            '<td>' + escapeHtml(activeLabel) + '</td>' +
+            '<td>' + escapeHtml(u.auth_source || 'local') + '</td>' +
+            '<td class="settings-users-actions"></td>';
+          var tdAct = tr.querySelector('.settings-users-actions');
+          var selR = tr.querySelector('.settings-user-role-sel');
+          selR.addEventListener('change', async function () {
+            try {
+              var pr = await pmFetch('/api/v1/users/' + u.id, {
+                method: 'PATCH',
+                body: JSON.stringify({ role: selR.value })
+              });
+              if (!pr.ok) {
+                var err = await pr.json().catch(function () { return {}; });
+                alert(err.detail || '更新角色失败');
+                selR.value = u.role;
+                return;
+              }
+              if (window.__pmCurrentUser && u.id === window.__pmCurrentUser.id) {
+                await applyMeFromServer();
+              }
+              await refreshUsersTable();
+              updateSettingsPanelRoleUi();
+            } catch (e) {
+              alert('更新失败');
+              selR.value = u.role;
+            }
+          });
+          function addBtn(text, className, onClick) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = text;
+            if (className) b.className = className;
+            b.addEventListener('click', onClick);
+            tdAct.appendChild(b);
+          }
+          addBtn(u.is_active ? '停用' : '启用', '', async function () {
+            if (!confirm(u.is_active ? '确认停用该用户？' : '确认启用该用户？')) return;
+            var pr = await pmFetch('/api/v1/users/' + u.id, {
+              method: 'PATCH',
+              body: JSON.stringify({ is_active: !u.is_active })
+            });
+            if (!pr.ok) {
+              var err = await pr.json().catch(function () { return {}; });
+              alert(err.detail || '操作失败');
+              return;
+            }
+            if (window.__pmCurrentUser && u.id === window.__pmCurrentUser.id) {
+              await applyMeFromServer();
+            }
+            await refreshUsersTable();
+          });
+          addBtn('重置密码', '', function () {
+            var np = prompt('为「' + u.username + '」设置新密码（至少 6 位）：', '');
+            if (!np || np.length < 6) {
+              if (np !== null) alert('密码至少 6 位');
+              return;
+            }
+            (async function () {
+              var pr = await pmFetch('/api/v1/users/' + u.id, {
+                method: 'PATCH',
+                body: JSON.stringify({ password: np })
+              });
+              if (!pr.ok) {
+                var err = await pr.json().catch(function () { return {}; });
+                alert(err.detail || '重置失败');
+                return;
+              }
+              alert('密码已更新');
+            })();
+          });
+          addBtn('删除', 'danger', async function () {
+            if (!confirm('确认删除用户「' + u.username + '」？不可恢复。')) return;
+            var pr = await pmFetch('/api/v1/users/' + u.id, { method: 'DELETE' });
+            if (!pr.ok) {
+              var err = await pr.json().catch(function () { return {}; });
+              alert(err.detail || '删除失败');
+              return;
+            }
+            await refreshUsersTable();
+          });
+          tb.appendChild(tr);
+        });
+      } catch (e) {
+        tb.innerHTML = '<tr><td colspan="5">加载失败</td></tr>';
+      }
+    }
+
+    function bindPmLogoutButtons() {
+      ['pm-btn-logout-nav', 'pm-btn-logout-settings'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && !el._pmLogoutBound) {
+          el._pmLogoutBound = true;
+          el.addEventListener('click', function () { pmLogout(); });
+        }
+      });
+      var createBtn = document.getElementById('settings-btn-user-create');
+      if (createBtn && !createBtn._pmBound) {
+        createBtn._pmBound = true;
+        createBtn.addEventListener('click', async function () {
+          var nameEl = document.getElementById('settings-new-user-name');
+          var passEl = document.getElementById('settings-new-user-pass');
+          var roleEl = document.getElementById('settings-new-user-role');
+          var username = nameEl && nameEl.value ? nameEl.value.trim() : '';
+          var password = passEl ? passEl.value : '';
+          var role = roleEl ? roleEl.value : 'viewer';
+          if (!username) {
+            alert('请填写用户名');
+            return;
+          }
+          if (!password || password.length < 6) {
+            alert('密码至少 6 位');
+            return;
+          }
+          var r = await pmFetch('/api/v1/users', {
+            method: 'POST',
+            body: JSON.stringify({ username: username, password: password, role: role })
+          });
+          if (!r.ok) {
+            var err = await r.json().catch(function () { return {}; });
+            alert(err.detail || '创建失败');
+            return;
+          }
+          if (nameEl) nameEl.value = '';
+          if (passEl) passEl.value = '';
+          await refreshUsersTable();
+          showSaveToast('用户已创建');
+        });
       }
     }
 
     function initSettingsPanelOnce() {
       const nav = document.querySelector('.settings-nav');
-      const sel = document.getElementById('settings-role-select');
       if (!nav || nav._pmWired) return;
       nav._pmWired = true;
       nav.querySelectorAll('.settings-nav-btn').forEach(function (btn) {
@@ -3116,13 +3550,10 @@
           document.querySelectorAll('.settings-module').forEach(function (sec) {
             sec.classList.toggle('active', sec.id === 'settings-module-' + mod);
           });
+          scrollMainToTop();
         });
       });
-      if (sel) {
-        sel.addEventListener('change', function () {
-          setAppUserRole(sel.value);
-        });
-      }
+      bindPmLogoutButtons();
       updateSettingsPanelRoleUi();
     }
 
@@ -3350,9 +3781,6 @@
       }, 2200);
     }
 
-    loadSavedData();
-    loadAppSettings();
-
     function formatRiskRegTime(d) {
       const pad = function (n) { return String(n).padStart(2, '0'); };
       return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
@@ -3483,6 +3911,7 @@
       if (riskSortState.key) applyRiskSort();
       renderRiskThead();
       const tb = document.getElementById('risk-table-body');
+      if (!tb) return;
       const allowEdit = window.pmIsAdmin && window.pmIsAdmin();
       tb.innerHTML = '';
       if (riskRows.length === 0) {
@@ -4355,67 +4784,88 @@
         renderTable();
       }
     }
-    initManpowerTimeUi();
-    initPhaseTimeUi();
-    initRiskAnalysisUi();
-    renderTable();
-    renderRiskTable();
-    renderPhaseTable();
-    applyPermissionToAllUI();
-    initSettingsPanelOnce();
+    async function pmBootstrap() {
+      var me = await fetchAuthMe();
+      if (me === null) return;
+      window.__pmCurrentUser = me;
+      appUserRole = me.role === 'admin' ? 'admin' : 'viewer';
+      syncPmRoleGlobal();
+      bindPmLogoutButtons();
 
-    (function initTabSwitching() {
-      var tabsBar = document.querySelector('.tabs');
-      if (!tabsBar) return;
-      tabsBar.addEventListener('click', function (e) {
-        var btn = e.target.closest('.tab');
-        if (!btn || !tabsBar.contains(btn)) return;
-        var target = btn.getAttribute('data-target');
-        if (!target) return;
-        tabsBar.querySelectorAll('.tab').forEach(function (b) {
-          var on = b === btn;
-          b.classList.toggle('active', on);
-          b.setAttribute('aria-selected', on ? 'true' : 'false');
+      (function initTabSwitching() {
+        var tabsBar = document.querySelector('.tabs');
+        if (!tabsBar) return;
+        if (tabsBar._pmTabWired) return;
+        tabsBar._pmTabWired = true;
+        tabsBar.addEventListener('click', function (e) {
+          var btn = e.target.closest('.tab');
+          if (!btn || !tabsBar.contains(btn)) return;
+          var target = btn.getAttribute('data-target');
+          if (!target) return;
+          tabsBar.querySelectorAll('.tab').forEach(function (b) {
+            var on = b === btn;
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-selected', on ? 'true' : 'false');
+          });
+          document.querySelectorAll('.tab-panel').forEach(function (p) {
+            p.classList.toggle('active', p.id === target);
+          });
+          scrollMainToTop();
+          if (target === 'panel-guide' && typeof window.__renderGuideMenu === 'function') {
+            window.__renderGuideMenu();
+          }
+          if (target === 'panel-settings') {
+            initSettingsPanelOnce();
+            updateSettingsPanelRoleUi();
+          }
+          if (target === 'panel-phase') {
+            renderPhaseTable();
+          }
         });
-        document.querySelectorAll('.tab-panel').forEach(function (p) {
-          p.classList.toggle('active', p.id === target);
-        });
-        if (target === 'panel-guide' && typeof window.__renderGuideMenu === 'function') {
-          window.__renderGuideMenu();
-        }
-        if (target === 'panel-settings') {
-          initSettingsPanelOnce();
-          updateSettingsPanelRoleUi();
-        }
-        if (target === 'panel-phase') {
-          renderPhaseTable();
-        }
-      });
-    })();
+      })();
 
-    (function setupModalA11y() {
-      var mask = document.getElementById('modal-mask');
-      mask.addEventListener('keydown', function (e) {
-        if (!mask.classList.contains('active')) return;
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          closeModal();
-          return;
-        }
-        if (e.key !== 'Tab') return;
-        var buttons = mask.querySelectorAll('.modal-box button');
-        if (buttons.length === 0) return;
-        var first = buttons[0];
-        var last = buttons[buttons.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus(); 
-        }
-      });
-    })();
+      (function setupModalA11y() {
+        var mask = document.getElementById('modal-mask');
+        if (!mask) return;
+        mask.addEventListener('keydown', function (e) {
+          if (!mask.classList.contains('active')) return;
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            closeModal();
+            return;
+          }
+          if (e.key !== 'Tab') return;
+          var buttons = mask.querySelectorAll('.modal-box button');
+          if (buttons.length === 0) return;
+          var first = buttons[0];
+          var last = buttons[buttons.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        });
+      })();
+
+      setTimeout(function () {
+        loadSavedData();
+        loadAppSettings();
+        initManpowerTimeUi();
+        initPhaseTimeUi();
+        initRiskAnalysisUi();
+        renderTable();
+        renderRiskTable();
+        renderPhaseTable();
+        applyPermissionToAllUI();
+        initSettingsPanelOnce();
+        updateSettingsPanelRoleUi();
+      }, 0);
+    }
+    pmBootstrap().catch(function (err) {
+      console.warn('[PM-tool] pmBootstrap failed', err);
+    });
   </script>
   <script>
 // 定义指引数据结构（模拟本地数据，实际可用localStorage或服务端替换）
