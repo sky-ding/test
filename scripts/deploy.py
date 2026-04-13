@@ -71,10 +71,10 @@ def main():
         copy_dir(noah_dir, dist_dir / 'noah')
 
     print('Deployment package created successfully!')
-    print(f'Package location: {dist_dir}')
+    print('Package location: {}'.format(dist_dir))
     print('')
     print('To deploy:')
-    print(f'   cd {dist_dir}')
+    print('   cd {}'.format(dist_dir))
     print('   python -m uvicorn app.main:app --host 0.0.0.0 --port 8001')
     print('')
     print('Package contents:')
@@ -104,10 +104,10 @@ def list_dir_contents(dir_path, base_dir=None, prefix=''):
         relative_path = item.relative_to(base_dir)
 
         if item.is_dir():
-            print(f'{prefix}{relative_path}/')
+            print('{}{}/'.format(prefix, relative_path))
             list_dir_contents(item, base_dir, prefix + '  ')
         else:
-            print(f'{prefix}{relative_path}')
+            print('{}{}'.format(prefix, relative_path))
 
 
 if __name__ == '__main__':
