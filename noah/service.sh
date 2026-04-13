@@ -1,0 +1,1 @@
+cd /apps/dat/web/working/ipd-pmo.vip.vip.com/ && python -m uvicorn main:app --host 0.0.0.0 --port 8080
