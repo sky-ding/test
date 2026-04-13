@@ -22,7 +22,7 @@ def main():
     try:
         subprocess.run(['node', 'scripts/build-frontend.js'], cwd=root_dir, check=True)
         print('Frontend build completed')
-    except FileNotFoundError:
+    except OSError:
         print('Node.js not found, skipping frontend build')
         print('   Make sure to run: node scripts/build-frontend.js')
     except subprocess.CalledProcessError as exc:
