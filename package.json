@@ -5,7 +5,10 @@
   "scripts": {
     "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001",
-    "dev:frontend": "npx --yes serve frontend -l 3000"
+    "dev:frontend": "npx --yes serve frontend -l 3000",
+    "build:frontend": "node scripts/build-frontend.js",
+    "build": "npm run build:frontend",
+    "start": "cd backend && python -m uvicorn app.main:app --host 127.0.0.1 --port 8001"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

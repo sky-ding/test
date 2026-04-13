@@ -1,7 +1,9 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
@@ -53,3 +55,12 @@ app.include_router(risk.router, prefix="/api/v1")
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+# Mount static files (frontend)
+# For development: use frontend directory directly
+# For production: build frontend to frontend/dist first, then Python serves it
+frontend_dir = Path(__file__).parent.parent.parent / "frontend"
+# Try dist folder first (production build), fallback to root (development)
+static_dir = frontend_dir / "dist" if (frontend_dir / "dist").exists() else frontend_dir
+app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")
