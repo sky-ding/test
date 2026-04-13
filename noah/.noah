@@ -1,2 +1,2 @@
-image_app_type=web-generic-os7
-image_ext_modules=python3.7.3
+image_app_type=web-generic-python3.12-anolis8
+image_full_path=vipdocker-f9nub.vclound.com/test/anolis8.10-base-web-generic-python3.12-anolis8:202509104ffee03
