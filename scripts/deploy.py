@@ -20,7 +20,7 @@ def main():
     # Step 1: Build frontend
     print('Building frontend...')
     try:
-        subprocess.run(['node', 'scripts/build-frontend.js'], cwd=root_dir, check=True)
+        subprocess.check_call(['node', 'scripts/build-frontend.js'], cwd=root_dir)
         print('Frontend build completed')
     except OSError:
         print('Node.js not found, skipping frontend build')
