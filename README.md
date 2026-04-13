@@ -16,8 +16,8 @@
 - **不要用 `file://` 直接双击打开** `index.html`（无法携带登录 Cookie）。请用 **HTTP 静态服务** 访问前端，例如：  
   `npx serve frontend -l 3000`  
   然后打开 <http://127.0.0.1:3000/login.html> 登录，或访问 <http://127.0.0.1:3000> 时未登录会自动跳转到登录页。
-- 前端默认 API 地址为 `http://127.0.0.1:8000`，可在页面加载前设置 `window.PM_API_BASE`（见 `index.html` / `login.html` 内脚本）。
-- **会话 Cookie**：登录后浏览器会保存 `pm_session`。开发环境下前端在 **3000** 端口、API 在 **8000** 端口属于**跨站**，部分浏览器对第三方 Cookie 较严格；若登录后仍被反复踢回登录页，请使用 **反向代理将前端与 `/api` 配成同源**，或查阅下文环境变量调整 `PM_SESSION_SAME_SITE` / `PM_SESSION_HTTPS_ONLY`（生产环境务必 HTTPS + 同源）。
+- 前端默认 API 地址为 `http://127.0.0.1:8001`，可在页面加载前设置 `window.PM_API_BASE`（见 `index.html` / `login.html` 内脚本）。
+- **会话 Cookie**：登录后浏览器会保存 `pm_session`。开发环境下前端在 **3000** 端口、API 在 **8001** 端口属于**跨站**，部分浏览器对第三方 Cookie 较严格；若登录后仍被反复踢回登录页，请使用 **反向代理将前端与 `/api` 配成同源**，或查阅下文环境变量调整 `PM_SESSION_SAME_SITE` / `PM_SESSION_HTTPS_ONLY`（生产环境务必 HTTPS + 同源）。
 - 业务数据仍主要保存在 **localStorage**；服务端 `registry` API 已需登录，**写操作仅管理员**。
 
 ## 鉴权与环境变量（首次部署必读）
@@ -39,7 +39,7 @@ cd backend
 $env:PM_SESSION_SECRET="your-long-random-secret"
 # 可选：覆盖 Sky 初始密码（默认 123123）
 # $env:PM_SKY_INITIAL_PASSWORD="YourSecurePwd123"
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 ```
 
 首次启动后可用用户名 **Sky**、密码 **123123** 登录（若未设置 `PM_SKY_INITIAL_PASSWORD`）。若库中已有旧 Sky 账号，需删除 `backend/data/app.db` 重建或请管理员重置密码。
@@ -55,7 +55,7 @@ cd backend
 python -m venv .venv
 .venv\Scripts\activate          # Windows
 pip install -r requirements.txt
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 ```
 
 ## 启动前端（静态）
@@ -77,7 +77,7 @@ npm run dev
 
 将并行启动：
 
-- 后端：<http://127.0.0.1:8000>
+- 后端：<http://127.0.0.1:8001>
 - 前端：<http://127.0.0.1:3000>
 
 若 `npm run dev:backend` 找不到依赖，请在已激活的 `backend/.venv` 环境中手动执行 `uvicorn`（见上文）。

@@ -108,11 +108,11 @@
       <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Sky 默认 123123">
       <button type="submit" id="login-submit">登录</button>
     </form>
-    <p class="hint">API 地址可在上一页通过 <code>window.PM_API_BASE</code> 配置；默认 <code>http://127.0.0.1:8000</code>。前后端需允许携带 Cookie（同源或正确配置 CORS）。</p>
+    <p class="hint">API 地址可在上一页通过 <code>window.PM_API_BASE</code> 配置；默认 <code>http://127.0.0.1:8001</code>。前后端需允许携带 Cookie（同源或正确配置 CORS）。</p>
   </div>
   <script>
     (function () {
-      var PM_API_BASE = (typeof window.PM_API_BASE === 'string' && window.PM_API_BASE) || 'http://127.0.0.1:8000';
+      var PM_API_BASE = (typeof window.PM_API_BASE === 'string' && window.PM_API_BASE) || 'http://127.0.0.1:8001';
       function pmApiUrl(path) {
         var base = PM_API_BASE.replace(/\/$/, '');
         return base + (path.indexOf('/') === 0 ? path : '/' + path);

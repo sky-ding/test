@@ -18,10 +18,10 @@ pip install -r requirements.txt
 在 `backend` 目录下（已激活 venv）：
 
 ```bash
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 ```
 
-- 接口文档：<http://127.0.0.1:8000/docs>
+- 接口文档：<http://127.0.0.1:8001/docs>
 - 健康检查：`GET /health`
 
 ## 环境变量（鉴权）

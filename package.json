@@ -4,7 +4,7 @@
   "description": "根目录脚本：并行启动 FastAPI 与前端静态服务",
   "scripts": {
     "dev": "concurrently -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000",
+    "dev:backend": "cd backend && python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001",
     "dev:frontend": "npx --yes serve frontend -l 3000"
   },
   "devDependencies": {
