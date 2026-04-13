@@ -15,25 +15,25 @@ def main():
     frontend_dir = root_dir / 'frontend'
     dist_dir = root_dir / 'dist'
 
-    print('🚀 Starting production deployment...')
+    print('Starting production deployment...')
 
     # Step 1: Build frontend
-    print('📦 Building frontend...')
+    print('Building frontend...')
     try:
         subprocess.run(['node', 'scripts/build-frontend.js'], cwd=root_dir, check=True)
-        print('✅ Frontend build completed')
+        print('Frontend build completed')
     except (subprocess.CalledProcessError, FileNotFoundError):
-        print('⚠️  Node.js not found, skipping frontend build')
+        print('Node.js not found, skipping frontend build')
         print('   Make sure to run: node scripts/build-frontend.js')
 
     # Step 2: Create deployment directory
-    print('📁 Creating deployment package...')
+    print('Creating deployment package...')
     if dist_dir.exists():
         shutil.rmtree(dist_dir)
     dist_dir.mkdir(parents=True)
 
     # Step 3: Copy backend files (flatten structure)
-    print('🔄 Copying backend files...')
+    print('Copying backend files...')
     # Copy backend/app/* to dist/
     backend_app_dir = backend_dir / 'app'
     for item in backend_app_dir.iterdir():
@@ -51,16 +51,16 @@ def main():
                 copy_dir(item, dist_dir / item.name)
 
     # Step 4: Copy built frontend
-    print('🔄 Copying frontend build...')
+    print('Copying frontend build...')
     frontend_dist = frontend_dir / 'dist'
     if frontend_dist.exists():
         copy_dir(frontend_dist, dist_dir / 'frontend')
     else:
-        print('⚠️  Frontend dist not found, copying source files...')
+        print('Frontend dist not found, copying source files...')
         copy_dir(frontend_dir, dist_dir / 'frontend')
 
     # Step 5: Update main.py static file paths and imports
-    print('🔄 Updating static file paths and imports...')
+    print('Updating static file paths and imports...')
     main_py_path = dist_dir / 'main.py'
     if main_py_path.exists():
         content = main_py_path.read_text(encoding='utf-8')
@@ -74,7 +74,7 @@ def main():
         main_py_path.write_text(content, encoding='utf-8')
 
     # Fix imports in all Python files
-    print('🔄 Fixing imports in all Python files...')
+    print('Fixing imports in all Python files...')
     for py_file in dist_dir.rglob('*.py'):
         if py_file.name == '__init__.py':
             continue
@@ -89,7 +89,7 @@ def main():
             print(f'Warning: Could not fix imports in {py_file}: {e}')
 
     # Step 5: Copy deployment configs
-    print('🔄 Copying deployment configs...')
+    print('Copying deployment configs...')
     config_files = ['package.json', 'README.md', 'requirements.txt']
     for file in config_files:
         src = root_dir / file
@@ -101,14 +101,14 @@ def main():
     if noah_dir.exists():
         copy_dir(noah_dir, dist_dir / 'noah')
 
-    print('✅ Deployment package created successfully!')
-    print(f'📂 Package location: {dist_dir}')
+    print('Deployment package created successfully!')
+    print(f'Package location: {dist_dir}')
     print('')
-    print('🚀 To deploy:')
+    print('To deploy:')
     print(f'   cd {dist_dir}')
     print('   python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8001')
     print('')
-    print('📋 Package contents:')
+    print('Package contents:')
     list_dir_contents(dist_dir)
 
 def copy_dir(src, dest):
@@ -128,10 +128,10 @@ def list_dir_contents(dir_path, prefix=''):
         relative_path = item.relative_to(dir_path.parent.parent if dir_path.parent.name == 'dist' else dir_path.parent)
 
         if item.is_dir():
-            print(f'{prefix}📁 {relative_path}/')
+            print(f'{prefix}{relative_path}/')
             list_dir_contents(item, prefix + '  ')
         else:
-            print(f'{prefix}📄 {relative_path}')
+            print(f'{prefix}{relative_path}')
 
 if __name__ == '__main__':
     main()
