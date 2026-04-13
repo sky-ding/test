@@ -60,7 +60,10 @@ def health():
 # Mount static files (frontend)
 # For development: use frontend directory directly
 # For production: build frontend to frontend/dist first, then Python serves it
-frontend_dir = Path(__file__).parent.parent.parent / "frontend"
-# Try dist folder first (production build), fallback to root (development)
+repo_root = Path(__file__).resolve().parents[2]
+frontend_dir = repo_root / "frontend"
+# When app is packaged under dist/app, the frontend folder may sit next to dist
+if not frontend_dir.exists():
+    frontend_dir = Path(__file__).resolve().parents[1] / "frontend"
 static_dir = frontend_dir / "dist" if (frontend_dir / "dist").exists() else frontend_dir
 app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")
