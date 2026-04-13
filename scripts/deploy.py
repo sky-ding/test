@@ -56,10 +56,11 @@ def main():
 
     # Step 5: Copy deployment configs
     print('Copying deployment configs...')
-    for file_name in ['package.json', 'README.md']:
-        src = os.path.join(root_dir, file_name)
-        if os.path.exists(src):
-            shutil.copy2(src, os.path.join(dist_dir, file_name))
+    # Note: README.md and package.json are in blacklist and should not be included in deployment package
+    # for file_name in ['package.json', 'README.md']:
+    #     src = os.path.join(root_dir, file_name)
+    #     if os.path.exists(src):
+    #         shutil.copy2(src, os.path.join(dist_dir, file_name))
 
     backend_requirements = os.path.join(backend_dir, 'requirements.txt')
     if os.path.exists(backend_requirements):
