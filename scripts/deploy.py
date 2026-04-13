@@ -26,7 +26,7 @@ def main():
         print('Node.js not found, skipping frontend build')
         print('   Make sure to run: node scripts/build-frontend.js')
     except subprocess.CalledProcessError as exc:
-        print(f'Frontend build failed: {exc}')
+        print('Frontend build failed: {}'.format(exc))
         print('   Skipping frontend build and copying frontend source files')
 
     # Step 2: Create deployment directory
