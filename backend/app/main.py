@@ -65,5 +65,7 @@ frontend_dir = repo_root / "frontend"
 # When app is packaged under dist/app, the frontend folder may sit next to dist
 if not frontend_dir.exists():
     frontend_dir = Path(__file__).resolve().parents[1] / "frontend"
-static_dir = frontend_dir / "dist" if (frontend_dir / "dist").exists() else frontend_dir
+# 仅当 dist 内已有入口页时才用 dist；避免空目录或失败构建导致 /index.html 404
+_dist = frontend_dir / "dist"
+static_dir = _dist if (_dist / "index.html").is_file() else frontend_dir
 app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")
