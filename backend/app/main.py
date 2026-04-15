@@ -54,7 +54,7 @@ app.include_router(risk.router, prefix="/api/v1")
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return "ok"
 
 
 # Mount static files (frontend)
