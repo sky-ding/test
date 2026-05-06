@@ -15,6 +15,7 @@ mkdir -p "$LOG_DIR"
 cd "$APP_DIR" || exit 1
 
 # 异步启动，并将标准输出/错误统一写入指定日志文件
-nohup /apps/svr/python3/bin/python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8001 >> "$LOG_FILE" 2>&1 &
+# 容器内 nginx upstream 指向 127.0.0.1:8080
+nohup /apps/svr/python3/bin/python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080 >> "$LOG_FILE" 2>&1 &
 
 echo "Started uvicorn in background, pid=$!, log=$LOG_FILE"
