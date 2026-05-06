@@ -3,6 +3,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -54,13 +55,13 @@ app.include_router(risk.router, prefix="/api/v1")
 
 @app.get("/health")
 def health():
-    return "ok"
+    return PlainTextResponse("ok")
 
 
 @app.get("/_health_check")
 def _health_check():
     # 平台探活接口，始终视为健康
-    return "ok"
+    return PlainTextResponse("ok")
 
 
 # Mount static files (frontend)
