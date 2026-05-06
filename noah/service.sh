@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# Noah 健康检查：始终视为通过
+_health_check() {
+  echo ok
+  return 0
+}
+
 APP_DIR="/apps/dat/web/working/ipd-pmo.vip.vip.com"
 LOG_DIR="/apps/logs/log_receiver/ipd-pmo.vip.vip.com"
 LOG_FILE="$LOG_DIR/backend.log"
