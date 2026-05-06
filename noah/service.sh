@@ -14,5 +14,5 @@ mkdir -p "$LOG_DIR"
 
 cd "$APP_DIR" || exit 1
 
-# 前台启动，交由平台托管进程生命周期；容器内 nginx upstream 指向 127.0.0.1:8080
-exec /apps/svr/python3/bin/python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080
+# 后台启动，让 init 能继续启动 nginx；端口 8080 匹配 nginx upstream
+nohup /apps/svr/python3/bin/python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080 >> "$LOG_FILE" 2>&1 &
