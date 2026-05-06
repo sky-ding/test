@@ -57,6 +57,12 @@ def health():
     return "ok"
 
 
+@app.get("/_health_check")
+def _health_check():
+    # 平台探活接口，始终视为健康
+    return "ok"
+
+
 # Mount static files (frontend)
 # For development: use frontend directory directly
 # For production: build frontend to frontend/dist first, then Python serves it
