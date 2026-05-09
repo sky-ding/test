@@ -27,7 +27,7 @@ class DeptGroup(BaseModel):
 class ManpowerProject(BaseModel):
     """项目集下的单行项目：fixManpowerInData 保证 manpowerByMonth 与 manpower。"""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
     name: str = "新项目"
     manpowerByMonth: dict[str, list[int | float]] = Field(default_factory=dict)
@@ -37,18 +37,27 @@ class ManpowerProject(BaseModel):
 class ManpowerProjectSet(BaseModel):
     """项目集（data 数组元素）。"""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
     name: str = "项目集"
-    projects: list[ManpowerProject] = Field(default_factory=list)
+    subProjects: list[ManpowerProject] = Field(default_factory=list)
+
+
+class ManpowerProgramSet(BaseModel):
+    """项目集（data 数组元素）。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = "项目集"
+    projectSets: list[ManpowerProjectSet] = Field(default_factory=list)
 
 
 class ManpowerState(BaseModel):
     """根对象：saveManpowerData 写入 { data, deptGroups, savedAt }。"""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
-    data: list[ManpowerProjectSet] = Field(default_factory=list)
+    data: list[ManpowerProgramSet] = Field(default_factory=list)
     deptGroups: list[DeptGroup] = Field(default_factory=list)
     savedAt: str | None = None
 
@@ -59,7 +68,7 @@ class ManpowerState(BaseModel):
 class PhaseMonthRow(BaseModel):
     """phaseByMonth 中单月一行：PHASE_FIELD_KEYS / newPhaseMonthRow。"""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
     goal: str = ""
     deliver: str = ""
@@ -71,7 +80,7 @@ class PhaseMonthRow(BaseModel):
 class PhaseProject(BaseModel):
     """阶段表中的项目行（仅存 name + phaseByMonth，不含 _phaseSlice）。"""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
     name: str = "新项目"
     phaseByMonth: dict[str, PhaseMonthRow] = Field(default_factory=dict)
@@ -80,18 +89,27 @@ class PhaseProject(BaseModel):
 class PhaseProjectSet(BaseModel):
     """阶段项目集。"""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
     name: str = "项目集"
-    projects: list[PhaseProject] = Field(default_factory=list)
+    subProjects: list[PhaseProject] = Field(default_factory=list)
+
+
+class PhaseProgramSet(BaseModel):
+    """阶段项目集。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = "项目集"
+    projectSets: list[PhaseProjectSet] = Field(default_factory=list)
 
 
 class PhaseState(BaseModel):
     """根对象：{ phaseData, savedAt }。"""
 
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="forbid")
 
-    phaseData: list[PhaseProjectSet] = Field(default_factory=list)
+    phaseData: list[PhaseProgramSet] = Field(default_factory=list)
     savedAt: str | None = None
 
 
@@ -103,14 +121,16 @@ class RiskRow(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
 
+    category: str = ""
+    source: str = ""
     project: str = ""
-    regTime: str = ""
-    registrant: str = ""
-    desc: str = ""
-    assessment: str = ""
+    issue: str = ""
+    solution: str = ""
     level: str = ""
+    owner: str = ""
+    regTime: str = ""
+    closeTime: str = ""
     status: str = ""
-    resolveEta: str = ""
 
 
 class RiskState(BaseModel):

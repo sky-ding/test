@@ -996,6 +996,22 @@
       resize: vertical;
     }
 
+    .risk-select.risk-color-progress { background: #e7f5ff; color: #0b5aa2; border-color: #b6ddff; }
+    .risk-select.risk-color-quality { background: #f3f0ff; color: #4b3fb4; border-color: #d9d1ff; }
+    .risk-select.risk-color-scope { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
+    .risk-select.risk-color-cost { background: #fff1f0; color: #a8071a; border-color: #ffccc7; }
+
+    .risk-select.risk-color-resource { background: #e6fffb; color: #006d75; border-color: #b5f5ec; }
+    .risk-select.risk-color-tech { background: #f6ffed; color: #237804; border-color: #d9f7be; }
+
+    .risk-select.risk-color-high { background: #fff1f0; color: #a8071a; border-color: #ffccc7; }
+    .risk-select.risk-color-mid { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
+    .risk-select.risk-color-low { background: #f6ffed; color: #237804; border-color: #d9f7be; }
+
+    .risk-select.risk-color-open { background: #e6fffb; color: #006d75; border-color: #b5f5ec; }
+    .risk-select.risk-color-hold { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
+    .risk-select.risk-color-close { background: #f5f5f5; color: #595959; border-color: #d9d9d9; }
+
     table#risk-table .delete-btn,
     td.center-cell .delete-btn {
       padding: 5px 12px;
@@ -2088,7 +2104,7 @@
         </section>
         <section class="manpower-analysis-section" id="risk-analysis-section-groups">
           <h3>各项目（事项）风险条数</h3>
-          <p class="manpower-analysis-period" style="margin:-6px 0 10px;font-size:12px;">分组规则：优先按「风险评估」归类；若为空则取「风险说明」首行（建议写上项目名以便区分）。下方可切换按条数排序或按组内最高风险等级排序。</p>
+          <p class="manpower-analysis-period" style="margin:-6px 0 10px;font-size:12px;">分组规则：优先按「项目」归类；若为空则取「问题&影响说明」首行。下方可切换按条数排序或按组内最高风险等级排序。</p>
           <div class="manpower-analysis-sort-row">
             <span class="risk-analysis-sort-label">排序方式</span>
             <div class="risk-analysis-sort-group" role="group" aria-label="排序方式">
@@ -2108,15 +2124,25 @@
     let data = [
       {
         name: '项目集A',
-        projects: [
-          { name: '项目A-1', manpower: [2, 3, 0, 1] },
-          { name: '项目A-2', manpower: [1, 0, 0, 1] }
+        projectSets: [
+          {
+            name: '子项目集A-1',
+            subProjects: [
+              { name: '子项目A-1', manpower: [2, 3, 0, 1] },
+              { name: '子项目A-2', manpower: [1, 0, 0, 1] }
+            ]
+          }
         ]
       },
       {
         name: '项目集B',
-        projects: [
-          { name: '项目B-1', manpower: [0, 2, 3, 0] }
+        projectSets: [
+          {
+            name: '子项目集B-1',
+            subProjects: [
+              { name: '子项目B-1', manpower: [0, 2, 3, 0] }
+            ]
+          }
         ]
       }
     ];
@@ -2124,15 +2150,25 @@
     let phaseData = [
       {
         name: '项目集A',
-        projects: [
-          { name: '项目A-1', phaseByMonth: {} },
-          { name: '项目A-2', phaseByMonth: {} }
+        projectSets: [
+          {
+            name: '子项目集A-1',
+            subProjects: [
+              { name: '子项目A-1', phaseByMonth: {} },
+              { name: '子项目A-2', phaseByMonth: {} }
+            ]
+          }
         ]
       },
       {
         name: '项目集B',
-        projects: [
-          { name: '项目B-1', phaseByMonth: {} }
+        projectSets: [
+          {
+            name: '子项目集B-1',
+            subProjects: [
+              { name: '子项目B-1', phaseByMonth: {} }
+            ]
+          }
         ]
       }
     ];
@@ -2208,6 +2244,22 @@
       nextNote: '下一阶段注意事项'
     };
 
+    function getProgramProjectSets(set) {
+      return (set && Array.isArray(set.projectSets)) ? set.projectSets : [];
+    }
+
+    function getSubProjects(projectSet) {
+      return (projectSet && Array.isArray(projectSet.subProjects)) ? projectSet.subProjects : [];
+    }
+
+    function countSubProjectsInSet(set) {
+      var n = 0;
+      getProgramProjectSets(set).forEach(function (ps) {
+        n += getSubProjects(ps).length;
+      });
+      return n;
+    }
+
     function newPhaseMonthRow() {
       return { goal: '', deliver: '', highlight: '', weakness: '', nextNote: '' };
     }
@@ -2232,9 +2284,10 @@
 
     function syncPhaseRowPointer() {
       phaseData.forEach(function (set) {
-        if (!set.projects) return;
-        set.projects.forEach(function (p) {
-          p._phaseSlice = getPhaseMonthSlice(p, phaseSelYear, phaseSelMonth);
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (p) {
+            p._phaseSlice = getPhaseMonthSlice(p, phaseSelYear, phaseSelMonth);
+          });
         });
       });
     }
@@ -2242,31 +2295,45 @@
     function mapPhaseDataFromStorage(arr) {
       if (!Array.isArray(arr)) return [];
       return arr.map(function (set) {
-        var projects = Array.isArray(set.projects) ? set.projects.map(function (p) {
-          var pm = (p && p.phaseByMonth && typeof p.phaseByMonth === 'object') ? p.phaseByMonth : {};
+        var projectSets = getProgramProjectSets(set).map(function (projectSet) {
+          var subProjects = getSubProjects(projectSet).map(function (p) {
+            var pm = (p && p.phaseByMonth && typeof p.phaseByMonth === 'object') ? p.phaseByMonth : {};
+            return {
+              name: p && p.name != null ? String(p.name) : '新子项目',
+              phaseByMonth: JSON.parse(JSON.stringify(pm))
+            };
+          });
           return {
-            name: p && p.name != null ? String(p.name) : '新项目',
-            phaseByMonth: JSON.parse(JSON.stringify(pm))
+            name: projectSet && projectSet.name != null ? String(projectSet.name) : '子项目集',
+            subProjects: subProjects
           };
-        }) : [];
-        return { name: set && set.name != null ? String(set.name) : '项目集', projects: projects };
+        });
+        return {
+          name: set && set.name != null ? String(set.name) : '项目集',
+          projectSets: projectSets
+        };
       });
     }
 
     function fixPhaseInData(arr) {
       if (!Array.isArray(arr)) return;
       arr.forEach(function (set) {
-        if (!set || !Array.isArray(set.projects)) return;
-        set.projects.forEach(function (p) {
-          if (!p) return;
-          ensurePhaseByMonth(p);
-          Object.keys(p.phaseByMonth).forEach(function (k) {
-            var row = p.phaseByMonth[k];
-            if (!row || typeof row !== 'object') row = newPhaseMonthRow();
-            PHASE_FIELD_KEYS.forEach(function (fk) {
-              row[fk] = row[fk] != null ? String(row[fk]) : '';
+        if (!set) return;
+        if (!Array.isArray(set.projectSets)) set.projectSets = [];
+        set.projectSets.forEach(function (projectSet) {
+          if (!projectSet) return;
+          if (!Array.isArray(projectSet.subProjects)) projectSet.subProjects = [];
+          projectSet.subProjects.forEach(function (p) {
+            if (!p) return;
+            ensurePhaseByMonth(p);
+            Object.keys(p.phaseByMonth).forEach(function (k) {
+              var row = p.phaseByMonth[k];
+              if (!row || typeof row !== 'object') row = newPhaseMonthRow();
+              PHASE_FIELD_KEYS.forEach(function (fk) {
+                row[fk] = row[fk] != null ? String(row[fk]) : '';
+              });
+              p.phaseByMonth[k] = row;
             });
-            p.phaseByMonth[k] = row;
           });
         });
       });
@@ -2278,8 +2345,13 @@
       return src.map(function (set) {
         return {
           name: set && set.name != null ? String(set.name) : '项目集',
-          projects: (set && Array.isArray(set.projects) ? set.projects : []).map(function (p) {
-            return { name: p && p.name != null ? String(p.name) : '新项目', phaseByMonth: {} };
+          projectSets: getProgramProjectSets(set).map(function (projectSet) {
+            return {
+              name: projectSet && projectSet.name != null ? String(projectSet.name) : '子项目集',
+              subProjects: getSubProjects(projectSet).map(function (p) {
+                return { name: p && p.name != null ? String(p.name) : '新子项目', phaseByMonth: {} };
+              })
+            };
           })
         };
       });
@@ -2293,61 +2365,76 @@
       if (!Array.isArray(phaseData)) phaseData = [];
       if (!Array.isArray(data)) data = [];
       var oldData = data.map(function (set) {
-        if (!set) return { name: '项目集', projects: [] };
+        if (!set) return { name: '项目集', projectSets: [] };
         return {
           name: set.name != null ? String(set.name) : '项目集',
-          projects: (Array.isArray(set.projects) ? set.projects : []).map(function (p) {
-            if (!p) return { name: '新项目', manpowerByMonth: {} };
-            var mb = (p.manpowerByMonth && typeof p.manpowerByMonth === 'object')
-              ? JSON.parse(JSON.stringify(p.manpowerByMonth)) : {};
-            return { name: p.name != null ? String(p.name) : '新项目', manpowerByMonth: mb };
+          projectSets: getProgramProjectSets(set).map(function (projectSet) {
+            return {
+              name: projectSet && projectSet.name != null ? String(projectSet.name) : '子项目集',
+              subProjects: getSubProjects(projectSet).map(function (p) {
+                if (!p) return { name: '新子项目', manpowerByMonth: {} };
+                var mb = (p.manpowerByMonth && typeof p.manpowerByMonth === 'object')
+                  ? JSON.parse(JSON.stringify(p.manpowerByMonth)) : {};
+                return { name: p.name != null ? String(p.name) : '新子项目', manpowerByMonth: mb };
+              })
+            };
           })
         };
       });
       var next = [];
       phaseData.forEach(function (phSet, si) {
         if (!phSet) return;
-        var phProjs = Array.isArray(phSet.projects) ? phSet.projects : [];
+        var phProjectSets = getProgramProjectSets(phSet);
         var oldSet = oldData[si];
-        var oldProjs = (oldSet && Array.isArray(oldSet.projects)) ? oldSet.projects.slice() : [];
-        var oldLen = oldProjs.length;
-        var newLen = phProjs.length;
-        var mergedProjs = [];
-        if (oldLen === newLen) {
-          for (var j = 0; j < newLen; j++) {
-            var phP = phProjs[j];
-            var oldP = oldProjs[j];
-            var mb = (oldP && oldP.manpowerByMonth && typeof oldP.manpowerByMonth === 'object')
-              ? JSON.parse(JSON.stringify(oldP.manpowerByMonth)) : {};
-            mergedProjs.push({
-              name: phP && phP.name != null ? String(phP.name) : '新项目',
-              manpowerByMonth: mb
+        var oldProjectSets = oldSet ? getProgramProjectSets(oldSet) : [];
+        var mergedProjectSets = [];
+        phProjectSets.forEach(function (phProjectSet, psi) {
+          var phProjs = getSubProjects(phProjectSet);
+          var oldPs = oldProjectSets[psi];
+          var oldProjs = oldPs ? getSubProjects(oldPs).slice() : [];
+          var oldLen = oldProjs.length;
+          var newLen = phProjs.length;
+          var mergedProjs = [];
+          if (oldLen === newLen) {
+            for (var j = 0; j < newLen; j++) {
+              var phP = phProjs[j];
+              var oldP = oldProjs[j];
+              var mb = (oldP && oldP.manpowerByMonth && typeof oldP.manpowerByMonth === 'object')
+                ? JSON.parse(JSON.stringify(oldP.manpowerByMonth)) : {};
+              mergedProjs.push({
+                name: phP && phP.name != null ? String(phP.name) : '新子项目',
+                manpowerByMonth: mb
+              });
+            }
+          } else {
+            var pool = oldProjs.map(function (op) {
+              return {
+                nm: op && op.name != null ? String(op.name) : '',
+                manpowerByMonth: (op && op.manpowerByMonth && typeof op.manpowerByMonth === 'object')
+                  ? JSON.parse(JSON.stringify(op.manpowerByMonth)) : {}
+              };
+            });
+            phProjs.forEach(function (phP) {
+              var wantName = phP && phP.name != null ? String(phP.name) : '新子项目';
+              var idx = -1;
+              for (var pi = 0; pi < pool.length; pi++) {
+                if (pool[pi].nm === wantName) {
+                  idx = pi;
+                  break;
+                }
+              }
+              var taken = idx >= 0 ? pool.splice(idx, 1)[0] : { nm: wantName, manpowerByMonth: {} };
+              mergedProjs.push({ name: wantName, manpowerByMonth: taken.manpowerByMonth });
             });
           }
-        } else {
-          var pool = oldProjs.map(function (op) {
-            return {
-              nm: op && op.name != null ? String(op.name) : '',
-              manpowerByMonth: (op && op.manpowerByMonth && typeof op.manpowerByMonth === 'object')
-                ? JSON.parse(JSON.stringify(op.manpowerByMonth)) : {}
-            };
+          mergedProjectSets.push({
+            name: phProjectSet && phProjectSet.name != null ? String(phProjectSet.name) : '子项目集',
+            subProjects: mergedProjs
           });
-          phProjs.forEach(function (phP) {
-            var wantName = phP && phP.name != null ? String(phP.name) : '新项目';
-            var idx = -1;
-            for (var pi = 0; pi < pool.length; pi++) {
-              if (pool[pi].nm === wantName) {
-                idx = pi;
-                break;
-              }
-            }
-            var taken = idx >= 0 ? pool.splice(idx, 1)[0] : { nm: wantName, manpowerByMonth: {} };
-            mergedProjs.push({ name: wantName, manpowerByMonth: taken.manpowerByMonth });
-          });
-        }
+        });
         next.push({
           name: phSet.name != null ? String(phSet.name) : '项目集',
-          projects: mergedProjs
+          projectSets: mergedProjectSets
         });
       });
       data = next;
@@ -2404,9 +2491,10 @@
 
     function syncProjectManpowerPointerToMonth() {
       data.forEach(function (set) {
-        if (!set.projects) return;
-        set.projects.forEach(function (p) {
-          p.manpower = getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (p) {
+            p.manpower = getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
+          });
         });
       });
     }
@@ -2433,12 +2521,15 @@
         var setName = set && set.name != null ? String(set.name) : '（未命名项目集）';
         var setSum = 0;
         var projs = [];
-        (set && set.projects ? set.projects : []).forEach(function (p) {
-          var t = manpowerProjectRowTotal(p);
-          setSum += t;
-          var pn = p && p.name != null ? String(p.name) : '（未命名）';
-          projs.push({ name: pn, total: t });
-          allProj.push({ label: setName + ' · ' + pn, total: t });
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          var psName = projectSet && projectSet.name != null ? String(projectSet.name) : '（未命名子项目集）';
+          getSubProjects(projectSet).forEach(function (p) {
+            var t = manpowerProjectRowTotal(p);
+            setSum += t;
+            var pn = p && p.name != null ? String(p.name) : '（未命名）';
+            projs.push({ name: psName + ' · ' + pn, total: t });
+            allProj.push({ label: setName + ' · ' + psName + ' · ' + pn, total: t });
+          });
         });
         grand += setSum;
         setRows.push({ name: setName, total: setSum, projects: projs });
@@ -3031,7 +3122,7 @@
     }
 
     /** 与 renderRiskTable 中控件顺序一致，供 syncRiskRowsFromDom 使用 */
-    const RISK_FIELD_ORDER = ['project', 'regTime', 'registrant', 'desc', 'assessment', 'level', 'status', 'resolveEta'];
+    const RISK_FIELD_ORDER = ['category', 'source', 'project', 'issue', 'solution', 'level', 'owner', 'regTime', 'closeTime', 'status'];
 
     let riskAnalysisCharts = [];
     let lastRiskAnalysisStats = null;
@@ -3049,15 +3140,15 @@
     }
 
     function riskRowGroupKey(row) {
-      var ass = row && row.assessment != null ? String(row.assessment).trim() : '';
-      if (ass) return ass.length > 48 ? ass.slice(0, 48) + '…' : ass;
-      var d = row && row.desc != null ? String(row.desc).trim() : '';
+      var proj = row && row.project != null ? String(row.project).trim() : '';
+      if (proj) return proj.length > 48 ? proj.slice(0, 48) + '…' : proj;
+      var d = row && row.issue != null ? String(row.issue).trim() : '';
       if (d) {
         var line = d.split(/\r?\n/)[0].trim();
         if (!line) line = d;
         return line.length > 48 ? line.slice(0, 48) + '…' : line;
       }
-      return '（未填写说明与评估）';
+      return '（未填写项目与问题）';
     }
 
     function buildRiskAnalysisStats() {
@@ -3570,29 +3661,34 @@
       if (!Array.isArray(arr)) return;
       const need = deptFlatCount();
       arr.forEach(function (set) {
-        if (!set || !Array.isArray(set.projects)) return;
-        set.projects.forEach(function (p) {
-          if (!p) return;
-          ensureProjectHasManpowerByMonth(p);
-          var mb = p.manpowerByMonth;
-          var keys = Object.keys(mb);
-          if (keys.length === 0 && Array.isArray(p.manpower)) {
-            mb[ymKey(manpowerSelYear, manpowerSelMonth)] = p.manpower.map(function (x) {
-              var n = Number(x);
-              return isNaN(n) ? 0 : n;
+        if (!set) return;
+        if (!Array.isArray(set.projectSets)) set.projectSets = [];
+        set.projectSets.forEach(function (projectSet) {
+          if (!projectSet) return;
+          if (!Array.isArray(projectSet.subProjects)) projectSet.subProjects = [];
+          projectSet.subProjects.forEach(function (p) {
+            if (!p) return;
+            ensureProjectHasManpowerByMonth(p);
+            var mb = p.manpowerByMonth;
+            var keys = Object.keys(mb);
+            if (keys.length === 0 && Array.isArray(p.manpower)) {
+              mb[ymKey(manpowerSelYear, manpowerSelMonth)] = p.manpower.map(function (x) {
+                var n = Number(x);
+                return isNaN(n) ? 0 : n;
+              });
+            }
+            Object.keys(mb).forEach(function (k) {
+              var row = Array.isArray(mb[k]) ? mb[k].slice() : [];
+              row = row.map(function (x) {
+                var n = Number(x);
+                return isNaN(n) ? 0 : n;
+              });
+              while (row.length < need) row.push(0);
+              if (row.length > need) row = row.slice(0, need);
+              mb[k] = row;
             });
-          }
-          Object.keys(mb).forEach(function (k) {
-            var row = Array.isArray(mb[k]) ? mb[k].slice() : [];
-            row = row.map(function (x) {
-              var n = Number(x);
-              return isNaN(n) ? 0 : n;
-            });
-            while (row.length < need) row.push(0);
-            if (row.length > need) row = row.slice(0, need);
-            mb[k] = row;
+            p.manpower = getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
           });
-          p.manpower = getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
         });
       });
     }
@@ -3601,14 +3697,16 @@
       if (!Array.isArray(arr)) return [];
       return arr.map(function (r) {
         return {
+          category: r.category != null ? String(r.category) : '',
+          source: r.source != null ? String(r.source) : '',
           project: r.project != null ? String(r.project) : '',
           regTime: r.regTime != null ? String(r.regTime) : '',
-          registrant: r.registrant != null ? String(r.registrant) : '',
-          desc: r.desc != null ? String(r.desc) : '',
-          assessment: r.assessment != null ? String(r.assessment) : '',
+          issue: r.issue != null ? String(r.issue) : '',
+          solution: r.solution != null ? String(r.solution) : '',
           level: r.level != null ? String(r.level) : '',
+          owner: r.owner != null ? String(r.owner) : '',
           status: r.status != null ? String(r.status) : '',
-          resolveEta: r.resolveEta != null ? String(r.resolveEta) : ''
+          closeTime: r.closeTime != null ? String(r.closeTime) : ''
         };
       });
     }
@@ -3851,9 +3949,10 @@
       var trs = tb.querySelectorAll('tr');
       var flat = [];
       phaseData.forEach(function (set) {
-        if (!set.projects) return;
-        set.projects.forEach(function (p) {
-          flat.push(p);
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (p) {
+            flat.push(p);
+          });
         });
       });
       var ri = 0;
@@ -3874,8 +3973,13 @@
       return phaseData.map(function (set) {
         return {
           name: set.name,
-          projects: (set.projects || []).map(function (p) {
-            return { name: p.name, phaseByMonth: p.phaseByMonth || {} };
+          projectSets: getProgramProjectSets(set).map(function (projectSet) {
+            return {
+              name: projectSet.name,
+              subProjects: getSubProjects(projectSet).map(function (p) {
+                return { name: p.name, phaseByMonth: p.phaseByMonth || {} };
+              })
+            };
           })
         };
       });
@@ -3924,14 +4028,16 @@
     function addRiskRow() {
       if (!requireAdminOrAlert()) return;
       riskRows.push({
+        category: '',
+        source: '',
         project: '',
-        regTime: formatRiskRegTime(new Date()),
-        registrant: '',
-        desc: '',
-        assessment: '',
+        issue: '',
+        solution: '',
         level: '',
+        owner: '',
+        regTime: '',
+        closeTime: '',
         status: '',
-        resolveEta: ''
       });
       renderRiskTable();
     }
@@ -3950,12 +4056,12 @@
       if (emptyB) return -1;
 
       if (key === 'level') {
-        var order = { '低': 1, '中': 2, '高': 3, '极高': 4 };
+        var order = { '低': 1, '中': 2, '高': 3 };
         var na = order[va] != null ? order[va] : 99;
         var nb = order[vb] != null ? order[vb] : 99;
         return na - nb;
       }
-      if (key === 'resolveEta') {
+      if (key === 'closeTime') {
         var da = new Date(va + 'T00:00:00').getTime();
         var db = new Date(vb + 'T00:00:00').getTime();
         if (isNaN(da)) da = 0;
@@ -3999,14 +4105,16 @@
       if (!thead) return;
       var headers = [
         { key: null, label: '序号', sortable: false, thClass: 'main seq' },
+        { key: 'category', label: '风险类别', sortable: true },
+        { key: 'source', label: '风险来源', sortable: true },
         { key: 'project', label: '项目', sortable: true },
-        { key: 'regTime', label: '风险登记时间', sortable: true },
-        { key: 'registrant', label: '风险登记人', sortable: true },
-        { key: 'desc', label: '风险说明', sortable: true },
-        { key: 'assessment', label: '风险评估', sortable: true },
+        { key: 'issue', label: '问题&影响说明', sortable: true },
+        { key: 'solution', label: '解决方案', sortable: true },
         { key: 'level', label: '风险等级', sortable: true },
-        { key: 'status', label: '目前状态', sortable: true },
-        { key: 'resolveEta', label: '预计解除时间', sortable: true },
+        { key: 'owner', label: '跟进人', sortable: true },
+        { key: 'regTime', label: '风险登记时间', sortable: true },
+        { key: 'closeTime', label: '风险解除时间', sortable: true },
+        { key: 'status', label: '状态', sortable: true },
         { key: null, label: '操作', sortable: false }
       ];
       var tr = document.createElement('tr');
@@ -4052,7 +4160,7 @@
       if (riskRows.length === 0) {
         const tr = document.createElement('tr');
         const td = document.createElement('td');
-        td.colSpan = 10;
+        td.colSpan = 12;
         td.className = 'center-cell';
         td.style.padding = '24px';
         td.textContent = allowEdit
@@ -4085,57 +4193,132 @@
           return td;
         }
 
+        function riskSelectColorClass(field, value) {
+          var v = value != null ? String(value).trim().toLowerCase() : '';
+          if (!v) return '';
+          if (field === 'category') {
+            if (v === '进度') return 'risk-color-progress';
+            if (v === '质量') return 'risk-color-quality';
+            if (v === '范围') return 'risk-color-scope';
+            if (v === '成本') return 'risk-color-cost';
+            return '';
+          }
+          if (field === 'source') {
+            if (v === '资源') return 'risk-color-resource';
+            if (v === '技术') return 'risk-color-tech';
+            return '';
+          }
+          if (field === 'level') {
+            if (v === '高') return 'risk-color-high';
+            if (v === '中') return 'risk-color-mid';
+            if (v === '低') return 'risk-color-low';
+            return '';
+          }
+          if (field === 'status') {
+            if (v === 'open') return 'risk-color-open';
+            if (v === 'hold') return 'risk-color-hold';
+            if (v === 'close') return 'risk-color-close';
+            return '';
+          }
+          return '';
+        }
+
+        function applyRiskSelectColor(el, field, value) {
+          if (!el) return;
+          el.classList.remove(
+            'risk-color-progress', 'risk-color-quality', 'risk-color-scope', 'risk-color-cost',
+            'risk-color-resource', 'risk-color-tech',
+            'risk-color-high', 'risk-color-mid', 'risk-color-low',
+            'risk-color-open', 'risk-color-hold', 'risk-color-close'
+          );
+          var cls = riskSelectColorClass(field, value);
+          if (cls) el.classList.add(cls);
+        }
+
+        function tdSelect(field, options, cls) {
+          const td = document.createElement('td');
+          td.className = 'risk-cell' + (cls ? ' ' + cls : '');
+          const sel = document.createElement('select');
+          sel.className = 'risk-select';
+          const current = row[field] != null ? String(row[field]) : '';
+          [['', '请选择']].concat(options).forEach(function (opt) {
+            const o = document.createElement('option');
+            o.value = opt[0];
+            o.textContent = opt[1];
+            if (current === opt[0]) o.selected = true;
+            sel.appendChild(o);
+          });
+          sel.disabled = !allowEdit;
+          applyRiskSelectColor(sel, field, current);
+          sel.addEventListener('change', function () {
+            if (allowEdit) updateRisk(idx, field, sel.value);
+            applyRiskSelectColor(sel, field, sel.value);
+          });
+          td.appendChild(sel);
+          return td;
+        }
+
+        tr.appendChild(tdSelect('category', [['进度', '进度'], ['质量', '质量'], ['范围', '范围'], ['成本', '成本']]));
+        tr.appendChild(tdSelect('source', [['资源', '资源'], ['技术', '技术']]));
         tr.appendChild(tdTextInput('project'));
-        tr.appendChild(tdTextInput('regTime'));
-        tr.appendChild(tdTextInput('registrant'));
 
-        const tdDesc = document.createElement('td');
-        tdDesc.className = 'risk-cell w-wide';
-        const ta = document.createElement('textarea');
-        ta.className = 'risk-input';
-        ta.rows = 2;
-        ta.value = row.desc || '';
-        ta.readOnly = !allowEdit;
-        ta.addEventListener('change', function () {
-          if (allowEdit) updateRisk(idx, 'desc', ta.value);
+        const tdIssue = document.createElement('td');
+        tdIssue.className = 'risk-cell w-wide';
+        const taIssue = document.createElement('textarea');
+        taIssue.className = 'risk-input';
+        taIssue.rows = 2;
+        taIssue.value = row.issue || '';
+        taIssue.readOnly = !allowEdit;
+        taIssue.addEventListener('change', function () {
+          if (allowEdit) updateRisk(idx, 'issue', taIssue.value);
         });
-        tdDesc.appendChild(ta);
-        tr.appendChild(tdDesc);
+        tdIssue.appendChild(taIssue);
+        tr.appendChild(tdIssue);
 
-        tr.appendChild(tdTextInput('assessment', 'w-wide'));
-
-        const tdLevel = document.createElement('td');
-        tdLevel.className = 'risk-cell';
-        const sel = document.createElement('select');
-        sel.className = 'risk-select';
-        [['', '请选择'], ['低', '低'], ['中', '中'], ['高', '高'], ['极高', '极高']].forEach(function (opt) {
-          const o = document.createElement('option');
-          o.value = opt[0];
-          o.textContent = opt[1];
-          if (row.level === opt[0]) o.selected = true;
-          sel.appendChild(o);
+        const tdSolution = document.createElement('td');
+        tdSolution.className = 'risk-cell w-wide';
+        const taSolution = document.createElement('textarea');
+        taSolution.className = 'risk-input';
+        taSolution.rows = 2;
+        taSolution.value = row.solution || '';
+        taSolution.readOnly = !allowEdit;
+        taSolution.addEventListener('change', function () {
+          if (allowEdit) updateRisk(idx, 'solution', taSolution.value);
         });
-        sel.disabled = !allowEdit;
-        sel.addEventListener('change', function () {
-          if (allowEdit) updateRisk(idx, 'level', sel.value);
+        tdSolution.appendChild(taSolution);
+        tr.appendChild(tdSolution);
+
+        tr.appendChild(tdSelect('level', [['高', '高'], ['中', '中'], ['低', '低']]));
+
+        tr.appendChild(tdTextInput('owner'));
+
+        const tdRegDate = document.createElement('td');
+        tdRegDate.className = 'risk-cell';
+        const rin = document.createElement('input');
+        rin.type = 'date';
+        rin.className = 'risk-input';
+        rin.value = row.regTime || '';
+        rin.disabled = !allowEdit;
+        rin.addEventListener('change', function () {
+          if (allowEdit) updateRisk(idx, 'regTime', rin.value);
         });
-        tdLevel.appendChild(sel);
-        tr.appendChild(tdLevel);
+        tdRegDate.appendChild(rin);
+        tr.appendChild(tdRegDate);
 
-        tr.appendChild(tdTextInput('status'));
-
-        const tdDate = document.createElement('td');
-        tdDate.className = 'risk-cell';
+        const tdCloseDate = document.createElement('td');
+        tdCloseDate.className = 'risk-cell';
         const din = document.createElement('input');
         din.type = 'date';
         din.className = 'risk-input';
-        din.value = row.resolveEta || '';
+        din.value = row.closeTime || '';
         din.disabled = !allowEdit;
         din.addEventListener('change', function () {
-          if (allowEdit) updateRisk(idx, 'resolveEta', din.value);
+          if (allowEdit) updateRisk(idx, 'closeTime', din.value);
         });
-        tdDate.appendChild(din);
-        tr.appendChild(tdDate);
+        tdCloseDate.appendChild(din);
+        tr.appendChild(tdCloseDate);
+
+        tr.appendChild(tdSelect('status', [['open', 'open'], ['close', 'close'], ['hold', 'hold']]));
 
         const tdAct = document.createElement('td');
         tdAct.className = 'center-cell';
@@ -4164,9 +4347,13 @@
       thSet.className = 'main col-set';
       thSet.textContent = '项目集';
       tr.appendChild(thSet);
+      var thSubSet = document.createElement('th');
+      thSubSet.className = 'sub col-set';
+      thSubSet.textContent = '子项目集';
+      tr.appendChild(thSubSet);
       var thProj = document.createElement('th');
       thProj.className = 'sub col-proj';
-      thProj.textContent = '项目';
+      thProj.textContent = '子项目';
       tr.appendChild(thProj);
       PHASE_FIELD_KEYS.forEach(function (key) {
         var th = document.createElement('th');
@@ -4178,22 +4365,33 @@
       thead.appendChild(tr);
     }
 
-    function appendPhaseRowNameCells(tr, set, setIdx, proj, projIdx, admin) {
-      if (projIdx === 0) {
+    function appendPhaseRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin) {
+      if (projectSetIdx === 0 && projIdx === 0) {
         var tdSet = document.createElement('td');
         tdSet.className = 'main col-set';
-        tdSet.rowSpan = set.projects.length || 1;
+        tdSet.rowSpan = countSubProjectsInSet(set) || 1;
         if (admin) {
-          tdSet.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseSetName(' + setIdx + ')">' + escapeHtml(set.name) + '</span><div class="actions"><button type="button" class="icon-btn" title="添加子项目" onclick="addPhaseProject(' + setIdx + ')">+</button><button type="button" class="icon-btn danger" title="删除项目集" onclick="showDeleteModal(\'set\',' + setIdx + ')">×</button></div></div>';
+          tdSet.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseSetName(' + setIdx + ')">' + escapeHtml(set.name) + '</span><div class="actions"><button type="button" class="icon-btn" title="添加子项目集" onclick="addPhaseProjectSet(' + setIdx + ')">+</button><button type="button" class="icon-btn danger" title="删除项目集" onclick="showDeleteModal(\'set\',' + setIdx + ')">×</button></div></div>';
         } else {
           tdSet.innerHTML = '<div class="cell-head-inline"><span>' + escapeHtml(set.name) + '</span></div>';
         }
         tr.appendChild(tdSet);
       }
+      if (projIdx === 0) {
+        var tdSubSet = document.createElement('td');
+        tdSubSet.className = 'sub col-set';
+        tdSubSet.rowSpan = getSubProjects(projectSet).length || 1;
+        if (admin) {
+          tdSubSet.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseProjectSetName(' + setIdx + ',' + projectSetIdx + ')">' + escapeHtml(projectSet.name) + '</span><div class="actions"><button type="button" class="icon-btn" title="添加子项目" onclick="addPhaseProject(' + setIdx + ',' + projectSetIdx + ')">+</button><button type="button" class="icon-btn danger" title="删除子项目集" onclick="showDeleteModal(\'projectSet\',' + setIdx + ',' + projectSetIdx + ')">×</button></div></div>';
+        } else {
+          tdSubSet.innerHTML = '<div class="cell-head-inline"><span>' + escapeHtml(projectSet.name) + '</span></div>';
+        }
+        tr.appendChild(tdSubSet);
+      }
       var tdProj = document.createElement('td');
       tdProj.className = 'sub col-proj';
       if (admin) {
-        tdProj.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseProjectName(' + setIdx + ',' + projIdx + ')">' + escapeHtml(proj.name) + '</span><div class="actions"><button type="button" class="icon-btn danger" title="删除项目" onclick="showDeleteModal(\'project\',' + setIdx + ',' + projIdx + ')">×</button></div></div>';
+        tdProj.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseProjectName(' + setIdx + ',' + projectSetIdx + ',' + projIdx + ')">' + escapeHtml(proj.name) + '</span><div class="actions"><button type="button" class="icon-btn danger" title="删除子项目" onclick="showDeleteModal(\'project\',' + setIdx + ',' + projectSetIdx + ',' + projIdx + ')">×</button></div></div>';
       } else {
         tdProj.innerHTML = '<div class="cell-head-inline"><span>' + escapeHtml(proj.name) + '</span></div>';
       }
@@ -4215,7 +4413,7 @@
       if (phaseData.length === 0) {
         var trE = document.createElement('tr');
         var tdE = document.createElement('td');
-        tdE.colSpan = 2 + PHASE_FIELD_KEYS.length;
+        tdE.colSpan = 3 + PHASE_FIELD_KEYS.length;
         tdE.className = 'center-cell';
         tdE.style.padding = '24px';
         tdE.textContent = admin
@@ -4227,55 +4425,67 @@
       }
 
       phaseData.forEach(function (set, setIdx) {
-        set.projects.forEach(function (proj, projIdx) {
-          var tr = document.createElement('tr');
-          if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
-          appendPhaseRowNameCells(tr, set, setIdx, proj, projIdx, admin);
-          var slice = proj._phaseSlice || getPhaseMonthSlice(proj, phaseSelYear, phaseSelMonth);
-          PHASE_FIELD_KEYS.forEach(function (key) {
-            var td = document.createElement('td');
-            td.className = 'phase-field-cell';
-            var ta = document.createElement('textarea');
-            ta.className = 'phase-field-input';
-            ta.value = slice[key] || '';
-            ta.readOnly = !admin;
-            ta.rows = 3;
-            if (admin) {
-              ta.addEventListener('input', function () {
-                slice[key] = ta.value;
-              });
-            }
-            td.appendChild(ta);
-            tr.appendChild(td);
+        getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
+          getSubProjects(projectSet).forEach(function (proj, projIdx) {
+            var tr = document.createElement('tr');
+            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
+            appendPhaseRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin);
+            var slice = proj._phaseSlice || getPhaseMonthSlice(proj, phaseSelYear, phaseSelMonth);
+            PHASE_FIELD_KEYS.forEach(function (key) {
+              var td = document.createElement('td');
+              td.className = 'phase-field-cell';
+              var ta = document.createElement('textarea');
+              ta.className = 'phase-field-input';
+              ta.value = slice[key] || '';
+              ta.readOnly = !admin;
+              ta.rows = 3;
+              if (admin) {
+                ta.addEventListener('input', function () {
+                  slice[key] = ta.value;
+                });
+              }
+              td.appendChild(ta);
+              tr.appendChild(td);
+            });
+            tb.appendChild(tr);
           });
-          tb.appendChild(tr);
         });
       });
     }
 
-    function addPhaseProjectSet() {
+    function addPhaseProjectSet(setIdx) {
       if (!requireAdminOrAlert()) return;
-      var name = prompt('输入新项目集的名称：');
+      var name = prompt(setIdx == null ? '输入新项目集的名称：' : '输入新子项目集的名称：');
       if (name && String(name).trim()) {
-        var newProj = { name: '新项目', phaseByMonth: {} };
+        var newProj = { name: '新子项目', phaseByMonth: {} };
         getPhaseMonthSlice(newProj, phaseSelYear, phaseSelMonth);
-        phaseData.push({
-          name: String(name).trim(),
-          projects: [newProj]
-        });
+        if (setIdx == null) {
+          phaseData.push({
+            name: String(name).trim(),
+            projectSets: [{ name: '默认子项目集', subProjects: [newProj] }]
+          });
+        } else {
+          var set = phaseData[setIdx];
+          if (!set) return;
+          if (!Array.isArray(set.projectSets)) set.projectSets = [];
+          set.projectSets.push({ name: String(name).trim(), subProjects: [newProj] });
+        }
         fixPhaseInData(phaseData);
         renderPhaseTable();
         renderTable();
       }
     }
 
-    function addPhaseProject(setIdx) {
+    function addPhaseProject(setIdx, projectSetIdx) {
       if (!requireAdminOrAlert()) return;
-      var name = prompt('输入新项目名称：');
+      var name = prompt('输入新子项目名称：');
       if (name && String(name).trim()) {
         var newProj = { name: String(name).trim(), phaseByMonth: {} };
         getPhaseMonthSlice(newProj, phaseSelYear, phaseSelMonth);
-        phaseData[setIdx].projects.push(newProj);
+        var projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+        if (!projectSet) return;
+        if (!Array.isArray(projectSet.subProjects)) projectSet.subProjects = [];
+        projectSet.subProjects.push(newProj);
         fixPhaseInData(phaseData);
         renderPhaseTable();
         renderTable();
@@ -4294,11 +4504,24 @@
       }
     }
 
-    function editPhaseProjectName(setIdx, projIdx) {
+    function editPhaseProjectSetName(setIdx, projectSetIdx) {
       if (!requireAdminOrAlert()) return;
-      var proj = phaseData[setIdx] && phaseData[setIdx].projects[projIdx];
+      var projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+      if (!projectSet) return;
+      var name = prompt('输入新的子项目集名称：', projectSet.name);
+      if (name != null && String(name).trim()) {
+        projectSet.name = String(name).trim();
+        renderPhaseTable();
+        renderTable();
+      }
+    }
+
+    function editPhaseProjectName(setIdx, projectSetIdx, projIdx) {
+      if (!requireAdminOrAlert()) return;
+      var projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+      var proj = projectSet && getSubProjects(projectSet)[projIdx];
       if (!proj) return;
-      var name = prompt('输入新的项目名称：', proj.name);
+      var name = prompt('输入新的子项目名称：', proj.name);
       if (name != null && String(name).trim()) {
         proj.name = String(name).trim();
         renderPhaseTable();
@@ -4387,11 +4610,16 @@
       thSet.rowSpan = 2;
       thSet.textContent = '项目集';
       tr1.appendChild(thSet);
+      const thSubSet = document.createElement('th');
+      thSubSet.className = 'sub col-set';
+      thSubSet.rowSpan = 2;
+      thSubSet.textContent = '子项目集';
+      tr1.appendChild(thSubSet);
 
       const thProj = document.createElement('th');
       thProj.className = 'sub col-proj';
       thProj.rowSpan = 2;
-      thProj.textContent = '项目';
+      thProj.textContent = '子项目';
       tr1.appendChild(thProj);
 
       deptGroups.forEach(function (g, gi) {
@@ -4477,10 +4705,15 @@
       thSet.rowSpan = 2;
       thSet.textContent = '项目集';
       tr1.appendChild(thSet);
+      const thSubSet = document.createElement('th');
+      thSubSet.className = 'sub col-set';
+      thSubSet.rowSpan = 2;
+      thSubSet.textContent = '子项目集';
+      tr1.appendChild(thSubSet);
       const thProj = document.createElement('th');
       thProj.className = 'sub col-proj';
       thProj.rowSpan = 2;
-      thProj.textContent = '项目';
+      thProj.textContent = '子项目';
       tr1.appendChild(thProj);
       deptGroups.forEach(function (g, gi) {
         const th = document.createElement('th');
@@ -4512,10 +4745,15 @@
       thSet.rowSpan = 2;
       thSet.textContent = '项目集';
       tr1.appendChild(thSet);
+      const thSubSet = document.createElement('th');
+      thSubSet.className = 'sub col-set';
+      thSubSet.rowSpan = 2;
+      thSubSet.textContent = '子项目集';
+      tr1.appendChild(thSubSet);
       const thProj = document.createElement('th');
       thProj.className = 'sub col-proj';
       thProj.rowSpan = 2;
-      thProj.textContent = '项目';
+      thProj.textContent = '子项目';
       tr1.appendChild(thProj);
       deptGroups.forEach(function (g, gi) {
         const th = document.createElement('th');
@@ -4572,17 +4810,18 @@
         : '子部门1';
       deptGroups.push({ name: String(name).trim(), depts: [firstCol] });
       data.forEach(function (set) {
-        if (!set.projects) return;
-        set.projects.forEach(function (p) {
-          ensureProjectHasManpowerByMonth(p);
-          if (Object.keys(p.manpowerByMonth).length === 0) {
-            getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
-          }
-          Object.keys(p.manpowerByMonth).forEach(function (k) {
-            p.manpowerByMonth[k].push(0);
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (p) {
+            ensureProjectHasManpowerByMonth(p);
+            if (Object.keys(p.manpowerByMonth).length === 0) {
+              getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
+            }
+            Object.keys(p.manpowerByMonth).forEach(function (k) {
+              p.manpowerByMonth[k].push(0);
+            });
+            if (!Array.isArray(p.manpower)) p.manpower = [];
+            p.manpower.push(0);
           });
-          if (!Array.isArray(p.manpower)) p.manpower = [];
-          p.manpower.push(0);
         });
       });
       fixManpowerInData(data);
@@ -4599,20 +4838,21 @@
       g.depts.push(String(name).trim());
       const insertAt = flatDeptIndex(gi, g.depts.length - 1);
       data.forEach(function (set) {
-        if (!set.projects) return;
-        set.projects.forEach(function (p) {
-          ensureProjectHasManpowerByMonth(p);
-          if (Object.keys(p.manpowerByMonth).length === 0) {
-            getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
-          }
-          Object.keys(p.manpowerByMonth).forEach(function (k) {
-            var arr = p.manpowerByMonth[k];
-            while (arr.length < insertAt) arr.push(0);
-            arr.splice(insertAt, 0, 0);
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (p) {
+            ensureProjectHasManpowerByMonth(p);
+            if (Object.keys(p.manpowerByMonth).length === 0) {
+              getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
+            }
+            Object.keys(p.manpowerByMonth).forEach(function (k) {
+              var arr = p.manpowerByMonth[k];
+              while (arr.length < insertAt) arr.push(0);
+              arr.splice(insertAt, 0, 0);
+            });
+            if (!Array.isArray(p.manpower)) p.manpower = [];
+            while (p.manpower.length < insertAt) p.manpower.push(0);
+            p.manpower.splice(insertAt, 0, 0);
           });
-          if (!Array.isArray(p.manpower)) p.manpower = [];
-          while (p.manpower.length < insertAt) p.manpower.push(0);
-          p.manpower.splice(insertAt, 0, 0);
         });
       });
       fixManpowerInData(data);
@@ -4633,33 +4873,34 @@
       const idx = flatDeptIndex(gi, di);
       g.depts.splice(di, 1);
       data.forEach(function (set) {
-        if (!set.projects) return;
-        set.projects.forEach(function (p) {
-          ensureProjectHasManpowerByMonth(p);
-          Object.keys(p.manpowerByMonth).forEach(function (k) {
-            var arr = p.manpowerByMonth[k];
-            if (idx < arr.length) arr.splice(idx, 1);
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (p) {
+            ensureProjectHasManpowerByMonth(p);
+            Object.keys(p.manpowerByMonth).forEach(function (k) {
+              var arr = p.manpowerByMonth[k];
+              if (idx < arr.length) arr.splice(idx, 1);
+            });
+            if (Array.isArray(p.manpower) && idx < p.manpower.length) {
+              p.manpower.splice(idx, 1);
+            }
           });
-          if (Array.isArray(p.manpower) && idx < p.manpower.length) {
-            p.manpower.splice(idx, 1);
-          }
         });
       });
       fixManpowerInData(data);
       renderTable();
     }
 
-    function appendManpowerRowNameCells(tr, set, setIdx, proj, projIdx, admin, structureEditable) {
-      if (projIdx === 0) {
+    function appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, structureEditable) {
+      if (projectSetIdx === 0 && projIdx === 0) {
         const tdSet = document.createElement('td');
         tdSet.className = 'main col-set';
-        tdSet.rowSpan = set.projects.length || 1;
+        tdSet.rowSpan = countSubProjectsInSet(set) || 1;
         if (admin && structureEditable) {
           tdSet.innerHTML = `
               <div class="cell-head-inline">
                 <span class="editable-text" onclick="editSetName(${setIdx})">${escapeHtml(set.name)}</span>
                 <div class="actions">
-                  <button type="button" class="icon-btn" title="添加子项目" onclick="addProject(${setIdx})">+</button>
+                  <button type="button" class="icon-btn" title="添加子项目集" onclick="addProjectSet(${setIdx})">+</button>
                   <button type="button" class="icon-btn danger" title="删除项目集" onclick="showDeleteModal('set',${setIdx})">×</button>
                 </div>
               </div>`;
@@ -4668,14 +4909,32 @@
         }
         tr.appendChild(tdSet);
       }
+      if (projIdx === 0) {
+        const tdSubSet = document.createElement('td');
+        tdSubSet.className = 'sub col-set';
+        tdSubSet.rowSpan = getSubProjects(projectSet).length || 1;
+        if (admin && structureEditable) {
+          tdSubSet.innerHTML = `
+              <div class="cell-head-inline">
+                <span class="editable-text" onclick="editProjectSetName(${setIdx},${projectSetIdx})">${escapeHtml(projectSet.name)}</span>
+                <div class="actions">
+                  <button type="button" class="icon-btn" title="添加子项目" onclick="addProject(${setIdx},${projectSetIdx})">+</button>
+                  <button type="button" class="icon-btn danger" title="删除子项目集" onclick="showDeleteModal('projectSet',${setIdx},${projectSetIdx})">×</button>
+                </div>
+              </div>`;
+        } else {
+          tdSubSet.innerHTML = `<div class="cell-head-inline"><span>${escapeHtml(projectSet.name)}</span></div>`;
+        }
+        tr.appendChild(tdSubSet);
+      }
       const tdProj = document.createElement('td');
       tdProj.className = 'sub col-proj';
       if (admin && structureEditable) {
         tdProj.innerHTML = `
             <div class="cell-head-inline">
-              <span class="editable-text" onclick="editProjectName(${setIdx},${projIdx})">${escapeHtml(proj.name)}</span>
+              <span class="editable-text" onclick="editProjectName(${setIdx},${projectSetIdx},${projIdx})">${escapeHtml(proj.name)}</span>
               <div class="actions">
-                <button type="button" class="icon-btn danger" title="删除项目" onclick="showDeleteModal('project',${setIdx},${projIdx})">×</button>
+                <button type="button" class="icon-btn danger" title="删除子项目" onclick="showDeleteModal('project',${setIdx},${projectSetIdx},${projIdx})">×</button>
               </div>
             </div>`;
       } else {
@@ -4691,26 +4950,28 @@
       const nCols = deptFlatCount();
       const admin = window.pmIsAdmin && window.pmIsAdmin();
       data.forEach(function (set, setIdx) {
-        set.projects.forEach(function (proj, projIdx) {
-          const tr = document.createElement('tr');
-          if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
-          appendManpowerRowNameCells(tr, set, setIdx, proj, projIdx, admin, true);
-          for (let i = 0; i < nCols; ++i) {
-            const tdC = document.createElement('td');
-            tdC.className = 'center-cell col-mp';
-            const v = proj.manpower[i] != null ? proj.manpower[i] : 0;
-            if (admin) {
-              tdC.innerHTML = `
-              <span id="v-${setIdx}-${projIdx}-${i}" ondblclick="editManpower(${setIdx},${projIdx},${i})">${escapeHtml(String(v))}</span>
-              <div class="actions inline">
-                <button type="button" class="text-action" title="编辑" onclick="editManpower(${setIdx},${projIdx},${i})">编辑</button>
-              </div>`;
-            } else {
-              tdC.innerHTML = '<span>' + escapeHtml(String(v)) + '</span>';
+        getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
+          getSubProjects(projectSet).forEach(function (proj, projIdx) {
+            const tr = document.createElement('tr');
+            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
+            appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, true);
+            for (let i = 0; i < nCols; ++i) {
+              const tdC = document.createElement('td');
+              tdC.className = 'center-cell col-mp';
+              const v = proj.manpower[i] != null ? proj.manpower[i] : 0;
+              if (admin) {
+                tdC.innerHTML = `
+                <span id="v-${setIdx}-${projectSetIdx}-${projIdx}-${i}" ondblclick="editManpower(${setIdx},${projectSetIdx},${projIdx},${i})">${escapeHtml(String(v))}</span>
+                <div class="actions inline">
+                  <button type="button" class="text-action" title="编辑" onclick="editManpower(${setIdx},${projectSetIdx},${projIdx},${i})">编辑</button>
+                </div>`;
+              } else {
+                tdC.innerHTML = '<span>' + escapeHtml(String(v)) + '</span>';
+              }
+              tr.appendChild(tdC);
             }
-            tr.appendChild(tdC);
-          }
-          $body.appendChild(tr);
+            $body.appendChild(tr);
+          });
         });
       });
     }
@@ -4723,17 +4984,19 @@
       const y = manpowerSelYear;
       const admin = window.pmIsAdmin && window.pmIsAdmin();
       data.forEach(function (set, setIdx) {
-        set.projects.forEach(function (proj, projIdx) {
-          const tr = document.createElement('tr');
-          if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
-          appendManpowerRowNameCells(tr, set, setIdx, proj, projIdx, admin, false);
-          for (let i = 0; i < nCols; ++i) {
-            const tdC = document.createElement('td');
-            tdC.className = 'center-cell col-mp manpower-readonly-cell';
-            tdC.textContent = String(sumQuarterDept(proj, y, manpowerSelQuarter, i));
-            tr.appendChild(tdC);
-          }
-          $body.appendChild(tr);
+        getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
+          getSubProjects(projectSet).forEach(function (proj, projIdx) {
+            const tr = document.createElement('tr');
+            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
+            appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, false);
+            for (let i = 0; i < nCols; ++i) {
+              const tdC = document.createElement('td');
+              tdC.className = 'center-cell col-mp manpower-readonly-cell';
+              tdC.textContent = String(sumQuarterDept(proj, y, manpowerSelQuarter, i));
+              tr.appendChild(tdC);
+            }
+            $body.appendChild(tr);
+          });
         });
       });
     }
@@ -4746,17 +5009,19 @@
       const y = manpowerSelYear;
       const admin = window.pmIsAdmin && window.pmIsAdmin();
       data.forEach(function (set, setIdx) {
-        set.projects.forEach(function (proj, projIdx) {
-          const tr = document.createElement('tr');
-          if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
-          appendManpowerRowNameCells(tr, set, setIdx, proj, projIdx, admin, false);
-          for (let i = 0; i < nCols; ++i) {
-            const tdC = document.createElement('td');
-            tdC.className = 'center-cell col-mp manpower-readonly-cell';
-            tdC.textContent = String(sumYearDept(proj, y, i));
-            tr.appendChild(tdC);
-          }
-          $body.appendChild(tr);
+        getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
+          getSubProjects(projectSet).forEach(function (proj, projIdx) {
+            const tr = document.createElement('tr');
+            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
+            appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, false);
+            for (let i = 0; i < nCols; ++i) {
+              const tdC = document.createElement('td');
+              tdC.className = 'center-cell col-mp manpower-readonly-cell';
+              tdC.textContent = String(sumYearDept(proj, y, i));
+              tr.appendChild(tdC);
+            }
+            $body.appendChild(tr);
+          });
         });
       });
     }
@@ -4792,12 +5057,26 @@
       }
     }
     // 编辑项目名称（以阶段表为准，同步到人力表）
-    function editProjectName(setIdx, projIdx) {
+    function editProjectSetName(setIdx, projectSetIdx) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
-      const proj = phaseData[setIdx] && phaseData[setIdx].projects[projIdx];
+      const projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+      if (!projectSet) return;
+      const name = prompt('输入新的子项目集名称：', projectSet.name);
+      if (name && name.trim()) {
+        projectSet.name = name.trim();
+        renderPhaseTable();
+        renderTable();
+      }
+    }
+    // 编辑子项目名称（以阶段表为准，同步到人力表）
+    function editProjectName(setIdx, projectSetIdx, projIdx) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+      const proj = projectSet && getSubProjects(projectSet)[projIdx];
       if (!proj) return;
-      const name = prompt('输入新的项目名称：', proj.name);
+      const name = prompt('输入新的子项目名称：', proj.name);
       if (name && name.trim()) {
         proj.name = name.trim();
         renderPhaseTable();
@@ -4805,31 +5084,41 @@
       }
     }
     // 新增项目集（写入阶段表并同步人力）
-    function addProjectSet() {
+    function addProjectSet(setIdx) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
-      const name = prompt('输入新项目集的名称：');
+      const name = prompt(setIdx == null ? '输入新项目集的名称：' : '输入新子项目集的名称：');
       if (name && name.trim()) {
-        const newProj = { name: '新项目', phaseByMonth: {} };
+        const newProj = { name: '新子项目', phaseByMonth: {} };
         getPhaseMonthSlice(newProj, phaseSelYear, phaseSelMonth);
-        phaseData.push({
-          name: name.trim(),
-          projects: [newProj]
-        });
+        if (setIdx == null) {
+          phaseData.push({
+            name: name.trim(),
+            projectSets: [{ name: '默认子项目集', subProjects: [newProj] }]
+          });
+        } else {
+          const set = phaseData[setIdx];
+          if (!set) return;
+          if (!Array.isArray(set.projectSets)) set.projectSets = [];
+          set.projectSets.push({ name: name.trim(), subProjects: [newProj] });
+        }
         fixPhaseInData(phaseData);
         renderPhaseTable();
         renderTable();
       }
     }
     // 新增项目（写入阶段表并同步人力）
-    function addProject(setIdx) {
+    function addProject(setIdx, projectSetIdx) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
-      const name = prompt('输入新项目名称：');
+      const name = prompt('输入新子项目名称：');
       if (name && name.trim()) {
         const newProj = { name: name.trim(), phaseByMonth: {} };
         getPhaseMonthSlice(newProj, phaseSelYear, phaseSelMonth);
-        phaseData[setIdx].projects.push(newProj);
+        const projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+        if (!projectSet) return;
+        if (!Array.isArray(projectSet.subProjects)) projectSet.subProjects = [];
+        projectSet.subProjects.push(newProj);
         fixPhaseInData(phaseData);
         renderPhaseTable();
         renderTable();
@@ -4837,25 +5126,25 @@
     }
 
     // 编辑人力格子
-    function editManpower(setIdx, projIdx, col) {
+    function editManpower(setIdx, projectSetIdx, projIdx, col) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
-      const key = `v-${setIdx}-${projIdx}-${col}`;
+      const key = `v-${setIdx}-${projectSetIdx}-${projIdx}-${col}`;
       const el = document.getElementById(key);
       if (!el) return;
-      const oldVal = data[setIdx].projects[projIdx].manpower[col];
+      const oldVal = data[setIdx].projectSets[projectSetIdx].subProjects[projIdx].manpower[col];
       el.innerHTML = `<input type="number" class="input-p" id="input-${key}" min="0" max="99" value="${oldVal}" 
-        onblur="saveManpower(${setIdx},${projIdx},${col}, this.value)"
+        onblur="saveManpower(${setIdx},${projectSetIdx},${projIdx},${col}, this.value)"
         onkeydown="if(event.key==='Enter'){this.blur()}else if(event.key==='Escape'){this.parentNode.innerHTML='${oldVal}' }"
       >`;
       document.getElementById(`input-${key}`).focus();
     }
-    function saveManpower(setIdx, projIdx, col, val) {
+    function saveManpower(setIdx, projectSetIdx, projIdx, col, val) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
       const v = Number(val);
       if (!isNaN(v) && v>=0 && v<100) {
-        data[setIdx].projects[projIdx].manpower[col] = v;
+        data[setIdx].projectSets[projectSetIdx].subProjects[projIdx].manpower[col] = v;
         renderTable();
       } else {
         alert('请输入0-99的人力人数');
@@ -4864,16 +5153,20 @@
     }
 
     // 删除弹窗
-    function showDeleteModal(type, setIdx, projIdx=null) {
-      if ((type === 'set' || type === 'project') && !requireManpowerMonthViewForStructure()) return;
+    function showDeleteModal(type, setIdx, projectSetIdx=null, projIdx=null) {
+      if ((type === 'set' || type === 'projectSet' || type === 'project') && !requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
-      delCtx = {type, setIdx, projIdx};
+      delCtx = {type, setIdx, projectSetIdx, projIdx};
       const msgEl = document.getElementById('modal-msg');
       if (type === 'set') {
         msgEl.textContent = '确认删除项目集 "' + (phaseData[setIdx] && phaseData[setIdx].name != null ? phaseData[setIdx].name : '') + '"？其下所有项目的阶段与人力记录将一并删除。';
+      } else if (type === 'projectSet') {
+        var ps = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+        msgEl.textContent = '确认删除子项目集 "' + (ps && ps.name != null ? ps.name : '') + '"？其下子项目将一并删除。';
       } else {
-        var pp = phaseData[setIdx] && phaseData[setIdx].projects && phaseData[setIdx].projects[projIdx];
-        msgEl.textContent = '确认删除项目 "' + (pp && pp.name != null ? pp.name : '') + '"？';
+        var targetSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+        var pp = targetSet && getSubProjects(targetSet)[projIdx];
+        msgEl.textContent = '确认删除子项目 "' + (pp && pp.name != null ? pp.name : '') + '"？';
       }
       openDeleteModal();
     }
@@ -4894,16 +5187,25 @@
         return;
       }
       const kind = delCtx.type;
-      if ((kind === 'set' || kind === 'project') && !requireManpowerMonthViewForStructure()) {
+      if ((kind === 'set' || kind === 'projectSet' || kind === 'project') && !requireManpowerMonthViewForStructure()) {
         closeModal();
         return;
       }
       if (kind === 'set') {
         phaseData.splice(delCtx.setIdx, 1);
       }
+      else if (kind === 'projectSet') {
+        phaseData[delCtx.setIdx].projectSets.splice(delCtx.projectSetIdx, 1);
+        if (phaseData[delCtx.setIdx].projectSets.length === 0) {
+          phaseData.splice(delCtx.setIdx, 1);
+        }
+      }
       else if (kind === 'project') {
-        phaseData[delCtx.setIdx].projects.splice(delCtx.projIdx, 1);
-        if (phaseData[delCtx.setIdx].projects.length === 0) {
+        phaseData[delCtx.setIdx].projectSets[delCtx.projectSetIdx].subProjects.splice(delCtx.projIdx, 1);
+        if (phaseData[delCtx.setIdx].projectSets[delCtx.projectSetIdx].subProjects.length === 0) {
+          phaseData[delCtx.setIdx].projectSets.splice(delCtx.projectSetIdx, 1);
+        }
+        if (phaseData[delCtx.setIdx].projectSets.length === 0) {
           phaseData.splice(delCtx.setIdx, 1);
         }
       }
@@ -4912,7 +5214,7 @@
       }
       closeModal();
       if (kind === 'risk') renderRiskTable();
-      else if (kind === 'set' || kind === 'project') {
+      else if (kind === 'set' || kind === 'projectSet' || kind === 'project') {
         renderPhaseTable();
         renderTable();
       } else {

@@ -8,7 +8,7 @@ from app.schemas import ManpowerState
 
 router = APIRouter(prefix="/manpower", tags=["manpower"])
 
-EMPTY = {"data": [], "deptGroups": []}
+EMPTY = {"data": [], "deptGroups": [], "savedAt": None}
 
 
 @router.get("", response_model=ManpowerState)

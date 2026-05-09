@@ -8,7 +8,7 @@ from app.schemas import PhaseState
 
 router = APIRouter(prefix="/phase", tags=["phase"])
 
-EMPTY = {"phaseData": []}
+EMPTY = {"phaseData": [], "savedAt": None}
 
 
 @router.get("", response_model=PhaseState)
