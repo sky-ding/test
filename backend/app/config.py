@@ -1,6 +1,7 @@
 from pathlib import Path
+from urllib.parse import quote_plus
 
-from pydantic import Field
+from pydantic import Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
@@ -9,6 +10,14 @@ DATA_DIR = BACKEND_ROOT / "data"
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="PM_", env_file=".env", extra="ignore")
+
+    # MySQL：同时设置 host、user、database 时启用；否则回落 SQLite（backend/data/app.db）
+    mysql_host: str = ""
+    mysql_port: int = 3306
+    mysql_user: str = ""
+    mysql_password: str = ""
+    mysql_database: str = ""
+    mysql_charset: str = "utf8mb4"
 
     # 逗号分隔，开发期默认覆盖常见静态服务端口
     cors_origins: str = (
@@ -35,6 +44,32 @@ class Settings(BaseSettings):
 
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def uses_mysql(self) -> bool:
+        h = (self.mysql_host or "").strip()
+        u = (self.mysql_user or "").strip()
+        d = (self.mysql_database or "").strip()
+        return bool(h and u and d)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def database_url(self) -> str:
+        """运行时数据库 URL：MySQL 或 SQLite。"""
+        if self.uses_mysql:
+            user = quote_plus((self.mysql_user or "").strip())
+            password = quote_plus(self.mysql_password or "")
+            host = (self.mysql_host or "").strip()
+            db = (self.mysql_database or "").strip()
+            port = int(self.mysql_port)
+            charset = (self.mysql_charset or "utf8mb4").strip() or "utf8mb4"
+            return (
+                f"mysql+pymysql://{user}:{password}@{host}:{port}/{db}"
+                f"?charset={quote_plus(charset)}"
+            )
+        sqlite_path = (DATA_DIR / "app.db").as_posix()
+        return f"sqlite:///{sqlite_path}"
 
 
 settings = Settings()

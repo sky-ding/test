@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -15,7 +15,9 @@ DEFAULT_SKY_INITIAL_PASSWORD = "123123"
 
 def seed_users(db: Session) -> None:
     """若不存在 Sky，则创建默认系统管理员；密码优先取 PM_SKY_INITIAL_PASSWORD，否则为 DEFAULT_SKY_INITIAL_PASSWORD。"""
-    existing = db.execute(select(User).where(User.username == "Sky")).scalar_one_or_none()
+    existing = db.execute(
+        select(User).where(func.lower(User.username) == "sky")
+    ).scalar_one_or_none()
     if existing:
         return
     raw = (settings.sky_initial_password or "").strip() or DEFAULT_SKY_INITIAL_PASSWORD

@@ -14,5 +14,13 @@ mkdir -p "$LOG_DIR"
 
 cd "$APP_DIR" || exit 1
 
+# 注入 Noah 环境文件中的 PM_* 等变量（发布平台若已在进程环境里配置，此处重复 export 一般无害）
+if [ -f "$APP_DIR/noah/env/app.env" ]; then
+  set -a
+  # shellcheck source=/dev/null
+  . "$APP_DIR/noah/env/app.env"
+  set +a
+fi
+
 # 后台启动，让 init 能继续启动 nginx；端口 8080 匹配 nginx upstream
 nohup /apps/svr/python3/bin/python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080 >> "$LOG_FILE" 2>&1 &

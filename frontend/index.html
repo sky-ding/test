@@ -3695,31 +3695,153 @@
       syncManpowerStructureFromPhase();
     }
 
-    function saveManpowerData() {
-      if (!requireAdminOrAlert()) return;
+    function isRegistryServerEmpty(mObj, pObj, rObj) {
+      var md = (mObj && Array.isArray(mObj.data)) ? mObj.data.length : 0;
+      var rd = (rObj && Array.isArray(rObj.riskRows)) ? rObj.riskRows.length : 0;
+      var pd = (pObj && Array.isArray(pObj.phaseData)) ? pObj.phaseData.length : 0;
+      return md === 0 && rd === 0 && pd === 0;
+    }
+
+    function hasLocalRegistryData() {
       try {
-        localStorage.setItem(STORAGE_KEY_MANPOWER, JSON.stringify({
-          data: data,
-          deptGroups: deptGroups,
-          savedAt: new Date().toISOString()
-        }));
-        showSaveToast('人力登记已保存到本机');
+        var rawM = localStorage.getItem(STORAGE_KEY_MANPOWER);
+        var rawR = localStorage.getItem(STORAGE_KEY_RISK);
+        var rawP = localStorage.getItem(STORAGE_KEY_PHASE);
+        if (rawM) {
+          var o = JSON.parse(rawM);
+          if (o && Array.isArray(o.data) && o.data.length > 0) return true;
+        }
+        if (rawR) {
+          var o2 = JSON.parse(rawR);
+          if (o2 && Array.isArray(o2.riskRows) && o2.riskRows.length > 0) return true;
+        }
+        if (rawP) {
+          var o3 = JSON.parse(rawP);
+          if (o3 && Array.isArray(o3.phaseData) && o3.phaseData.length > 0) return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    function mirrorRegistryToLocalStorage(mObj, pObj, rObj) {
+      try {
+        if (mObj) localStorage.setItem(STORAGE_KEY_MANPOWER, JSON.stringify(mObj));
+        if (pObj) localStorage.setItem(STORAGE_KEY_PHASE, JSON.stringify(pObj));
+        if (rObj) localStorage.setItem(STORAGE_KEY_RISK, JSON.stringify(rObj));
+      } catch (e) {}
+    }
+
+    function applyRegistryFromObjects(mObj, pObj, rObj) {
+      var phaseFromStorage = false;
+      if (mObj && Array.isArray(mObj.data)) {
+        deptGroups = Array.isArray(mObj.deptGroups)
+          ? normalizeDeptGroups(mObj.deptGroups)
+          : defaultDeptGroups();
+        fixManpowerInData(mObj.data);
+        data = mObj.data;
+      }
+      if (rObj && Array.isArray(rObj.riskRows)) {
+        riskRows = mapRiskRowsFromStorage(rObj.riskRows);
+      }
+      if (pObj && Array.isArray(pObj.phaseData)) {
+        phaseData = mapPhaseDataFromStorage(pObj.phaseData);
+        phaseFromStorage = true;
+      }
+      fixManpowerInData(data);
+      if (!phaseFromStorage) {
+        phaseData = phaseStructureNamesFromData(data);
+      }
+      fixPhaseInData(phaseData);
+      syncManpowerStructureFromPhase();
+    }
+
+    async function loadRegistryData() {
+      var me = window.__pmCurrentUser;
+      // 仅「认证不可用/离线」时用本机缓存；正常登录与 PM_AUTH_DISABLED 下的 dev 用户仍从服务器拉取
+      if (!me || me.username === 'offline' || me.username === 'unknown') {
+        loadSavedData();
+        return;
+      }
+      try {
+        var results = await Promise.all([
+          pmFetch('/api/v1/manpower', { method: 'GET' }),
+          pmFetch('/api/v1/phase', { method: 'GET' }),
+          pmFetch('/api/v1/risk', { method: 'GET' })
+        ]);
+        var rm = results[0];
+        var rp = results[1];
+        var rr = results[2];
+        if (rm.status === 401 || rp.status === 401 || rr.status === 401) {
+          window.__pmAuthRedirecting = true;
+          window.location.href = 'login.html';
+          return;
+        }
+        if (!rm.ok || !rp.ok || !rr.ok) {
+          throw new Error('HTTP ' + rm.status + ' / ' + rp.status + ' / ' + rr.status);
+        }
+        var mObj = await rm.json();
+        var pObj = await rp.json();
+        var rObj = await rr.json();
+        if (isRegistryServerEmpty(mObj, pObj, rObj) && hasLocalRegistryData()) {
+          loadSavedData();
+          showSaveToast('服务端暂无数据，已载入本机数据；请管理员点击保存以同步到服务器');
+          return;
+        }
+        applyRegistryFromObjects(mObj, pObj, rObj);
+        mirrorRegistryToLocalStorage(mObj, pObj, rObj);
       } catch (e) {
-        alert('保存失败：' + (e && e.message ? e.message : '请检查浏览器是否允许本地存储或空间是否已满'));
+        console.warn('[PM-tool] 从服务器加载登记数据失败，改用本机缓存', e);
+        alert('无法从服务器加载登记数据，已使用本机缓存。');
+        loadSavedData();
       }
     }
 
-    function saveRiskData() {
+    async function saveManpowerData() {
+      if (!requireAdminOrAlert()) return;
+      try {
+        var r = await pmFetch('/api/v1/manpower', {
+          method: 'PUT',
+          body: JSON.stringify({ data: data, deptGroups: deptGroups })
+        });
+        if (r.status === 401) {
+          window.location.href = 'login.html';
+          return;
+        }
+        if (!r.ok) {
+          var err = await r.json().catch(function () { return {}; });
+          alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
+          return;
+        }
+        var stored = await r.json();
+        mirrorRegistryToLocalStorage(stored, null, null);
+        showSaveToast('人力登记已保存到服务器');
+      } catch (e) {
+        alert('保存失败：无法连接服务器');
+      }
+    }
+
+    async function saveRiskData() {
       if (!requireAdminOrAlert()) return;
       syncRiskRowsFromDom();
       try {
-        localStorage.setItem(STORAGE_KEY_RISK, JSON.stringify({
-          riskRows: riskRows,
-          savedAt: new Date().toISOString()
-        }));
-        showSaveToast('风险登记已保存到本机');
+        var r = await pmFetch('/api/v1/risk', {
+          method: 'PUT',
+          body: JSON.stringify({ riskRows: riskRows })
+        });
+        if (r.status === 401) {
+          window.location.href = 'login.html';
+          return;
+        }
+        if (!r.ok) {
+          var err = await r.json().catch(function () { return {}; });
+          alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
+          return;
+        }
+        var stored = await r.json();
+        mirrorRegistryToLocalStorage(null, null, stored);
+        showSaveToast('风险登记已保存到服务器');
       } catch (e) {
-        alert('保存失败：' + (e && e.message ? e.message : '请检查浏览器是否允许本地存储或空间是否已满'));
+        alert('保存失败：无法连接服务器');
       }
     }
 
@@ -3759,17 +3881,28 @@
       });
     }
 
-    function savePhaseData() {
+    async function savePhaseData() {
       if (!requireAdminOrAlert()) return;
       syncPhaseFromDom();
       try {
-        localStorage.setItem(STORAGE_KEY_PHASE, JSON.stringify({
-          phaseData: phaseDataForStorage(),
-          savedAt: new Date().toISOString()
-        }));
-        showSaveToast('阶段状态已保存到本机');
+        var r = await pmFetch('/api/v1/phase', {
+          method: 'PUT',
+          body: JSON.stringify({ phaseData: phaseDataForStorage() })
+        });
+        if (r.status === 401) {
+          window.location.href = 'login.html';
+          return;
+        }
+        if (!r.ok) {
+          var err = await r.json().catch(function () { return {}; });
+          alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
+          return;
+        }
+        var stored = await r.json();
+        mirrorRegistryToLocalStorage(null, stored, null);
+        showSaveToast('阶段状态已保存到服务器');
       } catch (e) {
-        alert('保存失败：' + (e && e.message ? e.message : '请检查浏览器是否允许本地存储或空间是否已满'));
+        alert('保存失败：无法连接服务器');
       }
     }
 
@@ -4852,17 +4985,19 @@
       })();
 
       setTimeout(function () {
-        loadSavedData();
-        loadAppSettings();
-        initManpowerTimeUi();
-        initPhaseTimeUi();
-        initRiskAnalysisUi();
-        renderTable();
-        renderRiskTable();
-        renderPhaseTable();
-        applyPermissionToAllUI();
-        initSettingsPanelOnce();
-        updateSettingsPanelRoleUi();
+        (async function () {
+          await loadRegistryData();
+          loadAppSettings();
+          initManpowerTimeUi();
+          initPhaseTimeUi();
+          initRiskAnalysisUi();
+          renderTable();
+          renderRiskTable();
+          renderPhaseTable();
+          applyPermissionToAllUI();
+          initSettingsPanelOnce();
+          updateSettingsPanelRoleUi();
+        })();
       }, 0);
     }
     pmBootstrap().catch(function (err) {
