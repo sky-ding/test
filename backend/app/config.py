@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     session_same_site: str = "lax"
     session_https_only: bool = False
 
-    # 首次创建 Sky 时覆盖默认初始密码（默认见 seed.DEFAULT_SKY_INITIAL_PASSWORD，当前为 123123）
+    # 首次创建内置本地账号（含 roster 与兼容用 Sky）时覆盖默认初始密码（默认见 seed.DEFAULT_SKY_INITIAL_PASSWORD）
     sky_initial_password: str | None = None
 
     # local | oa_oauth（预留）

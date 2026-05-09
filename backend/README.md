@@ -35,6 +35,20 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 | `PM_SESSION_HTTPS_ONLY` | 是否仅 HTTPS 下发 Cookie（默认 `false`） |
 | `PM_AUTH_MODE` | 预留：`local`（默认），未来可对接 OA |
 
+## 启动时内置用户（仅当库中尚无同名账号时创建）
+
+初始密码与 **`Sky` 相同**：优先环境变量 `PM_SKY_INITIAL_PASSWORD`，**未设置时默认为 `123123`**。
+
+| 用户名 | 角色 |
+|--------|------|
+| `alfred.wang` | 管理员 |
+| `fanny.wu` | 管理员 |
+| `veking.lee` | 管理员 |
+| `sky.ding` | 管理员 |
+| `test` | 普通用户 |
+
+另：若不存在用户名为 `sky`（不区分大小写）的账号，仍会创建兼容用的管理员 **`Sky`**。生产环境请尽快修改各账号密码。
+
 ## MySQL（可选）
 
 同时设置以下变量时，应用使用 **MySQL**；否则仍使用 `backend/data/app.db`（SQLite）。
