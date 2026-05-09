@@ -56,6 +56,33 @@ python scripts/migrate_sqlite_to_mysql.py
 
 若目标库已有数据（例如先启动过应用并 seed 了 Sky），需加 `--force` 清空 `users` 与 `registry` 后再导入。
 
+## 导入已有业务数据（一次性）
+
+当你已有历史数据（例如从浏览器 localStorage 导出的 JSON）时，可手动导入到 `registry` 表。
+
+在 `backend` 目录执行：
+
+```bash
+# 先校验，不写库
+python scripts/import_registry_data.py --file path/to/data.json --dry-run
+
+# 导入全部识别到的模块（manpower / phase / risk）
+python scripts/import_registry_data.py --file path/to/data.json --force
+
+# 仅导入单模块
+python scripts/import_registry_data.py --file path/to/data.json --module manpower --force
+
+# Excel（.xlsx）先转换并校验（不写库）
+python scripts/import_registry_data.py --file path/to/data.xlsx --dry-run --export-json data/import-preview.json
+```
+
+说明：
+- 本脚本仅在你手动执行时生效，不会在服务启动时自动运行。
+- 支持 JSON 和 Excel（`.xlsx`）。
+- JSON 支持两类顶层键：`manpower|phase|risk` 或 `PM-tool-manpower-v1|PM-tool-phase-v1|PM-tool-risk-v1`。
+- Excel 约定：工作表名包含“月度执行评估（X月）/人力评估（X月）/风险监控”。
+- 若库中已有对应键，默认跳过；加 `--force` 才覆盖。
+
 ## API 摘要
 
 除另有说明外，`/api/v1/manpower|phase|risk` 的 **GET 需已登录**，**PUT 需管理员**。

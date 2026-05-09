@@ -2237,11 +2237,11 @@
     let phaseSelMonth = new Date().getMonth() + 1;
     const PHASE_FIELD_KEYS = ['goal', 'deliver', 'highlight', 'weakness', 'nextNote'];
     const PHASE_FIELD_LABELS = {
-      goal: '项目阶段目标',
-      deliver: '项目阶段交付',
-      highlight: '阶段工作亮点',
-      weakness: '阶段工作不足',
-      nextNote: '下一阶段注意事项'
+      goal: '阶段交付目标',
+      deliver: '实际交付评估',
+      highlight: '执行过程分析',
+      weakness: '问题分析',
+      nextNote: '改进计划'
     };
 
     function getProgramProjectSets(set) {
@@ -3043,9 +3043,21 @@
     const STORAGE_KEY_LEGACY = 'PM-tool-data-v1';
     const STORAGE_KEY_APP_SETTINGS = 'PM-tool-app-settings-v1';
 
-    var PM_API_BASE =
-      (typeof window.PM_API_BASE === 'string' && window.PM_API_BASE) ||
-      (window.location && /^https?:\/\//.test(window.location.origin) ? window.location.origin : 'http://127.0.0.1:8001');
+    function resolveApiBase() {
+      if (typeof window.PM_API_BASE === 'string' && window.PM_API_BASE) {
+        return window.PM_API_BASE;
+      }
+      if (!window.location || !/^https?:\/\//.test(window.location.origin)) {
+        return 'http://127.0.0.1:8001';
+      }
+      // 本地静态服务常用端口默认回退后端 8001，避免把 API 错误指向前端静态端口
+      var p = Number(window.location.port || 0);
+      if (p === 3000 || p === 5500 || p === 8080 || p === 5173) {
+        return 'http://127.0.0.1:8001';
+      }
+      return window.location.origin;
+    }
+    var PM_API_BASE = resolveApiBase();
 
     function pmApiUrl(path) {
       var base = PM_API_BASE.replace(/\/$/, '');
