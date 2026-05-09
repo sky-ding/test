@@ -4,7 +4,1796 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ProjectGuard · 项目管理登记</title>
-  <link rel="stylesheet" href="css/app.css">
+  <style>
+    :root {
+      --bg: #f2f1ee;
+      --surface: #ffffff;
+      --border: #e0ddd8;
+      --border-light: #eceae6;
+      --text: #2a2a2a;
+      --text-muted: #6f6d6a;
+      --accent: #5a6b5c;
+      --accent-soft: #eef1ee;
+      --header-bg: #ebe8e3;
+      --header-bg-sub: #f4f2ef;
+      --dept-tech-bg: #dfe8eb;
+      --dept-market-bg: #e8e3dc;
+      --manpower-stripe-b-main: #e5e2dc;
+      --manpower-stripe-b-sub: #ece9e4;
+      --manpower-stripe-b-mp: #f3f1ec;
+      --danger: #9a4a4a;
+      --danger-soft: #faf6f6;
+      --radius: 10px;
+      --radius-sm: 6px;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --font: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text);
+      margin: 28px 16px 18px;
+      letter-spacing: 0.04em;
+    }
+
+    .app-wrap {
+      width: 100%;
+      max-width: 1240px;
+      padding: 8px 16px 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .tabs-sticky {
+      /* 顶栏与 LOGO 目标高度 = 可视视口高度的 1/8（支持 dvh 时优先，更接近移动端可视区） */
+      --nav-vh-eighth: calc(100vh / 8);
+      /* 中间导航菜单条 = 顶栏高度的 2/3，在 tabs-nav-center 内垂直居中 */
+      --tabs-menu-height: calc(var(--nav-vh-eighth) * 2 / 3);
+      --tabs-rail-pad-x: clamp(4px, 0.55vw, 8px);
+      --tab-font-size: clamp(10px, calc(var(--tabs-menu-height) * 0.38), 16px);
+      --tab-line-height: 1.2;
+
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      align-self: stretch;
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 10px;
+      padding: 0;
+      height: var(--nav-vh-eighth);
+      min-height: var(--nav-vh-eighth);
+      margin: 0 0 10px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border-light);
+      box-shadow: 0 2px 10px rgba(45, 42, 38, 0.06);
+      box-sizing: border-box;
+    }
+
+    @supports (height: 100dvh) {
+      .tabs-sticky {
+        --nav-vh-eighth: calc(100dvh / 8);
+      }
+    }
+
+    .app-brand {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      align-self: stretch;
+      min-height: 0;
+      line-height: 0;
+    }
+
+    .app-brand img {
+      height: 100%;
+      max-height: var(--nav-vh-eighth);
+      width: auto;
+      max-width: min(42vw, 380px);
+      object-fit: contain;
+      object-position: left center;
+      display: block;
+    }
+
+    .tabs-nav-center {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: stretch;
+      min-width: 0;
+      min-height: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    .tabs {
+      display: inline-flex;
+      gap: 2px;
+      margin-top: 0;
+      height: var(--tabs-menu-height);
+      min-height: var(--tabs-menu-height);
+      max-height: var(--tabs-menu-height);
+      padding: 0 var(--tabs-rail-pad-x);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .tabs .tab {
+      padding: 0 clamp(10px, 2.2vw, 22px);
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: var(--tab-font-size);
+      line-height: var(--tab-line-height);
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: color 0.2s, background 0.2s;
+      box-sizing: border-box;
+    }
+
+    .tabs .tab:hover {
+      color: var(--text);
+      background: var(--header-bg-sub);
+    }
+
+    .tabs .tab.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .tab-panel {
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .tab-panel.active {
+      display: flex;
+    }
+
+    .table-shell {
+      width: 100%;
+      overflow-x: auto;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    table {
+      border-collapse: collapse;
+      margin: 0;
+      min-width: 960px;
+      width: 100%;
+      background: var(--surface);
+    }
+
+    th, td {
+      border: 1px solid var(--border-light);
+      text-align: center;
+      padding: 11px 10px;
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    th.main, td.main {
+      font-weight: 600;
+      background: var(--header-bg) !important;
+      color: var(--text);
+    }
+
+    th.sub, td.sub {
+      font-weight: 600;
+      background: var(--header-bg-sub) !important;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    #register-table {
+      table-layout: fixed;
+    }
+
+    #register-table thead th.col-set,
+    #register-table thead th.col-proj {
+      text-align: center;
+    }
+
+    #register-table td.col-set,
+    #register-table td.col-proj {
+      text-align: left;
+    }
+
+    #register-table .col-set {
+      min-width: 0;
+      padding: 9px 10px;
+      vertical-align: middle;
+    }
+
+    #register-table .col-proj {
+      min-width: 0;
+      padding: 9px 10px;
+      vertical-align: middle;
+    }
+
+    #register-table td.col-set .editable-text,
+    #register-table td.col-proj .editable-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+      display: inline-block;
+      vertical-align: bottom;
+      text-align: left;
+    }
+
+    #register-table td.col-set .cell-head-inline,
+    #register-table td.col-proj .cell-head-inline {
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      gap: 8px;
+    }
+
+    #register-table td.col-set .cell-head-inline .editable-text,
+    #register-table td.col-proj .cell-head-inline .editable-text {
+      text-align: left;
+    }
+
+    #register-table td.col-set .cell-head-inline > span:first-child,
+    #register-table td.col-proj .cell-head-inline > span:first-child {
+      text-align: left;
+    }
+
+    #register-table .col-mp {
+      min-width: 0;
+      padding: 9px 6px;
+      box-sizing: border-box;
+    }
+
+    #register-table .col-mp .input-p {
+      width: 3.75rem;
+      max-width: 100%;
+      padding: 5px 4px;
+      box-sizing: border-box;
+    }
+
+    #register-table thead th.col-mp {
+      padding: 8px 4px;
+      font-size: 14px;
+      line-height: 1.4;
+      font-weight: 600;
+    }
+
+    #register-table td.center-cell {
+      min-width: 0;
+      padding: 9px 6px;
+    }
+
+    #register-table td.center-cell.col-mp {
+      min-width: 0;
+    }
+
+    #register-table thead th {
+      position: relative;
+    }
+
+    .register-col-resize-handle {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 8px;
+      margin-right: -4px;
+      z-index: 6;
+      cursor: col-resize;
+      background: transparent;
+    }
+
+    .register-col-resize-handle:hover {
+      background: rgba(90, 107, 92, 0.18);
+    }
+
+    #register-table thead th.dept-g-0 {
+      background: var(--dept-tech-bg) !important;
+      color: var(--text);
+    }
+
+    #register-table thead th.dept-g-0.sub {
+      color: var(--text-muted);
+    }
+
+    #register-table thead th.dept-g-1 {
+      background: var(--dept-market-bg) !important;
+      color: var(--text);
+    }
+
+    #register-table thead th.dept-g-1.sub {
+      color: var(--text-muted);
+    }
+
+    #register-table thead th .cell-head-inline {
+      padding: 2px 0;
+    }
+
+    #register-table thead th.dept-g-0 .cell-head-inline .editable-text,
+    #register-table thead th.dept-g-1 .cell-head-inline .editable-text {
+      font-weight: 600;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    #register-table thead th:not(.col-mp) .cell-head-inline .editable-text {
+      font-size: 14px;
+    }
+
+    #register-table thead th.col-mp .cell-head-inline {
+      flex-wrap: nowrap;
+      gap: 4px;
+      max-width: 100%;
+    }
+
+    #register-table thead th.col-mp .cell-head-inline .editable-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: center;
+    }
+
+    #register-table thead th.col-mp .actions.inline {
+      flex-shrink: 0;
+      gap: 2px;
+      margin-left: 0;
+    }
+
+    #register-table thead th.col-mp .actions.inline .text-action {
+      font-size: 11px;
+      padding: 1px 5px;
+    }
+
+    .text-action.danger-text {
+      color: var(--danger);
+    }
+
+    .text-action.danger-text:hover {
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    #register-table tbody tr.manpower-set-stripe-b td.main,
+    #register-table-season tbody tr.manpower-set-stripe-b td.main,
+    #register-table-year tbody tr.manpower-set-stripe-b td.main,
+    #phase-table tbody tr.manpower-set-stripe-b td.main {
+      background: var(--manpower-stripe-b-main) !important;
+    }
+
+    #register-table tbody tr.manpower-set-stripe-b td.sub,
+    #register-table-season tbody tr.manpower-set-stripe-b td.sub,
+    #register-table-year tbody tr.manpower-set-stripe-b td.sub,
+    #phase-table tbody tr.manpower-set-stripe-b td.sub {
+      background: var(--manpower-stripe-b-sub) !important;
+    }
+
+    #register-table tbody tr.manpower-set-stripe-b td.center-cell.col-mp,
+    #register-table-season tbody tr.manpower-set-stripe-b td.center-cell.col-mp,
+    #register-table-year tbody tr.manpower-set-stripe-b td.center-cell.col-mp,
+    #phase-table tbody tr.manpower-set-stripe-b td.phase-field-cell {
+      background: var(--manpower-stripe-b-mp) !important;
+    }
+
+    #phase-table {
+      table-layout: fixed;
+      width: 100%;
+    }
+
+    #phase-table thead th.col-set,
+    #phase-table thead th.col-proj {
+      text-align: center;
+    }
+
+    #phase-table td.col-set,
+    #phase-table td.col-proj {
+      text-align: left;
+    }
+
+    #phase-table .col-set,
+    #phase-table .col-proj {
+      min-width: 0;
+      padding: 9px 10px;
+      vertical-align: middle;
+    }
+
+    #phase-table td.col-set .cell-head-inline,
+    #phase-table td.col-proj .cell-head-inline {
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      gap: 8px;
+    }
+
+    #phase-table td.col-set .cell-head-inline > span:first-child,
+    #phase-table td.col-proj .cell-head-inline > span:first-child {
+      text-align: left;
+    }
+
+    #phase-table thead th.phase-field-th {
+      padding: 10px 8px;
+      font-size: 13px;
+      line-height: 1.35;
+      font-weight: 600;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    #phase-table td.phase-field-cell {
+      vertical-align: top;
+      padding: 8px;
+      background: #fafaf9;
+      min-width: 100px;
+    }
+
+    #phase-table textarea.phase-field-input {
+      display: block;
+      width: 100%;
+      min-height: 72px;
+      max-width: 100%;
+      padding: 8px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      line-height: 1.45;
+      resize: vertical;
+      box-sizing: border-box;
+      background: #fff;
+      color: var(--text);
+    }
+
+    #phase-table textarea.phase-field-input:read-only {
+      background: var(--header-bg-sub);
+      color: var(--text-muted);
+      cursor: default;
+    }
+
+    #panel-phase .manpower-toolbar,
+    #panel-phase .table-shell,
+    #panel-phase .panel-actions {
+      max-width: 1240px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    #register-table-season,
+    #register-table-year {
+      table-layout: fixed;
+      width: 100%;
+    }
+
+    #register-table-season thead th.col-set,
+    #register-table-season thead th.col-proj,
+    #register-table-year thead th.col-set,
+    #register-table-year thead th.col-proj {
+      text-align: center;
+    }
+
+    #register-table-season td.col-set,
+    #register-table-season td.col-proj,
+    #register-table-year td.col-set,
+    #register-table-year td.col-proj {
+      text-align: left;
+    }
+
+    #register-table-season .col-set,
+    #register-table-season .col-proj,
+    #register-table-year .col-set,
+    #register-table-year .col-proj {
+      min-width: 0;
+      padding: 9px 10px;
+      vertical-align: middle;
+    }
+
+    #register-table-season td.col-set .cell-head-inline,
+    #register-table-season td.col-proj .cell-head-inline,
+    #register-table-year td.col-set .cell-head-inline,
+    #register-table-year td.col-proj .cell-head-inline {
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      gap: 8px;
+    }
+
+    #register-table-season td.col-set .cell-head-inline > span:first-child,
+    #register-table-season td.col-proj .cell-head-inline > span:first-child,
+    #register-table-year td.col-set .cell-head-inline > span:first-child,
+    #register-table-year td.col-proj .cell-head-inline > span:first-child {
+      text-align: left;
+    }
+
+    #register-table-season thead th.dept-g-0,
+    #register-table-year thead th.dept-g-0 {
+      background: var(--dept-tech-bg) !important;
+      color: var(--text);
+    }
+
+    #register-table-season thead th.dept-g-0.sub,
+    #register-table-year thead th.dept-g-0.sub {
+      color: var(--text-muted);
+    }
+
+    #register-table-season thead th.dept-g-1,
+    #register-table-year thead th.dept-g-1 {
+      background: var(--dept-market-bg) !important;
+      color: var(--text);
+    }
+
+    #register-table-season thead th.dept-g-1.sub,
+    #register-table-year thead th.dept-g-1.sub {
+      color: var(--text-muted);
+    }
+
+    #register-table-season thead th.col-mp,
+    #register-table-year thead th.col-mp {
+      padding: 8px 4px;
+      font-size: 12px;
+      line-height: 1.35;
+      font-weight: 600;
+    }
+
+    td.manpower-readonly-cell {
+      font-variant-numeric: tabular-nums;
+    }
+
+    td.center-cell {
+      background: #fafaf9;
+      color: var(--text);
+      position: relative;
+    }
+
+
+    .editable-text {
+      cursor: pointer;
+      border-bottom: 1px dashed transparent;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .editable-text:hover {
+      border-bottom-color: var(--border);
+      color: var(--accent);
+    }
+
+    .cell-head-inline {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      column-gap: 8px;
+      row-gap: 2px;
+    }
+
+    .cell-head-inline .editable-text {
+      text-align: center;
+    }
+
+    .cell-head-inline .actions {
+      margin-top: 0;
+    }
+
+    .actions {
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .actions.inline {
+      display: inline-flex;
+      margin-top: 0;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .icon-btn.danger:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .text-action {
+      padding: 2px 6px;
+      font-size: 12px;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+      border-radius: 4px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .text-action:hover {
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .input-p {
+      width: 78px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      background: var(--surface);
+      color: var(--text);
+      margin-top: 2px;
+      text-align: center;
+      font-family: inherit;
+    }
+
+    .input-p:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(90, 107, 92, 0.15);
+    }
+
+    .manpower-panel-head {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      width: 100%;
+      max-width: 1240px;
+      margin: 20px 0 14px;
+      box-sizing: border-box;
+    }
+
+    .manpower-subtabs {
+      position: static;
+      right: auto;
+      top: auto;
+      transform: none;
+      z-index: 1;
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px;
+      margin: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    .manpower-subtab {
+      padding: 8px 18px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .manpower-subtab:hover {
+      color: var(--text);
+      background: var(--header-bg-sub);
+    }
+
+    .manpower-subtab.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .risk-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px 16px;
+      flex-wrap: wrap;
+      width: 100%;
+      max-width: 1240px;
+      margin: 20px 0 14px;
+      box-sizing: border-box;
+    }
+
+    .risk-panel-head .manpower-subtabs {
+      position: static;
+      right: auto;
+      top: auto;
+      transform: none;
+      max-width: none;
+      flex-shrink: 0;
+      z-index: auto;
+    }
+
+    .manpower-analysis-sort-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px 14px;
+      margin-bottom: 12px;
+    }
+
+    .manpower-analysis-sort-row .risk-analysis-sort-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .risk-analysis-sort-group {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px;
+      background: var(--header-bg-sub);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+    }
+
+    .risk-analysis-sort-btn {
+      padding: 6px 14px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .risk-analysis-sort-btn:hover {
+      color: var(--text);
+      background: var(--surface);
+    }
+
+    .risk-analysis-sort-btn.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .risk-analysis-mask {
+      z-index: 126;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    .manpower-subpage {
+      display: none;
+      width: 100%;
+      max-width: 1240px;
+    }
+
+    .manpower-subpage.active {
+      display: block;
+    }
+
+    .manpower-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px 20px;
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      background: var(--header-bg-sub);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+    }
+
+    .manpower-toolbar label {
+      font-size: 14px;
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .manpower-toolbar .manpower-analysis-btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .manpower-toolbar .manpower-analysis-btn:hover {
+      background: #e2ebe3;
+    }
+
+    .manpower-toolbar select,
+    .manpower-toolbar .manpower-year-input {
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-family: inherit;
+      font-size: 14px;
+      min-width: 88px;
+    }
+
+    .panel-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0 8px;
+    }
+
+    .btn-add {
+      font-size: 14px;
+      padding: 9px 22px;
+      border-radius: var(--radius-sm);
+      background: var(--text);
+      color: var(--surface);
+      border: 1px solid var(--text);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.2s, transform 0.12s;
+    }
+
+    .btn-add:hover {
+      opacity: 0.88;
+    }
+
+    .btn-add:active {
+      transform: scale(0.98);
+    }
+
+    .btn-save-panel {
+      font-size: 14px;
+      padding: 9px 22px;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+
+    .btn-save-panel:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .btn-save-panel:active {
+      transform: scale(0.98);
+    }
+
+    .risk-table-wrap {
+      width: 100%;
+      max-width: 1180px;
+      margin: 0 0 8px;
+    }
+
+    .risk-table-wrap .table-shell {
+      margin-bottom: 0;
+    }
+
+    table#risk-table {
+      min-width: 1060px;
+      margin-bottom: 0;
+    }
+
+    table#risk-table th.seq,
+    table#risk-table td.seq {
+      width: 52px;
+      white-space: nowrap;
+    }
+
+    table#risk-table td.risk-cell {
+      text-align: left;
+      vertical-align: middle;
+      min-width: 90px;
+      max-width: 240px;
+    }
+
+    table#risk-table td.risk-cell.w-wide {
+      min-width: 140px;
+      max-width: 280px;
+    }
+
+    .risk-input,
+    .risk-select {
+      width: 100%;
+      min-width: 64px;
+      padding: 7px 9px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      background: var(--surface);
+      color: var(--text);
+      font-family: inherit;
+    }
+
+    .risk-input:focus,
+    .risk-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(90, 107, 92, 0.12);
+    }
+
+    textarea.risk-input {
+      min-height: 44px;
+      resize: vertical;
+    }
+
+    .risk-select.risk-color-progress { background: #e7f5ff; color: #0b5aa2; border-color: #b6ddff; }
+    .risk-select.risk-color-quality { background: #f3f0ff; color: #4b3fb4; border-color: #d9d1ff; }
+    .risk-select.risk-color-scope { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
+    .risk-select.risk-color-cost { background: #fff1f0; color: #a8071a; border-color: #ffccc7; }
+
+    .risk-select.risk-color-resource { background: #e6fffb; color: #006d75; border-color: #b5f5ec; }
+    .risk-select.risk-color-tech { background: #f6ffed; color: #237804; border-color: #d9f7be; }
+
+    .risk-select.risk-color-high { background: #fff1f0; color: #a8071a; border-color: #ffccc7; }
+    .risk-select.risk-color-mid { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
+    .risk-select.risk-color-low { background: #f6ffed; color: #237804; border-color: #d9f7be; }
+
+    .risk-select.risk-color-open { background: #e6fffb; color: #006d75; border-color: #b5f5ec; }
+    .risk-select.risk-color-hold { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
+    .risk-select.risk-color-close { background: #f5f5f5; color: #595959; border-color: #d9d9d9; }
+
+    table#risk-table .delete-btn,
+    td.center-cell .delete-btn {
+      padding: 5px 12px;
+      font-size: 13px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: inherit;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+
+    table#risk-table .delete-btn:hover,
+    td.center-cell .delete-btn:hover {
+      border-color: var(--danger);
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    table#risk-table th.risk-th-sortable {
+      padding: 0;
+      vertical-align: middle;
+    }
+
+    .risk-th-sort-btn {
+      width: 100%;
+      margin: 0;
+      padding: 11px 10px;
+      border: none;
+      background: transparent;
+      font: inherit;
+      font-weight: 600;
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      color: var(--text-muted);
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .risk-th-sort-btn:hover {
+      background: rgba(0, 0, 0, 0.04);
+      color: var(--text);
+    }
+
+    .risk-sort-ind {
+      flex-shrink: 0;
+      font-size: 11px;
+      min-width: 1.2em;
+    }
+
+    th.risk-th-sortable[aria-sort="none"] .risk-sort-ind {
+      opacity: 0.4;
+    }
+
+    th.risk-th-sortable[aria-sort="ascending"] .risk-sort-ind,
+    th.risk-th-sortable[aria-sort="descending"] .risk-sort-ind {
+      opacity: 1;
+    }
+
+    th.risk-th-sortable[aria-sort="ascending"] .risk-th-sort-btn,
+    th.risk-th-sortable[aria-sort="descending"] .risk-th-sort-btn {
+      color: var(--accent);
+    }
+
+    .modal-mask {
+      z-index: 100;
+      background: rgba(45, 42, 38, 0.35);
+      position: fixed;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-mask.active {
+      display: flex;
+    }
+
+    .guide-modal-mask {
+      z-index: 150;
+    }
+
+    .manpower-analysis-mask {
+      z-index: 125;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    .manpower-analysis-dialog {
+      text-align: left;
+      max-width: 960px;
+      width: 100%;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 22px 18px;
+      box-sizing: border-box;
+    }
+
+    .manpower-analysis-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-shrink: 0;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 14px;
+      margin-bottom: 8px;
+    }
+
+    .manpower-analysis-header h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .manpower-analysis-period {
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .manpower-analysis-header .manpower-analysis-close {
+      margin: 0;
+      flex-shrink: 0;
+    }
+
+    .manpower-analysis-body {
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+      padding-right: 4px;
+    }
+
+    .manpower-analysis-empty {
+      margin: 24px 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .manpower-analysis-section {
+      margin-top: 20px;
+    }
+
+    .manpower-analysis-section:first-of-type {
+      margin-top: 8px;
+    }
+
+    .manpower-analysis-section h3 {
+      margin: 0 0 12px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .manpower-analysis-chart-wrap {
+      position: relative;
+      max-width: 360px;
+      height: 280px;
+      margin: 0 auto;
+    }
+
+    .manpower-analysis-pies-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px 16px;
+    }
+
+    .manpower-analysis-pie-item h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .manpower-analysis-pie-item .manpower-analysis-chart-wrap {
+      max-width: none;
+      height: 240px;
+    }
+
+    .manpower-analysis-bar-wrap {
+      position: relative;
+      width: 100%;
+      min-height: 220px;
+      max-height: 70vh;
+    }
+
+    .guide-item-dialog,
+    .guide-detail-dialog {
+      text-align: left;
+      max-width: 520px;
+      width: 92vw;
+    }
+
+    .guide-detail-dialog {
+      max-width: 640px;
+    }
+
+    .guide-item-dialog h3,
+    .guide-detail-dialog h3 {
+      margin: 0 0 4px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .guide-item-dialog label {
+      display: block;
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .guide-item-dialog input[type="text"],
+    .guide-item-dialog input[type="url"],
+    .guide-item-dialog textarea {
+      width: 100%;
+      margin-top: 6px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-family: inherit;
+      font-size: 14px;
+      box-sizing: border-box;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .guide-item-dialog textarea {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .guide-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 22px;
+      flex-wrap: wrap;
+    }
+
+    .guide-modal-actions button {
+      margin: 0;
+    }
+
+    .guide-detail-body {
+      margin-top: 14px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .guide-detail-body:empty {
+      display: none;
+    }
+
+    .guide-detail-link-wrap {
+      margin-top: 16px;
+    }
+
+    .guide-detail-link-wrap a {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .guide-title-link {
+      flex: 1 1 auto;
+      min-width: 0;
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      font-weight: 600;
+      color: var(--accent);
+      text-align: left;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .guide-title-link:hover {
+      color: var(--text);
+    }
+
+    .guide-btn-open-add {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px dashed var(--border);
+      background: var(--surface);
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .guide-btn-open-add:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .modal-box {
+      background: var(--surface);
+      color: var(--text);
+      padding: 28px 32px 24px;
+      border-radius: var(--radius);
+      min-width: 280px;
+      max-width: 90vw;
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .modal-box #modal-msg {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text-muted);
+    }
+
+    .modal-box button {
+      background: var(--text);
+      color: var(--surface);
+      border: 1px solid var(--text);
+      padding: 8px 20px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 18px 8px 0;
+      font-family: inherit;
+      transition: opacity 0.2s;
+    }
+
+    .modal-box button:hover {
+      opacity: 0.9;
+    }
+
+    .modal-box button.cancel-btn {
+      background: var(--surface);
+      color: var(--text-muted);
+      border-color: var(--border);
+      font-weight: 500;
+    }
+
+    .modal-box button.cancel-btn:hover {
+      border-color: var(--text-muted);
+      color: var(--text);
+      opacity: 1;
+    }
+
+    .save-toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(72px);
+      padding: 10px 20px;
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 200;
+    }
+
+    .save-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #panel-settings {
+      align-self: stretch;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      align-items: stretch;
+    }
+
+    .settings-layout {
+      display: flex;
+      gap: 24px;
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+      margin: 12px 0 32px;
+      align-items: flex-start;
+    }
+
+    .settings-nav {
+      flex: 0 0 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      padding: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .settings-nav-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 10px 14px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .settings-nav-btn:hover {
+      background: var(--header-bg-sub);
+      color: var(--text);
+    }
+
+    .settings-nav-btn.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .settings-main {
+      flex: 1 1 0;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .settings-module {
+      display: none;
+      box-sizing: border-box;
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      padding: 20px 22px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+    }
+
+    .settings-module.active {
+      display: block;
+    }
+
+    .settings-module h2 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .settings-module .settings-desc {
+      margin: 0 0 20px;
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .settings-perm-grid {
+      display: grid;
+      grid-template-columns: 11em minmax(0, 1fr) minmax(0, 1fr);
+      row-gap: 22px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .settings-perm-grid > .settings-role-bar {
+      grid-column: 1 / -1;
+      margin-bottom: 0;
+    }
+
+    .settings-perm-table-wrap {
+      grid-column: 1 / -1;
+      min-width: 0;
+      overflow-x: auto;
+    }
+
+    @supports (grid-template-columns: subgrid) {
+      .settings-perm-grid > .settings-role-bar {
+        display: grid;
+        grid-template-columns: subgrid;
+        column-gap: 16px;
+        align-items: center;
+      }
+
+      .settings-perm-grid .settings-role-bar #settings-role-badge {
+        flex: unset;
+        min-width: 0;
+      }
+    }
+
+    @supports not (grid-template-columns: subgrid) {
+      .settings-perm-grid .settings-role-bar {
+        padding: 14px 16px;
+      }
+
+      .settings-perm-grid > .settings-role-bar {
+        display: grid;
+        grid-template-columns: 11em minmax(0, 1fr) minmax(0, 1fr);
+        column-gap: 16px;
+        align-items: center;
+      }
+
+      .settings-perm-grid .settings-role-bar #settings-role-badge {
+        flex: unset;
+        min-width: 0;
+      }
+    }
+
+    .settings-role-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 16px;
+      margin-bottom: 22px;
+      padding: 14px 16px;
+      background: var(--accent-soft);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-light);
+    }
+
+    /* 与下方三列表格共用列网格时，横向不留 padding，避免列线错位 */
+    .settings-perm-grid .settings-role-bar {
+      padding: 14px 0;
+    }
+
+    .settings-role-bar label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .settings-role-bar select {
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-family: inherit;
+      font-size: 14px;
+      background: #fff;
+      color: var(--text);
+      min-width: 160px;
+    }
+
+    #settings-role-badge {
+      font-size: 13px;
+      color: var(--text-muted);
+      flex: 1 1 200px;
+    }
+
+    .perm-menu-table {
+      table-layout: fixed;
+      width: 100%;
+      max-width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .perm-menu-table th,
+    .perm-menu-table td {
+      border: 1px solid var(--border-light);
+      padding: 12px 16px;
+      text-align: left;
+      vertical-align: top;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .perm-menu-table th {
+      background: var(--header-bg);
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .perm-menu-table col.perm-col-menu {
+      width: 11em;
+    }
+
+    .perm-menu-table th:first-child,
+    .perm-menu-table td:first-child {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .perm-menu-table td.perm-col-muted {
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .perm-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 6px;
+      margin-bottom: 4px;
+    }
+
+    .perm-tag.admin {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .perm-tag.viewer {
+      background: var(--header-bg-sub);
+      color: var(--text-muted);
+    }
+
+    .settings-placeholder {
+      margin: 0;
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--header-bg-sub);
+    }
+
+    .risk-readonly-cell {
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    button.btn-add:disabled,
+    button.btn-save-panel:disabled,
+    button.icon-btn:disabled,
+    button.text-action:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    @media (max-width: 1000px) {
+      table { min-width: 540px; font-size: 13px; }
+      th, td { padding: 8px 6px; }
+      .tabs-sticky {
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .app-brand img { max-width: min(260px, 55vw); }
+    }
+
+    .tabs-sticky-actions {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+    .pm-nav-user-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      max-width: 9em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pm-logout-btn {
+      padding: 6px 12px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+    }
+    .pm-logout-btn:hover {
+      background: var(--header-bg-sub);
+    }
+    .settings-session-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      background: var(--header-bg-sub);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-light);
+    }
+    .settings-users-wrap {
+      margin-top: 20px;
+    }
+    .settings-users-wrap h3 {
+      font-size: 1.05rem;
+      margin: 0 0 12px;
+    }
+    .settings-users-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+      margin-bottom: 14px;
+    }
+    .settings-users-toolbar label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .settings-users-toolbar input,
+    .settings-users-toolbar select {
+      min-width: 8em;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+    }
+    .settings-users-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+    }
+    .settings-users-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .settings-users-table th,
+    .settings-users-table td {
+      border: 1px solid var(--border-light);
+      padding: 8px 10px;
+      text-align: left;
+    }
+    .settings-users-table th {
+      background: var(--header-bg);
+      font-weight: 600;
+    }
+    .settings-users-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .settings-users-actions button {
+      font-size: 12px;
+      padding: 4px 8px;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: inherit;
+    }
+    .settings-users-actions button.danger {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+  </style>
 </head>
 <body>
   <div class="app-wrap">
@@ -333,6 +2122,3602 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="js/main.js"></script>
+  <script>
+    // 基础数据结构
+    let data = [
+      {
+        name: '项目集A',
+        projectSets: [
+          {
+            name: '子项目集A-1',
+            subProjects: [
+              { name: '子项目A-1', manpower: [2, 3, 0, 1] },
+              { name: '子项目A-2', manpower: [1, 0, 0, 1] }
+            ]
+          }
+        ]
+      },
+      {
+        name: '项目集B',
+        projectSets: [
+          {
+            name: '子项目集B-1',
+            subProjects: [
+              { name: '子项目B-1', manpower: [0, 2, 3, 0] }
+            ]
+          }
+        ]
+      }
+    ];
+
+    let phaseData = [
+      {
+        name: '项目集A',
+        projectSets: [
+          {
+            name: '子项目集A-1',
+            subProjects: [
+              { name: '子项目A-1', phaseByMonth: {} },
+              { name: '子项目A-2', phaseByMonth: {} }
+            ]
+          }
+        ]
+      },
+      {
+        name: '项目集B',
+        projectSets: [
+          {
+            name: '子项目集B-1',
+            subProjects: [
+              { name: '子项目B-1', phaseByMonth: {} }
+            ]
+          }
+        ]
+      }
+    ];
+
+    /** 部门分组默认结构（与初始 deptGroups、normalize 空值回退共用） */
+    function defaultDeptGroups() {
+      return [
+        { name: '技术部', depts: ['前端', '后端'] },
+        { name: '市场部', depts: ['销售', '策划'] }
+      ];
+    }
+
+    /** 部门分组：每组下多列人力；列数与每行 manpower 数组长度一致 */
+    let deptGroups = defaultDeptGroups();
+
+    function scrollMainToTop() {
+      try {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      } catch (e) {
+        window.scrollTo(0, 0);
+      }
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+
+    function normalizeDeptGroups(g) {
+      if (!Array.isArray(g) || g.length === 0) return defaultDeptGroups();
+      const out = [];
+      g.forEach(function (group) {
+        const name = String((group && group.name) || '').trim() || '部门分组';
+        const depts = Array.isArray(group && group.depts)
+          ? group.depts.map(function (d) { return String(d || '').trim() || '子部门'; }).filter(Boolean)
+          : [];
+        if (depts.length) out.push({ name: name, depts: depts.slice() });
+      });
+      return out.length ? out : defaultDeptGroups();
+    }
+
+    function deptFlatCount() {
+      return deptGroups.reduce(function (n, gr) { return n + gr.depts.length; }, 0);
+    }
+
+    function flatDeptIndex(gi, di) {
+      let n = 0;
+      for (let i = 0; i < gi; i++) n += deptGroups[i].depts.length;
+      return n + di;
+    }
+
+    function newManpowerRow() {
+      const len = deptFlatCount();
+      return Array.from({ length: len }, function () { return 0; });
+    }
+
+    let manpowerSubView = 'month';
+    let manpowerSelYear = new Date().getFullYear();
+    let manpowerSelMonth = new Date().getMonth() + 1;
+    let manpowerSelQuarter = Math.floor((manpowerSelMonth - 1) / 3);
+    const QUARTER_MONTH_LABELS = ['一季度', '二季度', '三季度', '四季度'];
+    const QUARTER_MONTHS = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]];
+
+    function ymKey(y, m) {
+      return String(y) + '-' + String(m).padStart(2, '0');
+    }
+
+    let phaseSelYear = new Date().getFullYear();
+    let phaseSelMonth = new Date().getMonth() + 1;
+    const PHASE_FIELD_KEYS = ['goal', 'deliver', 'highlight', 'weakness', 'nextNote'];
+    const PHASE_FIELD_LABELS = {
+      goal: '阶段交付目标',
+      deliver: '实际交付评估',
+      highlight: '执行过程分析',
+      weakness: '问题分析',
+      nextNote: '改进计划'
+    };
+
+    function getProgramProjectSets(set) {
+      return (set && Array.isArray(set.projectSets)) ? set.projectSets : [];
+    }
+
+    function getSubProjects(projectSet) {
+      return (projectSet && Array.isArray(projectSet.subProjects)) ? projectSet.subProjects : [];
+    }
+
+    function countSubProjectsInSet(set) {
+      var n = 0;
+      getProgramProjectSets(set).forEach(function (ps) {
+        n += getSubProjects(ps).length;
+      });
+      return n;
+    }
+
+    function newPhaseMonthRow() {
+      return { goal: '', deliver: '', highlight: '', weakness: '', nextNote: '' };
+    }
+
+    function ensurePhaseByMonth(p) {
+      if (!p.phaseByMonth || typeof p.phaseByMonth !== 'object') p.phaseByMonth = {};
+    }
+
+    function getPhaseMonthSlice(p, y, m) {
+      ensurePhaseByMonth(p);
+      var k = ymKey(y, m);
+      if (!p.phaseByMonth[k] || typeof p.phaseByMonth[k] !== 'object') {
+        p.phaseByMonth[k] = newPhaseMonthRow();
+      }
+      var row = p.phaseByMonth[k];
+      PHASE_FIELD_KEYS.forEach(function (key) {
+        if (row[key] == null) row[key] = '';
+        else row[key] = String(row[key]);
+      });
+      return row;
+    }
+
+    function syncPhaseRowPointer() {
+      phaseData.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (p) {
+            p._phaseSlice = getPhaseMonthSlice(p, phaseSelYear, phaseSelMonth);
+          });
+        });
+      });
+    }
+
+    function mapPhaseDataFromStorage(arr) {
+      if (!Array.isArray(arr)) return [];
+      return arr.map(function (set) {
+        var projectSets = getProgramProjectSets(set).map(function (projectSet) {
+          var subProjects = getSubProjects(projectSet).map(function (p) {
+            var pm = (p && p.phaseByMonth && typeof p.phaseByMonth === 'object') ? p.phaseByMonth : {};
+            return {
+              name: p && p.name != null ? String(p.name) : '新子项目',
+              phaseByMonth: JSON.parse(JSON.stringify(pm))
+            };
+          });
+          return {
+            name: projectSet && projectSet.name != null ? String(projectSet.name) : '子项目集',
+            subProjects: subProjects
+          };
+        });
+        return {
+          name: set && set.name != null ? String(set.name) : '项目集',
+          projectSets: projectSets
+        };
+      });
+    }
+
+    function fixPhaseInData(arr) {
+      if (!Array.isArray(arr)) return;
+      arr.forEach(function (set) {
+        if (!set) return;
+        if (!Array.isArray(set.projectSets)) set.projectSets = [];
+        set.projectSets.forEach(function (projectSet) {
+          if (!projectSet) return;
+          if (!Array.isArray(projectSet.subProjects)) projectSet.subProjects = [];
+          projectSet.subProjects.forEach(function (p) {
+            if (!p) return;
+            ensurePhaseByMonth(p);
+            Object.keys(p.phaseByMonth).forEach(function (k) {
+              var row = p.phaseByMonth[k];
+              if (!row || typeof row !== 'object') row = newPhaseMonthRow();
+              PHASE_FIELD_KEYS.forEach(function (fk) {
+                row[fk] = row[fk] != null ? String(row[fk]) : '';
+              });
+              p.phaseByMonth[k] = row;
+            });
+          });
+        });
+      });
+    }
+
+    /** 无阶段存档时，用人力表中的项目集/项目名称生成阶段表骨架（phaseByMonth 为空） */
+    function phaseStructureNamesFromData(src) {
+      if (!Array.isArray(src)) return [];
+      return src.map(function (set) {
+        return {
+          name: set && set.name != null ? String(set.name) : '项目集',
+          projectSets: getProgramProjectSets(set).map(function (projectSet) {
+            return {
+              name: projectSet && projectSet.name != null ? String(projectSet.name) : '子项目集',
+              subProjects: getSubProjects(projectSet).map(function (p) {
+                return { name: p && p.name != null ? String(p.name) : '新子项目', phaseByMonth: {} };
+              })
+            };
+          })
+        };
+      });
+    }
+
+    /**
+     * 部门项目人力登记 data 与项目阶段状态 phaseData 对齐：项目集/项目以阶段表为准；
+     * 同集内旧新项目数一致则按下标合并 manpowerByMonth，否则按项目名称从旧行池中匹配。
+     */
+    function syncManpowerStructureFromPhase() {
+      if (!Array.isArray(phaseData)) phaseData = [];
+      if (!Array.isArray(data)) data = [];
+      var oldData = data.map(function (set) {
+        if (!set) return { name: '项目集', projectSets: [] };
+        return {
+          name: set.name != null ? String(set.name) : '项目集',
+          projectSets: getProgramProjectSets(set).map(function (projectSet) {
+            return {
+              name: projectSet && projectSet.name != null ? String(projectSet.name) : '子项目集',
+              subProjects: getSubProjects(projectSet).map(function (p) {
+                if (!p) return { name: '新子项目', manpowerByMonth: {} };
+                var mb = (p.manpowerByMonth && typeof p.manpowerByMonth === 'object')
+                  ? JSON.parse(JSON.stringify(p.manpowerByMonth)) : {};
+                return { name: p.name != null ? String(p.name) : '新子项目', manpowerByMonth: mb };
+              })
+            };
+          })
+        };
+      });
+      var next = [];
+      phaseData.forEach(function (phSet, si) {
+        if (!phSet) return;
+        var phProjectSets = getProgramProjectSets(phSet);
+        var oldSet = oldData[si];
+        var oldProjectSets = oldSet ? getProgramProjectSets(oldSet) : [];
+        var mergedProjectSets = [];
+        phProjectSets.forEach(function (phProjectSet, psi) {
+          var phProjs = getSubProjects(phProjectSet);
+          var oldPs = oldProjectSets[psi];
+          var oldProjs = oldPs ? getSubProjects(oldPs).slice() : [];
+          var oldLen = oldProjs.length;
+          var newLen = phProjs.length;
+          var mergedProjs = [];
+          if (oldLen === newLen) {
+            for (var j = 0; j < newLen; j++) {
+              var phP = phProjs[j];
+              var oldP = oldProjs[j];
+              var mb = (oldP && oldP.manpowerByMonth && typeof oldP.manpowerByMonth === 'object')
+                ? JSON.parse(JSON.stringify(oldP.manpowerByMonth)) : {};
+              mergedProjs.push({
+                name: phP && phP.name != null ? String(phP.name) : '新子项目',
+                manpowerByMonth: mb
+              });
+            }
+          } else {
+            var pool = oldProjs.map(function (op) {
+              return {
+                nm: op && op.name != null ? String(op.name) : '',
+                manpowerByMonth: (op && op.manpowerByMonth && typeof op.manpowerByMonth === 'object')
+                  ? JSON.parse(JSON.stringify(op.manpowerByMonth)) : {}
+              };
+            });
+            phProjs.forEach(function (phP) {
+              var wantName = phP && phP.name != null ? String(phP.name) : '新子项目';
+              var idx = -1;
+              for (var pi = 0; pi < pool.length; pi++) {
+                if (pool[pi].nm === wantName) {
+                  idx = pi;
+                  break;
+                }
+              }
+              var taken = idx >= 0 ? pool.splice(idx, 1)[0] : { nm: wantName, manpowerByMonth: {} };
+              mergedProjs.push({ name: wantName, manpowerByMonth: taken.manpowerByMonth });
+            });
+          }
+          mergedProjectSets.push({
+            name: phProjectSet && phProjectSet.name != null ? String(phProjectSet.name) : '子项目集',
+            subProjects: mergedProjs
+          });
+        });
+        next.push({
+          name: phSet.name != null ? String(phSet.name) : '项目集',
+          projectSets: mergedProjectSets
+        });
+      });
+      data = next;
+      fixManpowerInData(data);
+      syncProjectManpowerPointerToMonth();
+    }
+
+    function ensureProjectHasManpowerByMonth(p) {
+      if (!p.manpowerByMonth || typeof p.manpowerByMonth !== 'object') p.manpowerByMonth = {};
+    }
+
+    function getMonthSlice(p, y, m) {
+      ensureProjectHasManpowerByMonth(p);
+      const need = deptFlatCount();
+      const k = ymKey(y, m);
+      if (!Array.isArray(p.manpowerByMonth[k])) {
+        p.manpowerByMonth[k] = Array.from({ length: need }, function () { return 0; });
+      }
+      var row = p.manpowerByMonth[k];
+      while (row.length < need) row.push(0);
+      if (row.length > need) row.splice(need, row.length - need);
+      return row;
+    }
+
+    function getDeptValueForMonth(p, y, month, deptIdx) {
+      ensureProjectHasManpowerByMonth(p);
+      var k = ymKey(y, month);
+      if (!Array.isArray(p.manpowerByMonth[k])) return 0;
+      var v = p.manpowerByMonth[k][deptIdx];
+      return isNaN(Number(v)) ? 0 : Number(v);
+    }
+
+    function sumYearDept(p, year, deptIdx) {
+      var s = 0;
+      for (var mo = 1; mo <= 12; mo++) s += getDeptValueForMonth(p, year, mo, deptIdx);
+      return s;
+    }
+
+    function sumQuarterDept(p, year, qIndex, deptIdx) {
+      var s = 0;
+      QUARTER_MONTHS[qIndex].forEach(function (mo) {
+        s += getDeptValueForMonth(p, year, mo, deptIdx);
+      });
+      return s;
+    }
+
+    function requireManpowerMonthViewForStructure() {
+      if (manpowerSubView !== 'month') {
+        alert('请在「月度」页面中修改部门结构或人力单元格。');
+        return false;
+      }
+      return true;
+    }
+
+    function syncProjectManpowerPointerToMonth() {
+      data.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (p) {
+            p.manpower = getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
+          });
+        });
+      });
+    }
+
+    let manpowerAnalysisCharts = [];
+    const MANPOWER_CHART_COLORS = [
+      '#5a8f7b', '#7b688c', '#b89a6b', '#6b8cae', '#a67c7c', '#8a9b6e',
+      '#6e8ba0', '#9b8f6e', '#8b6b7c', '#6b9b8a', '#9b7b6b', '#7b6b9b'
+    ];
+
+    function manpowerProjectRowTotal(p) {
+      if (!p || !Array.isArray(p.manpower)) return 0;
+      return p.manpower.reduce(function (s, x) {
+        var n = Number(x);
+        return s + (isNaN(n) ? 0 : n);
+      }, 0);
+    }
+
+    function buildManpowerMonthAnalysisStats() {
+      var setRows = [];
+      var allProj = [];
+      var grand = 0;
+      data.forEach(function (set) {
+        var setName = set && set.name != null ? String(set.name) : '（未命名项目集）';
+        var setSum = 0;
+        var projs = [];
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          var psName = projectSet && projectSet.name != null ? String(projectSet.name) : '（未命名子项目集）';
+          getSubProjects(projectSet).forEach(function (p) {
+            var t = manpowerProjectRowTotal(p);
+            setSum += t;
+            var pn = p && p.name != null ? String(p.name) : '（未命名）';
+            projs.push({ name: psName + ' · ' + pn, total: t });
+            allProj.push({ label: setName + ' · ' + psName + ' · ' + pn, total: t });
+          });
+        });
+        grand += setSum;
+        setRows.push({ name: setName, total: setSum, projects: projs });
+      });
+      allProj.sort(function (a, b) { return b.total - a.total; });
+      return { setRows: setRows, allProj: allProj, grand: grand };
+    }
+
+    function destroyManpowerAnalysisCharts() {
+      manpowerAnalysisCharts.forEach(function (c) {
+        try { c.destroy(); } catch (e) {}
+      });
+      manpowerAnalysisCharts = [];
+    }
+
+    function manpowerAnalysisSliceColors(n) {
+      var out = [];
+      for (var i = 0; i < n; i++) {
+        out.push(MANPOWER_CHART_COLORS[i % MANPOWER_CHART_COLORS.length]);
+      }
+      return out;
+    }
+
+    function closeManpowerAnalysisModal() {
+      var mask = document.getElementById('manpower-analysis-mask');
+      if (!mask) return;
+      if (window._manpowerAnalysisOnKey) {
+        document.removeEventListener('keydown', window._manpowerAnalysisOnKey);
+        window._manpowerAnalysisOnKey = null;
+      }
+      destroyManpowerAnalysisCharts();
+      mask.classList.remove('active');
+      mask.setAttribute('aria-hidden', 'true');
+    }
+
+    function renderManpowerAnalysisCharts(stats) {
+      var ChartLib = typeof Chart !== 'undefined' ? Chart : null;
+      if (!ChartLib || !stats) return;
+
+      var ctxSet = document.getElementById('manpower-chart-set-pie');
+      if (ctxSet) {
+        var setLabels = [];
+        var setVals = [];
+        stats.setRows.forEach(function (r) {
+          if (r.total > 0) {
+            setLabels.push(r.name);
+            setVals.push(r.total);
+          }
+        });
+        var setSum = setVals.reduce(function (a, b) { return a + b; }, 0);
+        if (setLabels.length > 0 && setSum > 0) {
+          manpowerAnalysisCharts.push(new ChartLib(ctxSet, {
+            type: 'pie',
+            data: {
+              labels: setLabels,
+              datasets: [{
+                data: setVals,
+                backgroundColor: manpowerAnalysisSliceColors(setLabels.length),
+                borderWidth: 1,
+                borderColor: '#fff'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      var num = Number(context.raw);
+                      var pct = setSum > 0 ? ((num / setSum) * 100).toFixed(1) : '0.0';
+                      return context.label + ': ' + num + '（' + pct + '%）';
+                    }
+                  }
+                }
+              }
+            }
+          }));
+        }
+      }
+
+      var grid = document.getElementById('manpower-analysis-set-pies-grid');
+      if (grid) {
+        grid.innerHTML = '';
+        stats.setRows.forEach(function (sr, idx) {
+          if (!sr.projects || sr.projects.length === 0) return;
+          var labels = [];
+          var vals = [];
+          sr.projects.forEach(function (pr) {
+            if (pr.total > 0) {
+              labels.push(pr.name);
+              vals.push(pr.total);
+            }
+          });
+          var item = document.createElement('div');
+          item.className = 'manpower-analysis-pie-item';
+          var h4 = document.createElement('h4');
+          h4.textContent = sr.name;
+          var cw = document.createElement('div');
+          cw.className = 'manpower-analysis-chart-wrap';
+          var canvas = document.createElement('canvas');
+          canvas.id = 'manpower-chart-setpie-' + idx;
+          canvas.setAttribute('aria-label', sr.name + ' 子项目人力占比');
+          cw.appendChild(canvas);
+          item.appendChild(h4);
+          item.appendChild(cw);
+          grid.appendChild(item);
+          if (labels.length === 0) {
+            var note = document.createElement('p');
+            note.className = 'manpower-analysis-empty';
+            note.style.margin = '12px 0';
+            note.style.fontSize = '13px';
+            note.textContent = '该集下子项目人力合计为 0';
+            item.appendChild(note);
+            return;
+          }
+          var subT = vals.reduce(function (a, b) { return a + b; }, 0);
+          manpowerAnalysisCharts.push(new ChartLib(canvas, {
+            type: 'pie',
+            data: {
+              labels: labels,
+              datasets: [{
+                data: vals,
+                backgroundColor: manpowerAnalysisSliceColors(labels.length),
+                borderWidth: 1,
+                borderColor: '#fff'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      var num = Number(context.raw);
+                      var pct = subT > 0 ? ((num / subT) * 100).toFixed(1) : '0.0';
+                      return context.label + ': ' + num + '（' + pct + '%）';
+                    }
+                  }
+                }
+              }
+            }
+          }));
+        });
+      }
+
+      var barCanvas = document.getElementById('manpower-chart-proj-bar');
+      var barWrap = document.querySelector('#manpower-analysis-body .manpower-analysis-bar-wrap');
+      if (barCanvas && barWrap && stats.allProj.length > 0) {
+        var labels = stats.allProj.map(function (x) { return x.label; });
+        var vals = stats.allProj.map(function (x) { return x.total; });
+        var barTotal = vals.reduce(function (a, b) { return a + b; }, 0);
+        var h = Math.min(560, Math.max(200, labels.length * 26));
+        barWrap.style.height = h + 'px';
+        manpowerAnalysisCharts.push(new ChartLib(barCanvas, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: '人力合计',
+              data: vals,
+              backgroundColor: manpowerAnalysisSliceColors(vals.length),
+              borderWidth: 0
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: function (context) {
+                    var num = Number(context.raw);
+                    var pct = barTotal > 0 ? ((num / barTotal) * 100).toFixed(1) : '0.0';
+                    return '人力 ' + num + '（占当月全员合计 ' + pct + '%）';
+                  }
+                }
+              }
+            },
+            scales: {
+              x: { beginAtZero: true, ticks: { precision: 0 } },
+              y: { ticks: { autoSkip: false } }
+            }
+          }
+        }));
+      }
+    }
+
+    function openManpowerAnalysisModal() {
+      if (manpowerSubView !== 'month') {
+        alert('请切换到「月度」页面后查看人力分析。');
+        return;
+      }
+      if (typeof Chart === 'undefined') {
+        alert('图表组件加载失败，请检查网络后刷新页面。');
+        return;
+      }
+      syncProjectManpowerPointerToMonth();
+      var mask = document.getElementById('manpower-analysis-mask');
+      var periodEl = document.getElementById('manpower-analysis-period');
+      var emptyEl = document.getElementById('manpower-analysis-empty');
+      var body = document.getElementById('manpower-analysis-body');
+      if (!mask || !body) return;
+
+      destroyManpowerAnalysisCharts();
+      var grid = document.getElementById('manpower-analysis-set-pies-grid');
+      if (grid) grid.innerHTML = '';
+
+      if (periodEl) {
+        periodEl.textContent = '统计范围：' + manpowerSelYear + '年' + manpowerSelMonth + '月（各部门人力列求和汇总）';
+      }
+
+      var stats = buildManpowerMonthAnalysisStats();
+      var sections = body.querySelectorAll('.manpower-analysis-section');
+
+      if (stats.grand <= 0) {
+        if (emptyEl) {
+          emptyEl.hidden = false;
+          emptyEl.textContent = '当月各项目人力合计为 0，暂无分析图表。';
+        }
+        sections.forEach(function (sec) { sec.style.display = 'none'; });
+      } else {
+        if (emptyEl) emptyEl.hidden = true;
+        sections.forEach(function (sec) { sec.style.display = ''; });
+        renderManpowerAnalysisCharts(stats);
+      }
+
+      mask.classList.add('active');
+      mask.setAttribute('aria-hidden', 'false');
+      window._manpowerAnalysisOnKey = function (e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closeManpowerAnalysisModal();
+        }
+      };
+      document.addEventListener('keydown', window._manpowerAnalysisOnKey);
+      requestAnimationFrame(function () {
+        var btn = document.getElementById('manpower-analysis-close');
+        if (btn) btn.focus();
+      });
+    }
+
+    function updateManpowerToolbarInputs() {
+      var ym = document.getElementById('manpower-year-month');
+      var ys = document.getElementById('manpower-year-season');
+      var yy = document.getElementById('manpower-year-year');
+      var sm = document.getElementById('manpower-month-select');
+      var sq = document.getElementById('manpower-quarter-select');
+      if (ym) ym.value = String(manpowerSelYear);
+      if (ys) ys.value = String(manpowerSelYear);
+      if (yy) yy.value = String(manpowerSelYear);
+      if (sm) sm.value = String(manpowerSelMonth);
+      if (sq) sq.value = String(manpowerSelQuarter);
+    }
+
+    function initManpowerTimeUi() {
+      var sm = document.getElementById('manpower-month-select');
+      if (sm && sm.options.length === 0) {
+        for (var mo = 1; mo <= 12; mo++) {
+          var o = document.createElement('option');
+          o.value = String(mo);
+          o.textContent = mo + '月';
+          sm.appendChild(o);
+        }
+        sm.value = String(manpowerSelMonth);
+      }
+      var sq = document.getElementById('manpower-quarter-select');
+      if (sq && sq.options.length === 0) {
+        for (var qi = 0; qi < 4; qi++) {
+          var qo = document.createElement('option');
+          qo.value = String(qi);
+          qo.textContent = QUARTER_MONTH_LABELS[qi];
+          sq.appendChild(qo);
+        }
+        sq.value = String(manpowerSelQuarter);
+      }
+      document.querySelectorAll('.manpower-subtab').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var page = btn.getAttribute('data-manpower-page');
+          if (!page) return;
+          manpowerSubView = page;
+          document.querySelectorAll('.manpower-subtab').forEach(function (b) {
+            var on = b === btn;
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-selected', on ? 'true' : 'false');
+          });
+          document.querySelectorAll('.manpower-subpage').forEach(function (el) {
+            var active = el.id === 'manpower-page-' + page;
+            el.classList.toggle('active', active);
+            el.setAttribute('aria-hidden', active ? 'false' : 'true');
+          });
+          renderTable();
+          scrollMainToTop();
+        });
+      });
+      var ym = document.getElementById('manpower-year-month');
+      var ys = document.getElementById('manpower-year-season');
+      var yy = document.getElementById('manpower-year-year');
+      if (ym) ym.addEventListener('change', function () {
+        var v = parseInt(ym.value, 10);
+        if (!isNaN(v) && v >= 2000 && v <= 2099) {
+          manpowerSelYear = v;
+          renderTable();
+        }
+      });
+      if (ys) ys.addEventListener('change', function () {
+        var v = parseInt(ys.value, 10);
+        if (!isNaN(v) && v >= 2000 && v <= 2099) {
+          manpowerSelYear = v;
+          renderTable();
+        }
+      });
+      if (yy) yy.addEventListener('change', function () {
+        var v = parseInt(yy.value, 10);
+        if (!isNaN(v) && v >= 2000 && v <= 2099) {
+          manpowerSelYear = v;
+          renderTable();
+        }
+      });
+      if (sm) sm.addEventListener('change', function () {
+        var v = parseInt(sm.value, 10);
+        if (!isNaN(v) && v >= 1 && v <= 12) {
+          manpowerSelMonth = v;
+          renderTable();
+        }
+      });
+      if (sq) sq.addEventListener('change', function () {
+        var v = parseInt(sq.value, 10);
+        if (!isNaN(v) && v >= 0 && v <= 3) {
+          manpowerSelQuarter = v;
+          renderTable();
+        }
+      });
+      var btnAn = document.getElementById('btn-manpower-month-analysis');
+      if (btnAn) btnAn.addEventListener('click', openManpowerAnalysisModal);
+      var maskAn = document.getElementById('manpower-analysis-mask');
+      var closeAn = document.getElementById('manpower-analysis-close');
+      if (maskAn) {
+        maskAn.addEventListener('click', function (e) {
+          if (e.target === maskAn) closeManpowerAnalysisModal();
+        });
+      }
+      if (closeAn) closeAn.addEventListener('click', closeManpowerAnalysisModal);
+      updateManpowerToolbarInputs();
+    }
+
+    let registerColWidths = [];
+    let registerColResizeDrag = null;
+
+    function getRegisterColCount() {
+      return 2 + deptFlatCount();
+    }
+
+    function getRegisterColMin(colIndex) {
+      if (colIndex === 0) return 100;
+      if (colIndex === 1) return 120;
+      return 56;
+    }
+
+    function loadRegisterColWidths() {
+      const n = getRegisterColCount();
+      const def = [];
+      def[0] = 168;
+      def[1] = 200;
+      for (let i = 2; i < n; i++) def[i] = 96;
+      const merged = def.slice();
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_REGISTER_COLS);
+        if (raw) {
+          const o = JSON.parse(raw);
+          if (o && Array.isArray(o.widths)) {
+            for (let j = 0; j < n && j < o.widths.length; j++) {
+              const v = Number(o.widths[j]);
+              if (!isNaN(v) && v >= getRegisterColMin(j)) merged[j] = v;
+            }
+          }
+        }
+      } catch (e) {}
+      registerColWidths = merged;
+    }
+
+    function saveRegisterColWidths() {
+      try {
+        localStorage.setItem(STORAGE_KEY_REGISTER_COLS, JSON.stringify({
+          widths: registerColWidths,
+          savedAt: new Date().toISOString()
+        }));
+      } catch (e) {}
+    }
+
+    function applyRegisterColWidthsToDom() {
+      const cg = document.getElementById('register-colgroup');
+      if (!cg) return;
+      const cols = cg.querySelectorAll('col');
+      for (let i = 0; i < cols.length && i < registerColWidths.length; i++) {
+        cols[i].style.width = registerColWidths[i] + 'px';
+      }
+    }
+
+    function startRegisterColResizeDrag(colIndex, clientX) {
+      registerColResizeDrag = {
+        colIndex: colIndex,
+        startX: clientX,
+        startWidths: registerColWidths.slice()
+      };
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
+
+      function onMove(e) {
+        if (!registerColResizeDrag) return;
+        const idx = registerColResizeDrag.colIndex;
+        const w = registerColResizeDrag.startWidths;
+        const deltaRaw = e.clientX - registerColResizeDrag.startX;
+        let delta = deltaRaw;
+        if (idx < w.length - 1) {
+          const minL = getRegisterColMin(idx);
+          const minR = getRegisterColMin(idx + 1);
+          const maxPos = w[idx + 1] - minR;
+          const maxNeg = -(w[idx] - minL);
+          delta = Math.max(maxNeg, Math.min(maxPos, delta));
+          registerColWidths[idx] = w[idx] + delta;
+          registerColWidths[idx + 1] = w[idx + 1] - delta;
+        } else {
+          registerColWidths[idx] = Math.max(getRegisterColMin(idx), Math.min(520, w[idx] + deltaRaw));
+        }
+        applyRegisterColWidthsToDom();
+      }
+
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        registerColResizeDrag = null;
+        saveRegisterColWidths();
+      }
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    }
+
+    function attachRegisterColResizeHandles() {
+      const thead = document.getElementById('register-thead');
+      if (!thead || thead.rows.length < 2) return;
+      thead.querySelectorAll('.register-col-resize-handle').forEach(function (el) {
+        el.remove();
+      });
+      const tr1 = thead.rows[0];
+      const tr2 = thead.rows[1];
+      function addHandle(th, colIndex) {
+        if (!th) return;
+        const h = document.createElement('div');
+        h.className = 'register-col-resize-handle';
+        h.title = '拖动调整列宽';
+        h.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          startRegisterColResizeDrag(colIndex, e.clientX);
+        });
+        th.appendChild(h);
+      }
+      addHandle(tr1.cells[0], 0);
+      addHandle(tr1.cells[1], 1);
+      for (let i = 0; i < tr2.cells.length; i++) {
+        addHandle(tr2.cells[i], 2 + i);
+      }
+    }
+
+    function syncRegisterColgroup() {
+      loadRegisterColWidths();
+      const cg = document.getElementById('register-colgroup');
+      if (!cg) return;
+      cg.innerHTML = '';
+      registerColWidths.forEach(function (w) {
+        const col = document.createElement('col');
+        col.style.width = w + 'px';
+        cg.appendChild(col);
+      });
+      attachRegisterColResizeHandles();
+    }
+
+    // 用于弹窗时定位删除内容
+    let delCtx = null; // {type: 'set'|'project'|'risk', ...}
+    let modalFocusReturn = null;
+
+    function openDeleteModal() {
+      const mask = document.getElementById('modal-mask');
+      modalFocusReturn = document.activeElement;
+      mask.classList.add('active');
+      mask.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(function () {
+        const btn = document.getElementById('modal-btn-confirm');
+        if (btn) btn.focus();
+      });
+    }
+
+    // —— 项目风险登记 ——
+    let riskRows = [];
+    /** 当前列表排序：点击表头字段切换升序/降序 */
+    let riskSortState = { key: null, dir: 'asc' };
+
+    const STORAGE_KEY_MANPOWER = 'PM-tool-manpower-v1';
+    const STORAGE_KEY_REGISTER_COLS = 'PM-tool-register-colwidths-v1';
+    const STORAGE_KEY_RISK = 'PM-tool-risk-v1';
+    const STORAGE_KEY_PHASE = 'PM-tool-phase-v1';
+    const STORAGE_KEY_LEGACY = 'PM-tool-data-v1';
+    const STORAGE_KEY_APP_SETTINGS = 'PM-tool-app-settings-v1';
+
+    function resolveApiBase() {
+      if (typeof window.PM_API_BASE === 'string' && window.PM_API_BASE) {
+        return window.PM_API_BASE;
+      }
+      if (!window.location || !/^https?:\/\//.test(window.location.origin)) {
+        return 'http://127.0.0.1:8001';
+      }
+      // 本地静态服务常用端口默认回退后端 8001，避免把 API 错误指向前端静态端口
+      var p = Number(window.location.port || 0);
+      if (p === 3000 || p === 5500 || p === 8080 || p === 5173) {
+        return 'http://127.0.0.1:8001';
+      }
+      return window.location.origin;
+    }
+    var PM_API_BASE = resolveApiBase();
+
+    function pmApiUrl(path) {
+      var base = PM_API_BASE.replace(/\/$/, '');
+      return base + (path.indexOf('/') === 0 ? path : '/' + path);
+    }
+
+    function pmFetch(path, options) {
+      var opts = options || {};
+      var h = Object.assign({}, opts.headers || {});
+      if (opts.body && typeof opts.body === 'string' && !h['Content-Type']) {
+        h['Content-Type'] = 'application/json';
+      }
+      return fetch(pmApiUrl(path), Object.assign({}, opts, { credentials: 'include', headers: h }));
+    }
+
+    async function fetchAuthMe() {
+      var authAbortTid = null;
+      var ctrl = null;
+      try {
+        ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        if (ctrl) {
+          authAbortTid = setTimeout(function () {
+            try { ctrl.abort(); } catch (abErr) {}
+          }, 8000);
+        }
+        var r = await pmFetch('/api/v1/auth/me', { method: 'GET', signal: ctrl ? ctrl.signal : undefined });
+        if (authAbortTid) clearTimeout(authAbortTid);
+        if (r.status === 401) {
+          window.__pmAuthRedirecting = true;
+          window.location.href = 'login.html';
+          return null;
+        }
+        if (!r.ok) {
+          alert('认证服务暂时不可用（HTTP ' + r.status + '），已按普通用户权限进入（仅本地数据）。');
+          return { id: 0, username: 'unknown', role: 'viewer' };
+        }
+        return await r.json();
+      } catch (e) {
+        if (authAbortTid) clearTimeout(authAbortTid);
+        alert('无法连接认证后端（' + PM_API_BASE + '）。请先启动 API 服务；已按普通用户权限进入（仅本地）。');
+        return { id: 0, username: 'offline', role: 'viewer' };
+      }
+    }
+
+    function pmLogout() {
+      pmFetch('/api/v1/auth/logout', { method: 'POST', body: '{}' }).catch(function () {});
+      window.location.href = 'login.html';
+    }
+
+    async function applyMeFromServer() {
+      try {
+        var mr = await pmFetch('/api/v1/auth/me', { method: 'GET' });
+        if (!mr.ok) return;
+        var nm = await mr.json();
+        window.__pmCurrentUser = nm;
+        appUserRole = nm.role === 'admin' ? 'admin' : 'viewer';
+        syncPmRoleGlobal();
+        applyPermissionToAllUI();
+        renderTable();
+        renderRiskTable();
+        renderPhaseTable();
+        updateSettingsPanelRoleUi();
+        var pg = document.getElementById('panel-guide');
+        if (pg && pg.classList.contains('active') && typeof window.__renderGuideMenu === 'function') {
+          window.__renderGuideMenu();
+        }
+      } catch (e) {}
+    }
+
+    let appUserRole = 'viewer';
+    const panelEditMode = { manpower: false, phase: false, risk: false };
+
+    function syncPmRoleGlobal() {
+      window.pmIsAdmin = function () { return appUserRole === 'admin'; };
+    }
+
+    function canEditPanel(panel) {
+      return !!(window.pmIsAdmin && window.pmIsAdmin() && panelEditMode[panel]);
+    }
+
+    function setPanelEditMode(panel, editing) {
+      if (!(window.pmIsAdmin && window.pmIsAdmin())) return;
+      panelEditMode[panel] = !!editing;
+      applyPermissionToAllUI();
+      if (panel === 'manpower') renderTable();
+      else if (panel === 'phase') renderPhaseTable();
+      else if (panel === 'risk') renderRiskTable();
+    }
+
+    function wirePanelEditToggleButtons() {
+      [
+        { id: 'btn-manpower-edit-toggle', panel: 'manpower' },
+        { id: 'btn-phase-edit-toggle', panel: 'phase' },
+        { id: 'btn-risk-edit-toggle', panel: 'risk' }
+      ].forEach(function (cfg) {
+        var btn = document.getElementById(cfg.id);
+        if (!btn || btn._pmEditWired) return;
+        btn._pmEditWired = true;
+        btn.addEventListener('click', function () {
+          if (!requireAdminOrAlert()) return;
+          setPanelEditMode(cfg.panel, !panelEditMode[cfg.panel]);
+        });
+      });
+    }
+
+    /** 与 renderRiskTable 中控件顺序一致，供 syncRiskRowsFromDom 使用 */
+    const RISK_FIELD_ORDER = ['category', 'source', 'project', 'issue', 'solution', 'level', 'owner', 'regTime', 'closeTime', 'status'];
+
+    let riskAnalysisCharts = [];
+    let lastRiskAnalysisStats = null;
+    let riskAnalysisSortMode = 'count';
+
+    function riskLevelToNum(level) {
+      var order = { '低': 1, '中': 2, '高': 3, '极高': 4 };
+      var v = level != null ? String(level).trim() : '';
+      return order[v] != null ? order[v] : 0;
+    }
+
+    function riskLevelNumToLabel(n) {
+      var map = { 0: '未选/未知', 1: '低', 2: '中', 3: '高', 4: '极高' };
+      return map[n] != null ? map[n] : '—';
+    }
+
+    function riskRowGroupKey(row) {
+      var proj = row && row.project != null ? String(row.project).trim() : '';
+      if (proj) return proj.length > 48 ? proj.slice(0, 48) + '…' : proj;
+      var d = row && row.issue != null ? String(row.issue).trim() : '';
+      if (d) {
+        var line = d.split(/\r?\n/)[0].trim();
+        if (!line) line = d;
+        return line.length > 48 ? line.slice(0, 48) + '…' : line;
+      }
+      return '（未填写项目与问题）';
+    }
+
+    function buildRiskAnalysisStats() {
+      var statusMap = {};
+      var groupMap = {};
+      riskRows.forEach(function (row) {
+        var st = row.status != null ? String(row.status).trim() : '';
+        if (!st) st = '（未填状态）';
+        statusMap[st] = (statusMap[st] || 0) + 1;
+
+        var gk = riskRowGroupKey(row);
+        if (!groupMap[gk]) {
+          groupMap[gk] = { label: gk, count: 0, maxLevel: 0 };
+        }
+        groupMap[gk].count += 1;
+        var ln = riskLevelToNum(row.level);
+        if (ln > groupMap[gk].maxLevel) groupMap[gk].maxLevel = ln;
+      });
+      var groups = Object.keys(groupMap).map(function (k) {
+        return groupMap[k];
+      });
+      return { statusMap: statusMap, groups: groups };
+    }
+
+    function destroyRiskAnalysisCharts() {
+      riskAnalysisCharts.forEach(function (c) {
+        try { c.destroy(); } catch (e) {}
+      });
+      riskAnalysisCharts = [];
+    }
+
+    function destroyRiskAnalysisBarChartOnly() {
+      var el = document.getElementById('risk-chart-group-bar');
+      if (!el || typeof Chart === 'undefined') return;
+      var c = Chart.getChart(el);
+      if (c) {
+        var ix = riskAnalysisCharts.indexOf(c);
+        if (ix >= 0) riskAnalysisCharts.splice(ix, 1);
+        try { c.destroy(); } catch (e2) {}
+      }
+    }
+
+    function riskAnalysisSliceColors(n) {
+      var pal = MANPOWER_CHART_COLORS;
+      var out = [];
+      for (var i = 0; i < n; i++) {
+        out.push(pal[i % pal.length]);
+      }
+      return out;
+    }
+
+    function renderRiskAnalysisStatusPie(stats) {
+      if (!stats || typeof Chart === 'undefined') return;
+      var ctx = document.getElementById('risk-chart-status-pie');
+      if (!ctx) return;
+      var labels = [];
+      var vals = [];
+      Object.keys(stats.statusMap).forEach(function (k) {
+        var v = stats.statusMap[k];
+        if (v > 0) {
+          labels.push(k);
+          vals.push(v);
+        }
+      });
+      var total = vals.reduce(function (a, b) { return a + b; }, 0);
+      if (labels.length === 0 || total <= 0) return;
+      riskAnalysisCharts.push(new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: vals,
+            backgroundColor: riskAnalysisSliceColors(labels.length),
+            borderWidth: 1,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  var num = Number(context.raw);
+                  var pct = total > 0 ? ((num / total) * 100).toFixed(1) : '0.0';
+                  return context.label + ': ' + num + ' 条（' + pct + '%）';
+                }
+              }
+            }
+          }
+        }
+      }));
+    }
+
+    function renderRiskAnalysisGroupBar(stats) {
+      if (!stats || typeof Chart === 'undefined') return;
+      var canvas = document.getElementById('risk-chart-group-bar');
+      var wrap = document.getElementById('risk-group-bar-wrap');
+      if (!canvas || !wrap) return;
+      var sorted = stats.groups.slice();
+      if (riskAnalysisSortMode === 'count') {
+        sorted.sort(function (a, b) {
+          return b.count - a.count || b.maxLevel - a.maxLevel || a.label.localeCompare(b.label, 'zh-CN');
+        });
+      } else {
+        sorted.sort(function (a, b) {
+          return b.maxLevel - a.maxLevel || b.count - a.count || a.label.localeCompare(b.label, 'zh-CN');
+        });
+      }
+      var labels = sorted.map(function (g) {
+        return g.label.length > 32 ? g.label.slice(0, 32) + '…' : g.label;
+      });
+      var counts = sorted.map(function (g) { return g.count; });
+      var maxLv = sorted.map(function (g) { return g.maxLevel; });
+      if (labels.length === 0) return;
+      var h = Math.min(520, Math.max(200, labels.length * 28));
+      wrap.style.height = h + 'px';
+      var totalAll = counts.reduce(function (a, b) { return a + b; }, 0);
+      riskAnalysisCharts.push(new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: '风险条数',
+            data: counts,
+            backgroundColor: riskAnalysisSliceColors(counts.length),
+            borderWidth: 0
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: function (items) {
+                  var i = items[0].dataIndex;
+                  return sorted[i].label;
+                },
+                label: function (context) {
+                  var i = context.dataIndex;
+                  var cnt = counts[i];
+                  var pct = totalAll > 0 ? ((cnt / totalAll) * 100).toFixed(1) : '0.0';
+                  return [
+                    '条数: ' + cnt + '（占全部 ' + pct + '%）',
+                    '组内最高等级: ' + riskLevelNumToLabel(maxLv[i])
+                  ];
+                }
+              }
+            }
+          },
+          scales: {
+            x: { beginAtZero: true, ticks: { precision: 0 } },
+            y: { ticks: { autoSkip: false } }
+          }
+        }
+      }));
+    }
+
+    function redrawRiskAnalysisBarOnly() {
+      if (!lastRiskAnalysisStats) return;
+      destroyRiskAnalysisBarChartOnly();
+      renderRiskAnalysisGroupBar(lastRiskAnalysisStats);
+    }
+
+    function closeRiskAnalysisModal() {
+      var mask = document.getElementById('risk-analysis-mask');
+      if (!mask) return;
+      if (window._riskAnalysisOnKey) {
+        document.removeEventListener('keydown', window._riskAnalysisOnKey);
+        window._riskAnalysisOnKey = null;
+      }
+      destroyRiskAnalysisCharts();
+      mask.classList.remove('active');
+      mask.setAttribute('aria-hidden', 'true');
+    }
+
+    function openRiskAnalysisModal() {
+      if (typeof Chart === 'undefined') {
+        alert('图表组件加载失败，请检查网络后刷新页面。');
+        return;
+      }
+      syncRiskRowsFromDom();
+      var mask = document.getElementById('risk-analysis-mask');
+      var noteEl = document.getElementById('risk-analysis-note');
+      var emptyEl = document.getElementById('risk-analysis-empty');
+      var body = document.getElementById('risk-analysis-body');
+      if (!mask || !body) return;
+
+      destroyRiskAnalysisCharts();
+      lastRiskAnalysisStats = null;
+
+      if (noteEl) {
+        noteEl.textContent = '基于当前列表共 ' + riskRows.length + ' 条风险记录（含未保存的编辑内容）。';
+      }
+
+      var sections = body.querySelectorAll('.manpower-analysis-section');
+
+      if (riskRows.length === 0) {
+        if (emptyEl) {
+          emptyEl.hidden = false;
+          emptyEl.textContent = '暂无风险记录，无法生成分析。';
+        }
+        sections.forEach(function (sec) { sec.style.display = 'none'; });
+      } else {
+        if (emptyEl) emptyEl.hidden = true;
+        sections.forEach(function (sec) { sec.style.display = ''; });
+        lastRiskAnalysisStats = buildRiskAnalysisStats();
+        renderRiskAnalysisStatusPie(lastRiskAnalysisStats);
+        renderRiskAnalysisGroupBar(lastRiskAnalysisStats);
+      }
+
+      mask.classList.add('active');
+      mask.setAttribute('aria-hidden', 'false');
+      window._riskAnalysisOnKey = function (e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closeRiskAnalysisModal();
+        }
+      };
+      document.addEventListener('keydown', window._riskAnalysisOnKey);
+      requestAnimationFrame(function () {
+        var btn = document.getElementById('risk-analysis-close');
+        if (btn) btn.focus();
+      });
+    }
+
+    function initRiskAnalysisUi() {
+      var btn = document.getElementById('btn-risk-analysis');
+      if (btn) btn.addEventListener('click', openRiskAnalysisModal);
+      var mask = document.getElementById('risk-analysis-mask');
+      var closeBtn = document.getElementById('risk-analysis-close');
+      if (mask) {
+        mask.addEventListener('click', function (e) {
+          if (e.target === mask) closeRiskAnalysisModal();
+        });
+      }
+      if (closeBtn) closeBtn.addEventListener('click', closeRiskAnalysisModal);
+      document.querySelectorAll('.risk-analysis-sort-btn').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var mode = b.getAttribute('data-risk-sort');
+          if (!mode) return;
+          riskAnalysisSortMode = mode;
+          document.querySelectorAll('.risk-analysis-sort-btn').forEach(function (x) {
+            var on = x.getAttribute('data-risk-sort') === mode;
+            x.classList.toggle('active', on);
+            x.setAttribute('aria-pressed', on ? 'true' : 'false');
+          });
+          var m = document.getElementById('risk-analysis-mask');
+          if (m && m.classList.contains('active') && lastRiskAnalysisStats) {
+            redrawRiskAnalysisBarOnly();
+          }
+        });
+      });
+      document.querySelectorAll('.risk-analysis-sort-btn').forEach(function (x) {
+        x.setAttribute('aria-pressed', x.classList.contains('active') ? 'true' : 'false');
+      });
+    }
+
+    function loadAppSettings() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_APP_SETTINGS);
+        if (raw) {
+          JSON.parse(raw);
+        }
+      } catch (e) {}
+      syncPmRoleGlobal();
+    }
+
+    function saveAppSettings() {
+      try {
+        localStorage.setItem(STORAGE_KEY_APP_SETTINGS, JSON.stringify({
+          savedAt: new Date().toISOString()
+        }));
+      } catch (e) {}
+    }
+
+    function requireAdminOrAlert() {
+      if (!window.pmIsAdmin || !window.pmIsAdmin()) {
+        alert('当前为普通用户身份，仅可查看。如需编辑或保存，请使用管理员账号登录。');
+        return false;
+      }
+      return true;
+    }
+
+    function applyPermissionToAllUI() {
+      const adm = window.pmIsAdmin && window.pmIsAdmin();
+      if (!adm) {
+        panelEditMode.manpower = false;
+        panelEditMode.phase = false;
+        panelEditMode.risk = false;
+      }
+      var panelConfigs = [
+        { panel: 'manpower', toggleId: 'btn-manpower-edit-toggle', editSelector: '#panel-manpower .manpower-edit-only' },
+        { panel: 'phase', toggleId: 'btn-phase-edit-toggle', editSelector: '#panel-phase .phase-edit-only' },
+        { panel: 'risk', toggleId: 'btn-risk-edit-toggle', editSelector: '#panel-risk .risk-edit-only' }
+      ];
+      panelConfigs.forEach(function (cfg) {
+        var toggleBtn = document.getElementById(cfg.toggleId);
+        var editing = adm && !!panelEditMode[cfg.panel];
+        if (toggleBtn) {
+          toggleBtn.style.display = adm ? '' : 'none';
+          toggleBtn.textContent = editing ? '完成编辑' : '编辑';
+          toggleBtn.title = editing ? '退出编辑模式，回到简洁查看态' : '进入编辑模式后显示增删改与保存按钮';
+        }
+        document.querySelectorAll(cfg.editSelector).forEach(function (btn) {
+          btn.style.display = editing ? '' : 'none';
+          btn.disabled = !editing;
+          if (!btn.getAttribute('data-orig-title') && btn.getAttribute('title')) {
+            btn.setAttribute('data-orig-title', btn.getAttribute('title'));
+          }
+          if (btn.getAttribute('data-orig-title')) {
+            btn.title = editing ? (btn.getAttribute('data-orig-title') || '') : '';
+          }
+        });
+      });
+    }
+
+    function updateSettingsPanelRoleUi() {
+      const badge = document.getElementById('settings-role-badge');
+      const me = window.__pmCurrentUser || {};
+      const un = me.username != null ? String(me.username) : '';
+      if (badge) {
+        if (appUserRole === 'admin') {
+          badge.textContent = '当前账号「' + un + '」为管理员：可进行增删改查、保存与人员管理。';
+        } else {
+          badge.textContent = '当前账号「' + un + '」为普通用户：各页仅可查看，不可编辑或保存。';
+        }
+      }
+      const navHint = document.getElementById('pm-nav-user-hint');
+      if (navHint) {
+        navHint.textContent = un ? (un + ' · ' + (appUserRole === 'admin' ? '管理员' : '普通用户')) : '';
+      }
+      const adminWrap = document.getElementById('settings-users-admin');
+      const viewerNote = document.getElementById('settings-users-viewer-note');
+      if (adminWrap && viewerNote) {
+        if (window.pmIsAdmin && window.pmIsAdmin()) {
+          adminWrap.style.display = '';
+          viewerNote.style.display = 'none';
+          refreshUsersTable();
+        } else {
+          adminWrap.style.display = 'none';
+          viewerNote.style.display = '';
+        }
+      }
+    }
+
+    async function refreshUsersTable() {
+      if (!window.pmIsAdmin || !window.pmIsAdmin()) return;
+      const tb = document.getElementById('settings-users-tbody');
+      if (!tb) return;
+      try {
+        var r = await pmFetch('/api/v1/users', { method: 'GET' });
+        if (!r.ok) {
+          tb.innerHTML = '<tr><td colspan="5">加载用户列表失败（HTTP ' + r.status + '）</td></tr>';
+          return;
+        }
+        var list = await r.json();
+        tb.innerHTML = '';
+        list.forEach(function (u) {
+          var tr = document.createElement('tr');
+          var roleLabel = u.role === 'admin' ? '管理员' : '普通用户';
+          var activeLabel = u.is_active ? '正常' : '已停用';
+          tr.innerHTML =
+            '<td>' + escapeHtml(u.username) + '</td>' +
+            '<td><select class="settings-user-role-sel" data-user-id="' + u.id + '" aria-label="角色">' +
+            '<option value="viewer"' + (u.role === 'viewer' ? ' selected' : '') + '>普通用户</option>' +
+            '<option value="admin"' + (u.role === 'admin' ? ' selected' : '') + '>管理员</option></select></td>' +
+            '<td>' + escapeHtml(activeLabel) + '</td>' +
+            '<td>' + escapeHtml(u.auth_source || 'local') + '</td>' +
+            '<td class="settings-users-actions"></td>';
+          var tdAct = tr.querySelector('.settings-users-actions');
+          var selR = tr.querySelector('.settings-user-role-sel');
+          selR.addEventListener('change', async function () {
+            try {
+              var pr = await pmFetch('/api/v1/users/' + u.id, {
+                method: 'PATCH',
+                body: JSON.stringify({ role: selR.value })
+              });
+              if (!pr.ok) {
+                var err = await pr.json().catch(function () { return {}; });
+                alert(err.detail || '更新角色失败');
+                selR.value = u.role;
+                return;
+              }
+              if (window.__pmCurrentUser && u.id === window.__pmCurrentUser.id) {
+                await applyMeFromServer();
+              }
+              await refreshUsersTable();
+              updateSettingsPanelRoleUi();
+            } catch (e) {
+              alert('更新失败');
+              selR.value = u.role;
+            }
+          });
+          function addBtn(text, className, onClick) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = text;
+            if (className) b.className = className;
+            b.addEventListener('click', onClick);
+            tdAct.appendChild(b);
+          }
+          addBtn(u.is_active ? '停用' : '启用', '', async function () {
+            if (!confirm(u.is_active ? '确认停用该用户？' : '确认启用该用户？')) return;
+            var pr = await pmFetch('/api/v1/users/' + u.id, {
+              method: 'PATCH',
+              body: JSON.stringify({ is_active: !u.is_active })
+            });
+            if (!pr.ok) {
+              var err = await pr.json().catch(function () { return {}; });
+              alert(err.detail || '操作失败');
+              return;
+            }
+            if (window.__pmCurrentUser && u.id === window.__pmCurrentUser.id) {
+              await applyMeFromServer();
+            }
+            await refreshUsersTable();
+          });
+          addBtn('重置密码', '', function () {
+            var np = prompt('为「' + u.username + '」设置新密码（至少 6 位）：', '');
+            if (!np || np.length < 6) {
+              if (np !== null) alert('密码至少 6 位');
+              return;
+            }
+            (async function () {
+              var pr = await pmFetch('/api/v1/users/' + u.id, {
+                method: 'PATCH',
+                body: JSON.stringify({ password: np })
+              });
+              if (!pr.ok) {
+                var err = await pr.json().catch(function () { return {}; });
+                alert(err.detail || '重置失败');
+                return;
+              }
+              alert('密码已更新');
+            })();
+          });
+          addBtn('删除', 'danger', async function () {
+            if (!confirm('确认删除用户「' + u.username + '」？不可恢复。')) return;
+            var pr = await pmFetch('/api/v1/users/' + u.id, { method: 'DELETE' });
+            if (!pr.ok) {
+              var err = await pr.json().catch(function () { return {}; });
+              alert(err.detail || '删除失败');
+              return;
+            }
+            await refreshUsersTable();
+          });
+          tb.appendChild(tr);
+        });
+      } catch (e) {
+        tb.innerHTML = '<tr><td colspan="5">加载失败</td></tr>';
+      }
+    }
+
+    function bindPmLogoutButtons() {
+      ['pm-btn-logout-nav', 'pm-btn-logout-settings'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && !el._pmLogoutBound) {
+          el._pmLogoutBound = true;
+          el.addEventListener('click', function () { pmLogout(); });
+        }
+      });
+      var createBtn = document.getElementById('settings-btn-user-create');
+      if (createBtn && !createBtn._pmBound) {
+        createBtn._pmBound = true;
+        createBtn.addEventListener('click', async function () {
+          var nameEl = document.getElementById('settings-new-user-name');
+          var passEl = document.getElementById('settings-new-user-pass');
+          var roleEl = document.getElementById('settings-new-user-role');
+          var username = nameEl && nameEl.value ? nameEl.value.trim() : '';
+          var password = passEl ? passEl.value : '';
+          var role = roleEl ? roleEl.value : 'viewer';
+          if (!username) {
+            alert('请填写用户名');
+            return;
+          }
+          if (!password || password.length < 6) {
+            alert('密码至少 6 位');
+            return;
+          }
+          var r = await pmFetch('/api/v1/users', {
+            method: 'POST',
+            body: JSON.stringify({ username: username, password: password, role: role })
+          });
+          if (!r.ok) {
+            var err = await r.json().catch(function () { return {}; });
+            alert(err.detail || '创建失败');
+            return;
+          }
+          if (nameEl) nameEl.value = '';
+          if (passEl) passEl.value = '';
+          await refreshUsersTable();
+          showSaveToast('用户已创建');
+        });
+      }
+    }
+
+    function initSettingsPanelOnce() {
+      const nav = document.querySelector('.settings-nav');
+      if (!nav || nav._pmWired) return;
+      nav._pmWired = true;
+      nav.querySelectorAll('.settings-nav-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const mod = btn.getAttribute('data-settings-module');
+          if (!mod) return;
+          nav.querySelectorAll('.settings-nav-btn').forEach(function (b) {
+            b.classList.toggle('active', b === btn);
+          });
+          document.querySelectorAll('.settings-module').forEach(function (sec) {
+            sec.classList.toggle('active', sec.id === 'settings-module-' + mod);
+          });
+          scrollMainToTop();
+        });
+      });
+      bindPmLogoutButtons();
+      updateSettingsPanelRoleUi();
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function fixManpowerInData(arr) {
+      if (!Array.isArray(arr)) return;
+      const need = deptFlatCount();
+      arr.forEach(function (set) {
+        if (!set) return;
+        if (!Array.isArray(set.projectSets)) set.projectSets = [];
+        set.projectSets.forEach(function (projectSet) {
+          if (!projectSet) return;
+          if (!Array.isArray(projectSet.subProjects)) projectSet.subProjects = [];
+          projectSet.subProjects.forEach(function (p) {
+            if (!p) return;
+            ensureProjectHasManpowerByMonth(p);
+            var mb = p.manpowerByMonth;
+            var keys = Object.keys(mb);
+            if (keys.length === 0 && Array.isArray(p.manpower)) {
+              mb[ymKey(manpowerSelYear, manpowerSelMonth)] = p.manpower.map(function (x) {
+                var n = Number(x);
+                return isNaN(n) ? 0 : n;
+              });
+            }
+            Object.keys(mb).forEach(function (k) {
+              var row = Array.isArray(mb[k]) ? mb[k].slice() : [];
+              row = row.map(function (x) {
+                var n = Number(x);
+                return isNaN(n) ? 0 : n;
+              });
+              while (row.length < need) row.push(0);
+              if (row.length > need) row = row.slice(0, need);
+              mb[k] = row;
+            });
+            p.manpower = getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
+          });
+        });
+      });
+    }
+
+    function mapRiskRowsFromStorage(arr) {
+      if (!Array.isArray(arr)) return [];
+      return arr.map(function (r) {
+        return {
+          category: r.category != null ? String(r.category) : '',
+          source: r.source != null ? String(r.source) : '',
+          project: r.project != null ? String(r.project) : '',
+          regTime: r.regTime != null ? String(r.regTime) : '',
+          issue: r.issue != null ? String(r.issue) : '',
+          solution: r.solution != null ? String(r.solution) : '',
+          level: r.level != null ? String(r.level) : '',
+          owner: r.owner != null ? String(r.owner) : '',
+          status: r.status != null ? String(r.status) : '',
+          closeTime: r.closeTime != null ? String(r.closeTime) : ''
+        };
+      });
+    }
+
+    function syncRiskRowsFromDom() {
+      const tb = document.getElementById('risk-table-body');
+      if (!tb || riskRows.length === 0) return;
+      const trList = tb.querySelectorAll('tr');
+      let i = 0;
+      trList.forEach(function (tr) {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length < 10) return;
+        const fields = tr.querySelectorAll('input, select, textarea');
+        if (fields.length < RISK_FIELD_ORDER.length || !riskRows[i]) return;
+        RISK_FIELD_ORDER.forEach(function (key, j) {
+          riskRows[i][key] = fields[j].value;
+        });
+        i++;
+      });
+    }
+
+    function loadSavedData() {
+      var phaseFromStorage = false;
+      try {
+        const rawM = localStorage.getItem(STORAGE_KEY_MANPOWER);
+        const rawR = localStorage.getItem(STORAGE_KEY_RISK);
+        const rawP = localStorage.getItem(STORAGE_KEY_PHASE);
+        const rawL = localStorage.getItem(STORAGE_KEY_LEGACY);
+
+        if (!rawM && !rawR && rawL) {
+          const leg = JSON.parse(rawL);
+          if (leg && typeof leg === 'object') {
+            if (Array.isArray(leg.data)) {
+              fixManpowerInData(leg.data);
+              data = leg.data;
+            }
+            if (Array.isArray(leg.riskRows)) {
+              riskRows = mapRiskRowsFromStorage(leg.riskRows);
+            }
+          }
+          try {
+            localStorage.setItem(STORAGE_KEY_MANPOWER, JSON.stringify({ data: data, deptGroups: deptGroups, savedAt: new Date().toISOString() }));
+            localStorage.setItem(STORAGE_KEY_RISK, JSON.stringify({ riskRows: riskRows, savedAt: new Date().toISOString() }));
+            localStorage.removeItem(STORAGE_KEY_LEGACY);
+          } catch (e2) {}
+          fixManpowerInData(data);
+          phaseData = phaseStructureNamesFromData(data);
+          fixPhaseInData(phaseData);
+          syncManpowerStructureFromPhase();
+          return;
+        }
+
+        if (rawM) {
+          const obj = JSON.parse(rawM);
+          if (obj && Array.isArray(obj.data)) {
+            if (Array.isArray(obj.deptGroups)) {
+              deptGroups = normalizeDeptGroups(obj.deptGroups);
+            }
+            fixManpowerInData(obj.data);
+            data = obj.data;
+          }
+        }
+        if (rawR) {
+          const obj = JSON.parse(rawR);
+          if (obj && Array.isArray(obj.riskRows)) {
+            riskRows = mapRiskRowsFromStorage(obj.riskRows);
+          }
+        }
+        if (rawP) {
+          const objP = JSON.parse(rawP);
+          if (objP && Array.isArray(objP.phaseData)) {
+            phaseData = mapPhaseDataFromStorage(objP.phaseData);
+            phaseFromStorage = true;
+          }
+        }
+      } catch (e) {
+        console.warn('[PM-tool] 本地数据解析失败，已保留当前默认或已加载数据：', e);
+      }
+      fixManpowerInData(data);
+      if (!phaseFromStorage) {
+        phaseData = phaseStructureNamesFromData(data);
+      }
+      fixPhaseInData(phaseData);
+      syncManpowerStructureFromPhase();
+    }
+
+    function isRegistryServerEmpty(mObj, pObj, rObj) {
+      var md = (mObj && Array.isArray(mObj.data)) ? mObj.data.length : 0;
+      var rd = (rObj && Array.isArray(rObj.riskRows)) ? rObj.riskRows.length : 0;
+      var pd = (pObj && Array.isArray(pObj.phaseData)) ? pObj.phaseData.length : 0;
+      return md === 0 && rd === 0 && pd === 0;
+    }
+
+    function hasLocalRegistryData() {
+      try {
+        var rawM = localStorage.getItem(STORAGE_KEY_MANPOWER);
+        var rawR = localStorage.getItem(STORAGE_KEY_RISK);
+        var rawP = localStorage.getItem(STORAGE_KEY_PHASE);
+        if (rawM) {
+          var o = JSON.parse(rawM);
+          if (o && Array.isArray(o.data) && o.data.length > 0) return true;
+        }
+        if (rawR) {
+          var o2 = JSON.parse(rawR);
+          if (o2 && Array.isArray(o2.riskRows) && o2.riskRows.length > 0) return true;
+        }
+        if (rawP) {
+          var o3 = JSON.parse(rawP);
+          if (o3 && Array.isArray(o3.phaseData) && o3.phaseData.length > 0) return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    function mirrorRegistryToLocalStorage(mObj, pObj, rObj) {
+      try {
+        if (mObj) localStorage.setItem(STORAGE_KEY_MANPOWER, JSON.stringify(mObj));
+        if (pObj) localStorage.setItem(STORAGE_KEY_PHASE, JSON.stringify(pObj));
+        if (rObj) localStorage.setItem(STORAGE_KEY_RISK, JSON.stringify(rObj));
+      } catch (e) {}
+    }
+
+    function applyRegistryFromObjects(mObj, pObj, rObj) {
+      var phaseFromStorage = false;
+      if (mObj && Array.isArray(mObj.data)) {
+        deptGroups = Array.isArray(mObj.deptGroups)
+          ? normalizeDeptGroups(mObj.deptGroups)
+          : defaultDeptGroups();
+        fixManpowerInData(mObj.data);
+        data = mObj.data;
+      }
+      if (rObj && Array.isArray(rObj.riskRows)) {
+        riskRows = mapRiskRowsFromStorage(rObj.riskRows);
+      }
+      if (pObj && Array.isArray(pObj.phaseData)) {
+        phaseData = mapPhaseDataFromStorage(pObj.phaseData);
+        phaseFromStorage = true;
+      }
+      fixManpowerInData(data);
+      if (!phaseFromStorage) {
+        phaseData = phaseStructureNamesFromData(data);
+      }
+      fixPhaseInData(phaseData);
+      syncManpowerStructureFromPhase();
+    }
+
+    async function loadRegistryData() {
+      var me = window.__pmCurrentUser;
+      // 仅「认证不可用/离线」时用本机缓存；正常登录与 PM_AUTH_DISABLED 下的 dev 用户仍从服务器拉取
+      if (!me || me.username === 'offline' || me.username === 'unknown') {
+        loadSavedData();
+        return;
+      }
+      try {
+        var results = await Promise.all([
+          pmFetch('/api/v1/manpower', { method: 'GET' }),
+          pmFetch('/api/v1/phase', { method: 'GET' }),
+          pmFetch('/api/v1/risk', { method: 'GET' })
+        ]);
+        var rm = results[0];
+        var rp = results[1];
+        var rr = results[2];
+        if (rm.status === 401 || rp.status === 401 || rr.status === 401) {
+          window.__pmAuthRedirecting = true;
+          window.location.href = 'login.html';
+          return;
+        }
+        if (!rm.ok || !rp.ok || !rr.ok) {
+          throw new Error('HTTP ' + rm.status + ' / ' + rp.status + ' / ' + rr.status);
+        }
+        var mObj = await rm.json();
+        var pObj = await rp.json();
+        var rObj = await rr.json();
+        if (isRegistryServerEmpty(mObj, pObj, rObj) && hasLocalRegistryData()) {
+          loadSavedData();
+          showSaveToast('服务端暂无数据，已载入本机数据；请管理员点击保存以同步到服务器');
+          return;
+        }
+        applyRegistryFromObjects(mObj, pObj, rObj);
+        mirrorRegistryToLocalStorage(mObj, pObj, rObj);
+      } catch (e) {
+        console.warn('[PM-tool] 从服务器加载登记数据失败，改用本机缓存', e);
+        alert('无法从服务器加载登记数据，已使用本机缓存。');
+        loadSavedData();
+      }
+    }
+
+    async function saveManpowerData() {
+      if (!requireAdminOrAlert()) return;
+      try {
+        var r = await pmFetch('/api/v1/manpower', {
+          method: 'PUT',
+          body: JSON.stringify({ data: data, deptGroups: deptGroups })
+        });
+        if (r.status === 401) {
+          window.location.href = 'login.html';
+          return;
+        }
+        if (!r.ok) {
+          var err = await r.json().catch(function () { return {}; });
+          alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
+          return;
+        }
+        var stored = await r.json();
+        mirrorRegistryToLocalStorage(stored, null, null);
+        showSaveToast('人力登记已保存到服务器');
+        setPanelEditMode('manpower', false);
+      } catch (e) {
+        alert('保存失败：无法连接服务器');
+      }
+    }
+
+    async function saveRiskData() {
+      if (!requireAdminOrAlert()) return;
+      syncRiskRowsFromDom();
+      try {
+        var r = await pmFetch('/api/v1/risk', {
+          method: 'PUT',
+          body: JSON.stringify({ riskRows: riskRows })
+        });
+        if (r.status === 401) {
+          window.location.href = 'login.html';
+          return;
+        }
+        if (!r.ok) {
+          var err = await r.json().catch(function () { return {}; });
+          alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
+          return;
+        }
+        var stored = await r.json();
+        mirrorRegistryToLocalStorage(null, null, stored);
+        showSaveToast('风险登记已保存到服务器');
+        setPanelEditMode('risk', false);
+      } catch (e) {
+        alert('保存失败：无法连接服务器');
+      }
+    }
+
+    function syncPhaseFromDom() {
+      var tb = document.getElementById('phase-table-body');
+      if (!tb) return;
+      var trs = tb.querySelectorAll('tr');
+      var flat = [];
+      phaseData.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (p) {
+            flat.push(p);
+          });
+        });
+      });
+      var ri = 0;
+      trs.forEach(function (tr) {
+        var p = flat[ri];
+        if (!p) return;
+        var slice = getPhaseMonthSlice(p, phaseSelYear, phaseSelMonth);
+        var tas = tr.querySelectorAll('textarea.phase-field-input');
+        if (tas.length < PHASE_FIELD_KEYS.length) return;
+        PHASE_FIELD_KEYS.forEach(function (key, j) {
+          slice[key] = tas[j].value;
+        });
+        ri++;
+      });
+    }
+
+    function phaseDataForStorage() {
+      return phaseData.map(function (set) {
+        return {
+          name: set.name,
+          projectSets: getProgramProjectSets(set).map(function (projectSet) {
+            return {
+              name: projectSet.name,
+              subProjects: getSubProjects(projectSet).map(function (p) {
+                return { name: p.name, phaseByMonth: p.phaseByMonth || {} };
+              })
+            };
+          })
+        };
+      });
+    }
+
+    async function savePhaseData() {
+      if (!requireAdminOrAlert()) return;
+      syncPhaseFromDom();
+      try {
+        var r = await pmFetch('/api/v1/phase', {
+          method: 'PUT',
+          body: JSON.stringify({ phaseData: phaseDataForStorage() })
+        });
+        if (r.status === 401) {
+          window.location.href = 'login.html';
+          return;
+        }
+        if (!r.ok) {
+          var err = await r.json().catch(function () { return {}; });
+          alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
+          return;
+        }
+        var stored = await r.json();
+        mirrorRegistryToLocalStorage(null, stored, null);
+        showSaveToast('阶段状态已保存到服务器');
+        setPanelEditMode('phase', false);
+      } catch (e) {
+        alert('保存失败：无法连接服务器');
+      }
+    }
+
+    function showSaveToast(msg) {
+      const el = document.getElementById('save-toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(el._hideTimer);
+      el._hideTimer = setTimeout(function () {
+        el.classList.remove('show');
+      }, 2200);
+    }
+
+    function formatRiskRegTime(d) {
+      const pad = function (n) { return String(n).padStart(2, '0'); };
+      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    function addRiskRow() {
+      if (!requireAdminOrAlert()) return;
+      riskRows.push({
+        category: '',
+        source: '',
+        project: '',
+        issue: '',
+        solution: '',
+        level: '',
+        owner: '',
+        regTime: '',
+        closeTime: '',
+        status: '',
+      });
+      renderRiskTable();
+    }
+
+    function updateRisk(idx, field, value) {
+      if (riskRows[idx]) riskRows[idx][field] = value;
+    }
+
+    function compareRiskRowsByField(a, b, key) {
+      var va = a[key] != null ? String(a[key]).trim() : '';
+      var vb = b[key] != null ? String(b[key]).trim() : '';
+      var emptyA = !va;
+      var emptyB = !vb;
+      if (emptyA && emptyB) return 0;
+      if (emptyA) return 1;
+      if (emptyB) return -1;
+
+      if (key === 'level') {
+        var order = { '低': 1, '中': 2, '高': 3 };
+        var na = order[va] != null ? order[va] : 99;
+        var nb = order[vb] != null ? order[vb] : 99;
+        return na - nb;
+      }
+      if (key === 'closeTime') {
+        var da = new Date(va + 'T00:00:00').getTime();
+        var db = new Date(vb + 'T00:00:00').getTime();
+        if (isNaN(da)) da = 0;
+        if (isNaN(db)) db = 0;
+        return da - db;
+      }
+      if (key === 'regTime') {
+        var da = new Date(va.replace(/-/g, '/')).getTime();
+        var db = new Date(vb.replace(/-/g, '/')).getTime();
+        if (isNaN(da)) da = 0;
+        if (isNaN(db)) db = 0;
+        return da - db;
+      }
+      if (key === 'project') {
+        return va.localeCompare(vb, 'zh-CN', { numeric: true, sensitivity: 'base' });
+      }
+      return va.localeCompare(vb, 'zh-CN', { numeric: true, sensitivity: 'base' });
+    }
+
+    function applyRiskSort() {
+      if (!riskSortState.key) return;
+      var key = riskSortState.key;
+      var mul = riskSortState.dir === 'asc' ? 1 : -1;
+      riskRows.sort(function (a, b) {
+        return compareRiskRowsByField(a, b, key) * mul;
+      });
+    }
+
+    function toggleRiskSort(fieldKey) {
+      if (riskSortState.key === fieldKey) {
+        riskSortState.dir = riskSortState.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        riskSortState.key = fieldKey;
+        riskSortState.dir = 'asc';
+      }
+      renderRiskTable();
+    }
+
+    function renderRiskThead() {
+      var thead = document.getElementById('risk-thead');
+      if (!thead) return;
+      var headers = [
+        { key: null, label: '序号', sortable: false, thClass: 'main seq' },
+        { key: 'category', label: '风险类别', sortable: true },
+        { key: 'source', label: '风险来源', sortable: true },
+        { key: 'project', label: '项目', sortable: true },
+        { key: 'issue', label: '问题&影响说明', sortable: true },
+        { key: 'solution', label: '解决方案', sortable: true },
+        { key: 'level', label: '风险等级', sortable: true },
+        { key: 'owner', label: '跟进人', sortable: true },
+        { key: 'regTime', label: '风险登记时间', sortable: true },
+        { key: 'closeTime', label: '风险解除时间', sortable: true },
+        { key: 'status', label: '状态', sortable: true },
+        { key: null, label: '操作', sortable: false }
+      ];
+      var tr = document.createElement('tr');
+      headers.forEach(function (h) {
+        var th = document.createElement('th');
+        th.className = h.thClass || 'sub';
+        if (h.sortable) {
+          th.classList.add('risk-th-sortable');
+          var active = riskSortState.key === h.key;
+          th.setAttribute('aria-sort', active ? (riskSortState.dir === 'asc' ? 'ascending' : 'descending') : 'none');
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'risk-th-sort-btn';
+          btn.title = '按「' + h.label + '」排序，再次点击切换升序/降序';
+          var spanLabel = document.createElement('span');
+          spanLabel.textContent = h.label;
+          var ind = document.createElement('span');
+          ind.className = 'risk-sort-ind';
+          ind.setAttribute('aria-hidden', 'true');
+          ind.textContent = active ? (riskSortState.dir === 'asc' ? '▲' : '▼') : '↕';
+          btn.appendChild(spanLabel);
+          btn.appendChild(ind);
+          (function (fk) {
+            btn.addEventListener('click', function () { toggleRiskSort(fk); });
+          })(h.key);
+          th.appendChild(btn);
+        } else {
+          th.textContent = h.label;
+        }
+        tr.appendChild(th);
+      });
+      thead.innerHTML = '';
+      thead.appendChild(tr);
+    }
+
+    function renderRiskTable() {
+      if (riskSortState.key) applyRiskSort();
+      renderRiskThead();
+      const tb = document.getElementById('risk-table-body');
+      if (!tb) return;
+      const allowEdit = canEditPanel('risk');
+      tb.innerHTML = '';
+      if (riskRows.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 12;
+        td.className = 'center-cell';
+        td.style.padding = '24px';
+        td.textContent = allowEdit
+          ? '暂无风险记录，请点击「+ 新增风险」添加。'
+          : '暂无风险记录。普通用户仅可查看；管理员可通过「+ 新增风险」添加。';
+        tr.appendChild(td);
+        tb.appendChild(tr);
+        return;
+      }
+      riskRows.forEach(function (row, idx) {
+        const tr = document.createElement('tr');
+
+        const tdSeq = document.createElement('td');
+        tdSeq.className = 'main seq';
+        tdSeq.textContent = String(idx + 1);
+        tr.appendChild(tdSeq);
+
+        function tdTextInput(field, cls) {
+          const td = document.createElement('td');
+          td.className = 'risk-cell' + (cls ? ' ' + cls : '');
+          const inp = document.createElement('input');
+          inp.type = 'text';
+          inp.className = 'risk-input';
+          inp.value = row[field] || '';
+          inp.readOnly = !allowEdit;
+          inp.addEventListener('change', function () {
+            if (allowEdit) updateRisk(idx, field, inp.value);
+          });
+          td.appendChild(inp);
+          return td;
+        }
+
+        function riskSelectColorClass(field, value) {
+          var v = value != null ? String(value).trim().toLowerCase() : '';
+          if (!v) return '';
+          if (field === 'category') {
+            if (v === '进度') return 'risk-color-progress';
+            if (v === '质量') return 'risk-color-quality';
+            if (v === '范围') return 'risk-color-scope';
+            if (v === '成本') return 'risk-color-cost';
+            return '';
+          }
+          if (field === 'source') {
+            if (v === '资源') return 'risk-color-resource';
+            if (v === '技术') return 'risk-color-tech';
+            return '';
+          }
+          if (field === 'level') {
+            if (v === '高') return 'risk-color-high';
+            if (v === '中') return 'risk-color-mid';
+            if (v === '低') return 'risk-color-low';
+            return '';
+          }
+          if (field === 'status') {
+            if (v === 'open') return 'risk-color-open';
+            if (v === 'hold') return 'risk-color-hold';
+            if (v === 'close') return 'risk-color-close';
+            return '';
+          }
+          return '';
+        }
+
+        function applyRiskSelectColor(el, field, value) {
+          if (!el) return;
+          el.classList.remove(
+            'risk-color-progress', 'risk-color-quality', 'risk-color-scope', 'risk-color-cost',
+            'risk-color-resource', 'risk-color-tech',
+            'risk-color-high', 'risk-color-mid', 'risk-color-low',
+            'risk-color-open', 'risk-color-hold', 'risk-color-close'
+          );
+          var cls = riskSelectColorClass(field, value);
+          if (cls) el.classList.add(cls);
+        }
+
+        function tdSelect(field, options, cls) {
+          const td = document.createElement('td');
+          td.className = 'risk-cell' + (cls ? ' ' + cls : '');
+          const sel = document.createElement('select');
+          sel.className = 'risk-select';
+          const current = row[field] != null ? String(row[field]) : '';
+          [['', '请选择']].concat(options).forEach(function (opt) {
+            const o = document.createElement('option');
+            o.value = opt[0];
+            o.textContent = opt[1];
+            if (current === opt[0]) o.selected = true;
+            sel.appendChild(o);
+          });
+          sel.disabled = !allowEdit;
+          applyRiskSelectColor(sel, field, current);
+          sel.addEventListener('change', function () {
+            if (allowEdit) updateRisk(idx, field, sel.value);
+            applyRiskSelectColor(sel, field, sel.value);
+          });
+          td.appendChild(sel);
+          return td;
+        }
+
+        tr.appendChild(tdSelect('category', [['进度', '进度'], ['质量', '质量'], ['范围', '范围'], ['成本', '成本']]));
+        tr.appendChild(tdSelect('source', [['资源', '资源'], ['技术', '技术']]));
+        tr.appendChild(tdTextInput('project'));
+
+        const tdIssue = document.createElement('td');
+        tdIssue.className = 'risk-cell w-wide';
+        const taIssue = document.createElement('textarea');
+        taIssue.className = 'risk-input';
+        taIssue.rows = 2;
+        taIssue.value = row.issue || '';
+        taIssue.readOnly = !allowEdit;
+        taIssue.addEventListener('change', function () {
+          if (allowEdit) updateRisk(idx, 'issue', taIssue.value);
+        });
+        tdIssue.appendChild(taIssue);
+        tr.appendChild(tdIssue);
+
+        const tdSolution = document.createElement('td');
+        tdSolution.className = 'risk-cell w-wide';
+        const taSolution = document.createElement('textarea');
+        taSolution.className = 'risk-input';
+        taSolution.rows = 2;
+        taSolution.value = row.solution || '';
+        taSolution.readOnly = !allowEdit;
+        taSolution.addEventListener('change', function () {
+          if (allowEdit) updateRisk(idx, 'solution', taSolution.value);
+        });
+        tdSolution.appendChild(taSolution);
+        tr.appendChild(tdSolution);
+
+        tr.appendChild(tdSelect('level', [['高', '高'], ['中', '中'], ['低', '低']]));
+
+        tr.appendChild(tdTextInput('owner'));
+
+        const tdRegDate = document.createElement('td');
+        tdRegDate.className = 'risk-cell';
+        const rin = document.createElement('input');
+        rin.type = 'date';
+        rin.className = 'risk-input';
+        rin.value = row.regTime || '';
+        rin.disabled = !allowEdit;
+        rin.addEventListener('change', function () {
+          if (allowEdit) updateRisk(idx, 'regTime', rin.value);
+        });
+        tdRegDate.appendChild(rin);
+        tr.appendChild(tdRegDate);
+
+        const tdCloseDate = document.createElement('td');
+        tdCloseDate.className = 'risk-cell';
+        const din = document.createElement('input');
+        din.type = 'date';
+        din.className = 'risk-input';
+        din.value = row.closeTime || '';
+        din.disabled = !allowEdit;
+        din.addEventListener('change', function () {
+          if (allowEdit) updateRisk(idx, 'closeTime', din.value);
+        });
+        tdCloseDate.appendChild(din);
+        tr.appendChild(tdCloseDate);
+
+        tr.appendChild(tdSelect('status', [['open', 'open'], ['close', 'close'], ['hold', 'hold']]));
+
+        const tdAct = document.createElement('td');
+        tdAct.className = 'center-cell';
+        if (allowEdit) {
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'delete-btn';
+          delBtn.textContent = '删除';
+          delBtn.onclick = function () { showRiskDeleteModal(idx); };
+          tdAct.appendChild(delBtn);
+        } else {
+          tdAct.className = 'center-cell risk-readonly-cell';
+          tdAct.textContent = '—';
+        }
+        tr.appendChild(tdAct);
+
+        tb.appendChild(tr);
+      });
+    }
+
+    function renderPhaseThead() {
+      var thead = document.getElementById('phase-thead');
+      if (!thead) return;
+      var tr = document.createElement('tr');
+      var thSet = document.createElement('th');
+      thSet.className = 'main col-set';
+      thSet.textContent = '项目集';
+      tr.appendChild(thSet);
+      var thSubSet = document.createElement('th');
+      thSubSet.className = 'sub col-set';
+      thSubSet.textContent = '子项目集';
+      tr.appendChild(thSubSet);
+      var thProj = document.createElement('th');
+      thProj.className = 'sub col-proj';
+      thProj.textContent = '子项目';
+      tr.appendChild(thProj);
+      PHASE_FIELD_KEYS.forEach(function (key) {
+        var th = document.createElement('th');
+        th.className = 'sub phase-field-th';
+        th.textContent = PHASE_FIELD_LABELS[key];
+        tr.appendChild(th);
+      });
+      thead.innerHTML = '';
+      thead.appendChild(tr);
+    }
+
+    function appendPhaseRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin) {
+      if (projectSetIdx === 0 && projIdx === 0) {
+        var tdSet = document.createElement('td');
+        tdSet.className = 'main col-set';
+        tdSet.rowSpan = countSubProjectsInSet(set) || 1;
+        if (admin) {
+          tdSet.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseSetName(' + setIdx + ')">' + escapeHtml(set.name) + '</span><div class="actions"><button type="button" class="icon-btn" title="添加子项目集" onclick="addPhaseProjectSet(' + setIdx + ')">+</button><button type="button" class="icon-btn danger" title="删除项目集" onclick="showDeleteModal(\'set\',' + setIdx + ')">×</button></div></div>';
+        } else {
+          tdSet.innerHTML = '<div class="cell-head-inline"><span>' + escapeHtml(set.name) + '</span></div>';
+        }
+        tr.appendChild(tdSet);
+      }
+      if (projIdx === 0) {
+        var tdSubSet = document.createElement('td');
+        tdSubSet.className = 'sub col-set';
+        tdSubSet.rowSpan = getSubProjects(projectSet).length || 1;
+        if (admin) {
+          tdSubSet.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseProjectSetName(' + setIdx + ',' + projectSetIdx + ')">' + escapeHtml(projectSet.name) + '</span><div class="actions"><button type="button" class="icon-btn" title="添加子项目" onclick="addPhaseProject(' + setIdx + ',' + projectSetIdx + ')">+</button><button type="button" class="icon-btn danger" title="删除子项目集" onclick="showDeleteModal(\'projectSet\',' + setIdx + ',' + projectSetIdx + ')">×</button></div></div>';
+        } else {
+          tdSubSet.innerHTML = '<div class="cell-head-inline"><span>' + escapeHtml(projectSet.name) + '</span></div>';
+        }
+        tr.appendChild(tdSubSet);
+      }
+      var tdProj = document.createElement('td');
+      tdProj.className = 'sub col-proj';
+      if (admin) {
+        tdProj.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseProjectName(' + setIdx + ',' + projectSetIdx + ',' + projIdx + ')">' + escapeHtml(proj.name) + '</span><div class="actions"><button type="button" class="icon-btn danger" title="删除子项目" onclick="showDeleteModal(\'project\',' + setIdx + ',' + projectSetIdx + ',' + projIdx + ')">×</button></div></div>';
+      } else {
+        tdProj.innerHTML = '<div class="cell-head-inline"><span>' + escapeHtml(proj.name) + '</span></div>';
+      }
+      tr.appendChild(tdProj);
+    }
+
+    function renderPhaseTable() {
+      syncPhaseRowPointer();
+      renderPhaseThead();
+      var tb = document.getElementById('phase-table-body');
+      if (!tb) return;
+      tb.innerHTML = '';
+      var admin = canEditPanel('phase');
+      var yearInput = document.getElementById('phase-year-input');
+      var monthSel = document.getElementById('phase-month-select');
+      if (yearInput) yearInput.value = String(phaseSelYear);
+      if (monthSel) monthSel.value = String(phaseSelMonth);
+
+      if (phaseData.length === 0) {
+        var trE = document.createElement('tr');
+        var tdE = document.createElement('td');
+        tdE.colSpan = 3 + PHASE_FIELD_KEYS.length;
+        tdE.className = 'center-cell';
+        tdE.style.padding = '24px';
+        tdE.textContent = admin
+          ? '暂无记录，请点击「+ 新项目集」添加。'
+          : '暂无记录。普通用户仅可查看；管理员可添加与编辑。';
+        trE.appendChild(tdE);
+        tb.appendChild(trE);
+        return;
+      }
+
+      phaseData.forEach(function (set, setIdx) {
+        getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
+          getSubProjects(projectSet).forEach(function (proj, projIdx) {
+            var tr = document.createElement('tr');
+            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
+            appendPhaseRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin);
+            var slice = proj._phaseSlice || getPhaseMonthSlice(proj, phaseSelYear, phaseSelMonth);
+            PHASE_FIELD_KEYS.forEach(function (key) {
+              var td = document.createElement('td');
+              td.className = 'phase-field-cell';
+              var ta = document.createElement('textarea');
+              ta.className = 'phase-field-input';
+              ta.value = slice[key] || '';
+              ta.readOnly = !admin;
+              ta.rows = 3;
+              if (admin) {
+                ta.addEventListener('input', function () {
+                  slice[key] = ta.value;
+                });
+              }
+              td.appendChild(ta);
+              tr.appendChild(td);
+            });
+            tb.appendChild(tr);
+          });
+        });
+      });
+    }
+
+    function addPhaseProjectSet(setIdx) {
+      if (!requireAdminOrAlert()) return;
+      var name = prompt(setIdx == null ? '输入新项目集的名称：' : '输入新子项目集的名称：');
+      if (name && String(name).trim()) {
+        var newProj = { name: '新子项目', phaseByMonth: {} };
+        getPhaseMonthSlice(newProj, phaseSelYear, phaseSelMonth);
+        if (setIdx == null) {
+          phaseData.push({
+            name: String(name).trim(),
+            projectSets: [{ name: '默认子项目集', subProjects: [newProj] }]
+          });
+        } else {
+          var set = phaseData[setIdx];
+          if (!set) return;
+          if (!Array.isArray(set.projectSets)) set.projectSets = [];
+          set.projectSets.push({ name: String(name).trim(), subProjects: [newProj] });
+        }
+        fixPhaseInData(phaseData);
+        renderPhaseTable();
+        renderTable();
+      }
+    }
+
+    function addPhaseProject(setIdx, projectSetIdx) {
+      if (!requireAdminOrAlert()) return;
+      var name = prompt('输入新子项目名称：');
+      if (name && String(name).trim()) {
+        var newProj = { name: String(name).trim(), phaseByMonth: {} };
+        getPhaseMonthSlice(newProj, phaseSelYear, phaseSelMonth);
+        var projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+        if (!projectSet) return;
+        if (!Array.isArray(projectSet.subProjects)) projectSet.subProjects = [];
+        projectSet.subProjects.push(newProj);
+        fixPhaseInData(phaseData);
+        renderPhaseTable();
+        renderTable();
+      }
+    }
+
+    function editPhaseSetName(setIdx) {
+      if (!requireAdminOrAlert()) return;
+      var set = phaseData[setIdx];
+      if (!set) return;
+      var name = prompt('输入新的项目集名称：', set.name);
+      if (name != null && String(name).trim()) {
+        set.name = String(name).trim();
+        renderPhaseTable();
+        renderTable();
+      }
+    }
+
+    function editPhaseProjectSetName(setIdx, projectSetIdx) {
+      if (!requireAdminOrAlert()) return;
+      var projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+      if (!projectSet) return;
+      var name = prompt('输入新的子项目集名称：', projectSet.name);
+      if (name != null && String(name).trim()) {
+        projectSet.name = String(name).trim();
+        renderPhaseTable();
+        renderTable();
+      }
+    }
+
+    function editPhaseProjectName(setIdx, projectSetIdx, projIdx) {
+      if (!requireAdminOrAlert()) return;
+      var projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+      var proj = projectSet && getSubProjects(projectSet)[projIdx];
+      if (!proj) return;
+      var name = prompt('输入新的子项目名称：', proj.name);
+      if (name != null && String(name).trim()) {
+        proj.name = String(name).trim();
+        renderPhaseTable();
+        renderTable();
+      }
+    }
+
+    function initPhaseTimeUi() {
+      var sm = document.getElementById('phase-month-select');
+      if (sm && sm.options.length === 0) {
+        for (var mo = 1; mo <= 12; mo++) {
+          var o = document.createElement('option');
+          o.value = String(mo);
+          o.textContent = mo + '月';
+          sm.appendChild(o);
+        }
+      }
+      if (sm) sm.value = String(phaseSelMonth);
+      var ym = document.getElementById('phase-year-input');
+      if (ym && !ym._phaseWired) {
+        ym._phaseWired = true;
+        ym.addEventListener('change', function () {
+          var v = parseInt(ym.value, 10);
+          if (!isNaN(v) && v >= 2000 && v <= 2099) {
+            phaseSelYear = v;
+            renderPhaseTable();
+          }
+        });
+      }
+      if (sm && !sm._phaseWired) {
+        sm._phaseWired = true;
+        sm.addEventListener('change', function () {
+          var v = parseInt(sm.value, 10);
+          if (!isNaN(v) && v >= 1 && v <= 12) {
+            phaseSelMonth = v;
+            renderPhaseTable();
+          }
+        });
+      }
+      var btnPhAn = document.getElementById('btn-phase-analysis');
+      var maskPh = document.getElementById('phase-analysis-mask');
+      var closePh = document.getElementById('phase-analysis-close');
+      if (btnPhAn) btnPhAn.addEventListener('click', openPhaseAnalysisModal);
+      if (maskPh) {
+        maskPh.addEventListener('click', function (e) {
+          if (e.target === maskPh) closePhaseAnalysisModal();
+        });
+      }
+      if (closePh) closePh.addEventListener('click', closePhaseAnalysisModal);
+    }
+
+    function openPhaseAnalysisModal() {
+      var mask = document.getElementById('phase-analysis-mask');
+      var per = document.getElementById('phase-analysis-period');
+      if (per) per.textContent = '当前所选：' + phaseSelYear + ' 年 ' + phaseSelMonth + ' 月';
+      if (mask) {
+        mask.classList.add('active');
+        mask.setAttribute('aria-hidden', 'false');
+      }
+    }
+
+    function closePhaseAnalysisModal() {
+      var mask = document.getElementById('phase-analysis-mask');
+      if (mask) {
+        mask.classList.remove('active');
+        mask.setAttribute('aria-hidden', 'true');
+      }
+    }
+
+    function showRiskDeleteModal(riskIdx) {
+      if (!requireAdminOrAlert()) return;
+      delCtx = { type: 'risk', riskIdx: riskIdx };
+      document.getElementById('modal-msg').textContent = '确认删除序号为 ' + (riskIdx + 1) + ' 的风险登记？';
+      openDeleteModal();
+    }
+
+    function renderManpowerTheadMonth() {
+      const thead = document.getElementById('register-thead');
+      if (!thead) return;
+      const admin = canEditPanel('manpower');
+      thead.innerHTML = '';
+
+      const tr1 = document.createElement('tr');
+      const thSet = document.createElement('th');
+      thSet.className = 'main col-set';
+      thSet.rowSpan = 2;
+      thSet.textContent = '项目集';
+      tr1.appendChild(thSet);
+      const thSubSet = document.createElement('th');
+      thSubSet.className = 'sub col-set';
+      thSubSet.rowSpan = 2;
+      thSubSet.textContent = '子项目集';
+      tr1.appendChild(thSubSet);
+
+      const thProj = document.createElement('th');
+      thProj.className = 'sub col-proj';
+      thProj.rowSpan = 2;
+      thProj.textContent = '子项目';
+      tr1.appendChild(thProj);
+
+      deptGroups.forEach(function (g, gi) {
+        const th = document.createElement('th');
+        th.className = 'main dept-g-' + (gi % 2);
+        th.colSpan = g.depts.length;
+        const wrap = document.createElement('div');
+        wrap.className = 'cell-head-inline';
+        const nameSpan = document.createElement('span');
+        if (admin) {
+          nameSpan.className = 'editable-text';
+          nameSpan.title = '点击修改分组名称';
+          nameSpan.onclick = function () { editDeptGroupName(gi); };
+        }
+        nameSpan.textContent = g.name;
+        wrap.appendChild(nameSpan);
+        if (admin) {
+          const act = document.createElement('div');
+          act.className = 'actions inline';
+          const addBtn = document.createElement('button');
+          addBtn.type = 'button';
+          addBtn.className = 'icon-btn';
+          addBtn.textContent = '+';
+          addBtn.title = '在本分组下增加一列';
+          addBtn.onclick = function () { addDeptToGroup(gi); };
+          act.appendChild(addBtn);
+          wrap.appendChild(act);
+        }
+        th.appendChild(wrap);
+        tr1.appendChild(th);
+      });
+      thead.appendChild(tr1);
+
+      const tr2 = document.createElement('tr');
+      deptGroups.forEach(function (g, gi) {
+        g.depts.forEach(function (dname, di) {
+          const th = document.createElement('th');
+          th.className = 'sub dept-g-' + (gi % 2) + ' col-mp';
+          const wrap = document.createElement('div');
+          wrap.className = 'cell-head-inline';
+          const nm = document.createElement('span');
+          if (admin) {
+            nm.className = 'editable-text';
+            nm.title = '点击修改列名';
+            nm.onclick = function () { editDeptColumnName(gi, di); };
+          }
+          nm.textContent = dname;
+          wrap.appendChild(nm);
+          if (admin) {
+            const act = document.createElement('div');
+            act.className = 'actions inline';
+            const bEdit = document.createElement('button');
+            bEdit.type = 'button';
+            bEdit.className = 'text-action';
+            bEdit.textContent = '改';
+            bEdit.title = '改名';
+            bEdit.onclick = function () { editDeptColumnName(gi, di); };
+            const bDel = document.createElement('button');
+            bDel.type = 'button';
+            bDel.className = 'text-action danger-text';
+            bDel.textContent = '删';
+            bDel.title = '删列';
+            bDel.onclick = function () { deleteDeptColumn(gi, di); };
+            act.appendChild(bEdit);
+            act.appendChild(bDel);
+            wrap.appendChild(act);
+          }
+          th.appendChild(wrap);
+          tr2.appendChild(th);
+        });
+      });
+      thead.appendChild(tr2);
+      syncRegisterColgroup();
+    }
+
+    function renderManpowerTheadSeason() {
+      const thead = document.getElementById('register-season-thead');
+      if (!thead) return;
+      thead.innerHTML = '';
+      const tr1 = document.createElement('tr');
+      const thSet = document.createElement('th');
+      thSet.className = 'main col-set';
+      thSet.rowSpan = 2;
+      thSet.textContent = '项目集';
+      tr1.appendChild(thSet);
+      const thSubSet = document.createElement('th');
+      thSubSet.className = 'sub col-set';
+      thSubSet.rowSpan = 2;
+      thSubSet.textContent = '子项目集';
+      tr1.appendChild(thSubSet);
+      const thProj = document.createElement('th');
+      thProj.className = 'sub col-proj';
+      thProj.rowSpan = 2;
+      thProj.textContent = '子项目';
+      tr1.appendChild(thProj);
+      deptGroups.forEach(function (g, gi) {
+        const th = document.createElement('th');
+        th.className = 'main dept-g-' + (gi % 2);
+        th.colSpan = g.depts.length;
+        th.textContent = g.name;
+        tr1.appendChild(th);
+      });
+      thead.appendChild(tr1);
+      const tr2 = document.createElement('tr');
+      deptGroups.forEach(function (g, gi) {
+        g.depts.forEach(function (dname) {
+          const th = document.createElement('th');
+          th.className = 'sub dept-g-' + (gi % 2) + ' col-mp';
+          th.textContent = dname;
+          tr2.appendChild(th);
+        });
+      });
+      thead.appendChild(tr2);
+    }
+
+    function renderManpowerTheadYear() {
+      const thead = document.getElementById('register-year-thead');
+      if (!thead) return;
+      thead.innerHTML = '';
+      const tr1 = document.createElement('tr');
+      const thSet = document.createElement('th');
+      thSet.className = 'main col-set';
+      thSet.rowSpan = 2;
+      thSet.textContent = '项目集';
+      tr1.appendChild(thSet);
+      const thSubSet = document.createElement('th');
+      thSubSet.className = 'sub col-set';
+      thSubSet.rowSpan = 2;
+      thSubSet.textContent = '子项目集';
+      tr1.appendChild(thSubSet);
+      const thProj = document.createElement('th');
+      thProj.className = 'sub col-proj';
+      thProj.rowSpan = 2;
+      thProj.textContent = '子项目';
+      tr1.appendChild(thProj);
+      deptGroups.forEach(function (g, gi) {
+        const th = document.createElement('th');
+        th.className = 'main dept-g-' + (gi % 2);
+        th.colSpan = g.depts.length;
+        th.textContent = g.name;
+        tr1.appendChild(th);
+      });
+      thead.appendChild(tr1);
+      const tr2 = document.createElement('tr');
+      deptGroups.forEach(function (g, gi) {
+        g.depts.forEach(function (dname) {
+          const th = document.createElement('th');
+          th.className = 'sub dept-g-' + (gi % 2) + ' col-mp';
+          th.textContent = dname;
+          tr2.appendChild(th);
+        });
+      });
+      thead.appendChild(tr2);
+    }
+
+    function editDeptGroupName(gi) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const g = deptGroups[gi];
+      if (!g) return;
+      const name = prompt('部门分组名称：', g.name);
+      if (name != null && String(name).trim()) {
+        g.name = String(name).trim();
+        renderTable();
+      }
+    }
+
+    function editDeptColumnName(gi, di) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const g = deptGroups[gi];
+      if (!g || !g.depts[di]) return;
+      const name = prompt('列名称：', g.depts[di]);
+      if (name != null && String(name).trim()) {
+        g.depts[di] = String(name).trim();
+        renderTable();
+      }
+    }
+
+    function addDeptGroup() {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const name = prompt('新的一级部门（分组）名称：');
+      if (!name || !String(name).trim()) return;
+      const subPrompt = prompt('该分组下首列（二级部门）名称：', '子部门1');
+      const firstCol = (subPrompt != null && String(subPrompt).trim())
+        ? String(subPrompt).trim()
+        : '子部门1';
+      deptGroups.push({ name: String(name).trim(), depts: [firstCol] });
+      data.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (p) {
+            ensureProjectHasManpowerByMonth(p);
+            if (Object.keys(p.manpowerByMonth).length === 0) {
+              getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
+            }
+            Object.keys(p.manpowerByMonth).forEach(function (k) {
+              p.manpowerByMonth[k].push(0);
+            });
+            if (!Array.isArray(p.manpower)) p.manpower = [];
+            p.manpower.push(0);
+          });
+        });
+      });
+      fixManpowerInData(data);
+      renderTable();
+    }
+
+    function addDeptToGroup(gi) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const g = deptGroups[gi];
+      if (!g) return;
+      const name = prompt('新子部门列名称：');
+      if (!name || !String(name).trim()) return;
+      g.depts.push(String(name).trim());
+      const insertAt = flatDeptIndex(gi, g.depts.length - 1);
+      data.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (p) {
+            ensureProjectHasManpowerByMonth(p);
+            if (Object.keys(p.manpowerByMonth).length === 0) {
+              getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
+            }
+            Object.keys(p.manpowerByMonth).forEach(function (k) {
+              var arr = p.manpowerByMonth[k];
+              while (arr.length < insertAt) arr.push(0);
+              arr.splice(insertAt, 0, 0);
+            });
+            if (!Array.isArray(p.manpower)) p.manpower = [];
+            while (p.manpower.length < insertAt) p.manpower.push(0);
+            p.manpower.splice(insertAt, 0, 0);
+          });
+        });
+      });
+      fixManpowerInData(data);
+      renderTable();
+    }
+
+    function deleteDeptColumn(gi, di) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const g = deptGroups[gi];
+      if (!g || !g.depts[di]) return;
+      if (g.depts.length <= 1) {
+        alert('每组至少保留一列。');
+        return;
+      }
+      const label = g.depts[di];
+      if (!confirm('确定删除列「' + label + '」？对应人力数据列将一并删除。')) return;
+      const idx = flatDeptIndex(gi, di);
+      g.depts.splice(di, 1);
+      data.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (p) {
+            ensureProjectHasManpowerByMonth(p);
+            Object.keys(p.manpowerByMonth).forEach(function (k) {
+              var arr = p.manpowerByMonth[k];
+              if (idx < arr.length) arr.splice(idx, 1);
+            });
+            if (Array.isArray(p.manpower) && idx < p.manpower.length) {
+              p.manpower.splice(idx, 1);
+            }
+          });
+        });
+      });
+      fixManpowerInData(data);
+      renderTable();
+    }
+
+    function appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, structureEditable) {
+      if (projectSetIdx === 0 && projIdx === 0) {
+        const tdSet = document.createElement('td');
+        tdSet.className = 'main col-set';
+        tdSet.rowSpan = countSubProjectsInSet(set) || 1;
+        if (admin && structureEditable) {
+          tdSet.innerHTML = `
+              <div class="cell-head-inline">
+                <span class="editable-text" onclick="editSetName(${setIdx})">${escapeHtml(set.name)}</span>
+                <div class="actions">
+                  <button type="button" class="icon-btn" title="添加子项目集" onclick="addProjectSet(${setIdx})">+</button>
+                  <button type="button" class="icon-btn danger" title="删除项目集" onclick="showDeleteModal('set',${setIdx})">×</button>
+                </div>
+              </div>`;
+        } else {
+          tdSet.innerHTML = `<div class="cell-head-inline"><span>${escapeHtml(set.name)}</span></div>`;
+        }
+        tr.appendChild(tdSet);
+      }
+      if (projIdx === 0) {
+        const tdSubSet = document.createElement('td');
+        tdSubSet.className = 'sub col-set';
+        tdSubSet.rowSpan = getSubProjects(projectSet).length || 1;
+        if (admin && structureEditable) {
+          tdSubSet.innerHTML = `
+              <div class="cell-head-inline">
+                <span class="editable-text" onclick="editProjectSetName(${setIdx},${projectSetIdx})">${escapeHtml(projectSet.name)}</span>
+                <div class="actions">
+                  <button type="button" class="icon-btn" title="添加子项目" onclick="addProject(${setIdx},${projectSetIdx})">+</button>
+                  <button type="button" class="icon-btn danger" title="删除子项目集" onclick="showDeleteModal('projectSet',${setIdx},${projectSetIdx})">×</button>
+                </div>
+              </div>`;
+        } else {
+          tdSubSet.innerHTML = `<div class="cell-head-inline"><span>${escapeHtml(projectSet.name)}</span></div>`;
+        }
+        tr.appendChild(tdSubSet);
+      }
+      const tdProj = document.createElement('td');
+      tdProj.className = 'sub col-proj';
+      if (admin && structureEditable) {
+        tdProj.innerHTML = `
+            <div class="cell-head-inline">
+              <span class="editable-text" onclick="editProjectName(${setIdx},${projectSetIdx},${projIdx})">${escapeHtml(proj.name)}</span>
+              <div class="actions">
+                <button type="button" class="icon-btn danger" title="删除子项目" onclick="showDeleteModal('project',${setIdx},${projectSetIdx},${projIdx})">×</button>
+              </div>
+            </div>`;
+      } else {
+        tdProj.innerHTML = `<div class="cell-head-inline"><span>${escapeHtml(proj.name)}</span></div>`;
+      }
+      tr.appendChild(tdProj);
+    }
+
+    function renderMonthTableBody() {
+      const $body = document.getElementById('table-body');
+      if (!$body) return;
+      $body.innerHTML = '';
+      const nCols = deptFlatCount();
+      const admin = canEditPanel('manpower');
+      data.forEach(function (set, setIdx) {
+        getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
+          getSubProjects(projectSet).forEach(function (proj, projIdx) {
+            const tr = document.createElement('tr');
+            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
+            appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, true);
+            for (let i = 0; i < nCols; ++i) {
+              const tdC = document.createElement('td');
+              tdC.className = 'center-cell col-mp';
+              const v = proj.manpower[i] != null ? proj.manpower[i] : 0;
+              if (admin) {
+                tdC.innerHTML = `
+                <span id="v-${setIdx}-${projectSetIdx}-${projIdx}-${i}" ondblclick="editManpower(${setIdx},${projectSetIdx},${projIdx},${i})">${escapeHtml(String(v))}</span>
+                <div class="actions inline">
+                  <button type="button" class="text-action" title="编辑" onclick="editManpower(${setIdx},${projectSetIdx},${projIdx},${i})">编辑</button>
+                </div>`;
+              } else {
+                tdC.innerHTML = '<span>' + escapeHtml(String(v)) + '</span>';
+              }
+              tr.appendChild(tdC);
+            }
+            $body.appendChild(tr);
+          });
+        });
+      });
+    }
+
+    function renderSeasonTableBody() {
+      const $body = document.getElementById('register-season-body');
+      if (!$body) return;
+      $body.innerHTML = '';
+      const nCols = deptFlatCount();
+      const y = manpowerSelYear;
+      const admin = canEditPanel('manpower');
+      data.forEach(function (set, setIdx) {
+        getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
+          getSubProjects(projectSet).forEach(function (proj, projIdx) {
+            const tr = document.createElement('tr');
+            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
+            appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, false);
+            for (let i = 0; i < nCols; ++i) {
+              const tdC = document.createElement('td');
+              tdC.className = 'center-cell col-mp manpower-readonly-cell';
+              tdC.textContent = String(sumQuarterDept(proj, y, manpowerSelQuarter, i));
+              tr.appendChild(tdC);
+            }
+            $body.appendChild(tr);
+          });
+        });
+      });
+    }
+
+    function renderYearTableBody() {
+      const $body = document.getElementById('register-year-body');
+      if (!$body) return;
+      $body.innerHTML = '';
+      const nCols = deptFlatCount();
+      const y = manpowerSelYear;
+      const admin = canEditPanel('manpower');
+      data.forEach(function (set, setIdx) {
+        getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
+          getSubProjects(projectSet).forEach(function (proj, projIdx) {
+            const tr = document.createElement('tr');
+            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
+            appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, false);
+            for (let i = 0; i < nCols; ++i) {
+              const tdC = document.createElement('td');
+              tdC.className = 'center-cell col-mp manpower-readonly-cell';
+              tdC.textContent = String(sumYearDept(proj, y, i));
+              tr.appendChild(tdC);
+            }
+            $body.appendChild(tr);
+          });
+        });
+      });
+    }
+
+    // 渲染表格主体
+    function renderTable() {
+      syncManpowerStructureFromPhase();
+      updateManpowerToolbarInputs();
+      if (manpowerSubView === 'month') {
+        syncProjectManpowerPointerToMonth();
+        renderManpowerTheadMonth();
+        renderMonthTableBody();
+      } else if (manpowerSubView === 'season') {
+        renderManpowerTheadSeason();
+        renderSeasonTableBody();
+      } else {
+        renderManpowerTheadYear();
+        renderYearTableBody();
+      }
+    }
+
+    // 编辑项目集名称（以阶段表为准，同步到人力表）
+    function editSetName(setIdx) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const set = phaseData[setIdx];
+      if (!set) return;
+      const name = prompt('输入新的项目集名称：', set.name);
+      if (name && name.trim()) {
+        set.name = name.trim();
+        renderPhaseTable();
+        renderTable();
+      }
+    }
+    // 编辑项目名称（以阶段表为准，同步到人力表）
+    function editProjectSetName(setIdx, projectSetIdx) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+      if (!projectSet) return;
+      const name = prompt('输入新的子项目集名称：', projectSet.name);
+      if (name && name.trim()) {
+        projectSet.name = name.trim();
+        renderPhaseTable();
+        renderTable();
+      }
+    }
+    // 编辑子项目名称（以阶段表为准，同步到人力表）
+    function editProjectName(setIdx, projectSetIdx, projIdx) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+      const proj = projectSet && getSubProjects(projectSet)[projIdx];
+      if (!proj) return;
+      const name = prompt('输入新的子项目名称：', proj.name);
+      if (name && name.trim()) {
+        proj.name = name.trim();
+        renderPhaseTable();
+        renderTable();
+      }
+    }
+    // 新增项目集（写入阶段表并同步人力）
+    function addProjectSet(setIdx) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const name = prompt(setIdx == null ? '输入新项目集的名称：' : '输入新子项目集的名称：');
+      if (name && name.trim()) {
+        const newProj = { name: '新子项目', phaseByMonth: {} };
+        getPhaseMonthSlice(newProj, phaseSelYear, phaseSelMonth);
+        if (setIdx == null) {
+          phaseData.push({
+            name: name.trim(),
+            projectSets: [{ name: '默认子项目集', subProjects: [newProj] }]
+          });
+        } else {
+          const set = phaseData[setIdx];
+          if (!set) return;
+          if (!Array.isArray(set.projectSets)) set.projectSets = [];
+          set.projectSets.push({ name: name.trim(), subProjects: [newProj] });
+        }
+        fixPhaseInData(phaseData);
+        renderPhaseTable();
+        renderTable();
+      }
+    }
+    // 新增项目（写入阶段表并同步人力）
+    function addProject(setIdx, projectSetIdx) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const name = prompt('输入新子项目名称：');
+      if (name && name.trim()) {
+        const newProj = { name: name.trim(), phaseByMonth: {} };
+        getPhaseMonthSlice(newProj, phaseSelYear, phaseSelMonth);
+        const projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+        if (!projectSet) return;
+        if (!Array.isArray(projectSet.subProjects)) projectSet.subProjects = [];
+        projectSet.subProjects.push(newProj);
+        fixPhaseInData(phaseData);
+        renderPhaseTable();
+        renderTable();
+      }
+    }
+
+    // 编辑人力格子
+    function editManpower(setIdx, projectSetIdx, projIdx, col) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const key = `v-${setIdx}-${projectSetIdx}-${projIdx}-${col}`;
+      const el = document.getElementById(key);
+      if (!el) return;
+      const oldVal = data[setIdx].projectSets[projectSetIdx].subProjects[projIdx].manpower[col];
+      el.innerHTML = `<input type="number" class="input-p" id="input-${key}" min="0" max="99" value="${oldVal}" 
+        onblur="saveManpower(${setIdx},${projectSetIdx},${projIdx},${col}, this.value)"
+        onkeydown="if(event.key==='Enter'){this.blur()}else if(event.key==='Escape'){this.parentNode.innerHTML='${oldVal}' }"
+      >`;
+      document.getElementById(`input-${key}`).focus();
+    }
+    function saveManpower(setIdx, projectSetIdx, projIdx, col, val) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const v = Number(val);
+      if (!isNaN(v) && v>=0 && v<100) {
+        data[setIdx].projectSets[projectSetIdx].subProjects[projIdx].manpower[col] = v;
+        renderTable();
+      } else {
+        alert('请输入0-99的人力人数');
+        renderTable();
+      }
+    }
+
+    // 删除弹窗
+    function showDeleteModal(type, setIdx, projectSetIdx=null, projIdx=null) {
+      if ((type === 'set' || type === 'projectSet' || type === 'project') && !requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      delCtx = {type, setIdx, projectSetIdx, projIdx};
+      const msgEl = document.getElementById('modal-msg');
+      if (type === 'set') {
+        msgEl.textContent = '确认删除项目集 "' + (phaseData[setIdx] && phaseData[setIdx].name != null ? phaseData[setIdx].name : '') + '"？其下所有项目的阶段与人力记录将一并删除。';
+      } else if (type === 'projectSet') {
+        var ps = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+        msgEl.textContent = '确认删除子项目集 "' + (ps && ps.name != null ? ps.name : '') + '"？其下子项目将一并删除。';
+      } else {
+        var targetSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+        var pp = targetSet && getSubProjects(targetSet)[projIdx];
+        msgEl.textContent = '确认删除子项目 "' + (pp && pp.name != null ? pp.name : '') + '"？';
+      }
+      openDeleteModal();
+    }
+    function closeModal() {
+      delCtx = null;
+      const mask = document.getElementById('modal-mask');
+      mask.classList.remove('active');
+      mask.setAttribute('aria-hidden', 'true');
+      if (modalFocusReturn && typeof modalFocusReturn.focus === 'function') {
+        try { modalFocusReturn.focus(); } catch (err) {}
+      }
+      modalFocusReturn = null;
+    }
+    function confirmDelete() {
+      if (!delCtx) return;
+      if (!requireAdminOrAlert()) {
+        closeModal();
+        return;
+      }
+      const kind = delCtx.type;
+      if ((kind === 'set' || kind === 'projectSet' || kind === 'project') && !requireManpowerMonthViewForStructure()) {
+        closeModal();
+        return;
+      }
+      if (kind === 'set') {
+        phaseData.splice(delCtx.setIdx, 1);
+      }
+      else if (kind === 'projectSet') {
+        phaseData[delCtx.setIdx].projectSets.splice(delCtx.projectSetIdx, 1);
+        if (phaseData[delCtx.setIdx].projectSets.length === 0) {
+          phaseData.splice(delCtx.setIdx, 1);
+        }
+      }
+      else if (kind === 'project') {
+        phaseData[delCtx.setIdx].projectSets[delCtx.projectSetIdx].subProjects.splice(delCtx.projIdx, 1);
+        if (phaseData[delCtx.setIdx].projectSets[delCtx.projectSetIdx].subProjects.length === 0) {
+          phaseData[delCtx.setIdx].projectSets.splice(delCtx.projectSetIdx, 1);
+        }
+        if (phaseData[delCtx.setIdx].projectSets.length === 0) {
+          phaseData.splice(delCtx.setIdx, 1);
+        }
+      }
+      else if (kind === 'risk') {
+        riskRows.splice(delCtx.riskIdx, 1);
+      }
+      closeModal();
+      if (kind === 'risk') renderRiskTable();
+      else if (kind === 'set' || kind === 'projectSet' || kind === 'project') {
+        renderPhaseTable();
+        renderTable();
+      } else {
+        renderTable();
+      }
+    }
+    async function pmBootstrap() {
+      var me = await fetchAuthMe();
+      if (me === null) return;
+      window.__pmCurrentUser = me;
+      appUserRole = me.role === 'admin' ? 'admin' : 'viewer';
+      syncPmRoleGlobal();
+      bindPmLogoutButtons();
+      wirePanelEditToggleButtons();
+
+      (function initTabSwitching() {
+        var tabsBar = document.querySelector('.tabs');
+        if (!tabsBar) return;
+        if (tabsBar._pmTabWired) return;
+        tabsBar._pmTabWired = true;
+        tabsBar.addEventListener('click', function (e) {
+          var btn = e.target.closest('.tab');
+          if (!btn || !tabsBar.contains(btn)) return;
+          var target = btn.getAttribute('data-target');
+          if (!target) return;
+          tabsBar.querySelectorAll('.tab').forEach(function (b) {
+            var on = b === btn;
+            b.classList.toggle('active', on);
+            b.setAttribute('aria-selected', on ? 'true' : 'false');
+          });
+          document.querySelectorAll('.tab-panel').forEach(function (p) {
+            p.classList.toggle('active', p.id === target);
+          });
+          scrollMainToTop();
+          if (target === 'panel-guide' && typeof window.__renderGuideMenu === 'function') {
+            window.__renderGuideMenu();
+          }
+          if (target === 'panel-settings') {
+            initSettingsPanelOnce();
+            updateSettingsPanelRoleUi();
+          }
+          if (target === 'panel-phase') {
+            renderPhaseTable();
+          }
+        });
+      })();
+
+      (function setupModalA11y() {
+        var mask = document.getElementById('modal-mask');
+        if (!mask) return;
+        mask.addEventListener('keydown', function (e) {
+          if (!mask.classList.contains('active')) return;
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            closeModal();
+            return;
+          }
+          if (e.key !== 'Tab') return;
+          var buttons = mask.querySelectorAll('.modal-box button');
+          if (buttons.length === 0) return;
+          var first = buttons[0];
+          var last = buttons[buttons.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        });
+      })();
+
+      setTimeout(function () {
+        (async function () {
+          await loadRegistryData();
+          loadAppSettings();
+          initManpowerTimeUi();
+          initPhaseTimeUi();
+          initRiskAnalysisUi();
+          renderTable();
+          renderRiskTable();
+          renderPhaseTable();
+          applyPermissionToAllUI();
+          initSettingsPanelOnce();
+          updateSettingsPanelRoleUi();
+        })();
+      }, 0);
+    }
+    pmBootstrap().catch(function (err) {
+      console.warn('[PM-tool] pmBootstrap failed', err);
+    });
+  </script>
+  <script>
+// 定义指引数据结构（模拟本地数据，实际可用localStorage或服务端替换）
+// 每项：title 列表标题（可点击）；body 说明正文；link 选填，合法 http(s) 时点击标题新开页
+var GUIDE_BLOCK_KEYS = ['design', 'techDesign', 'develop', 'operate'];
+var guideData = {
+  design: [
+    { id: 1, title: '完成需求文档撰写', body: '', link: '' },
+    { id: 2, title: '绘制原型并评审', body: '', link: '' }
+  ],
+  techDesign: [
+    { id: 1, title: '完成技术方案与接口设计', body: '', link: '' },
+    { id: 2, title: '组织技术评审并落实结论', body: '', link: '' }
+  ],
+  develop: [
+    { id: 1, title: '代码开发并提交MR', body: '', link: '' },
+    { id: 2, title: '完成自测及代码Review', body: '', link: '' }
+  ],
+  operate: [
+    { id: 1, title: '上线通知相关干系人', body: '', link: '' },
+    { id: 2, title: '监控数据并反馈问题', body: '', link: '' }
+  ]
+};
+
+// 保证下次刷新面板时同步内容
+function saveGuideData() {
+  if (window.localStorage) {
+    localStorage.setItem('pmGuideData', JSON.stringify(guideData));
+  }
+}
+function loadGuideData() {
+  if (window.localStorage) {
+    var s = localStorage.getItem('pmGuideData');
+    if (s) guideData = JSON.parse(s);
+  }
+}
+loadGuideData();
+
+if (!Array.isArray(guideData.techDesign)) {
+  guideData.techDesign = [
+    { id: 1, title: '完成技术方案与接口设计', body: '', link: '' },
+    { id: 2, title: '组织技术评审并落实结论', body: '', link: '' }
+  ];
+  saveGuideData();
+}
+
+function normalizeGuideItem(it) {
+  var tit = it.title != null ? String(it.title).trim() : '';
+  if (!tit && it.text != null) tit = String(it.text).trim();
+  if (!tit) tit = '（未命名）';
+  return {
+    id: it.id,
+    title: tit,
+    body: it.body != null ? String(it.body) : '',
+    link: it.link != null ? String(it.link).trim() : ''
+  };
+}
+
+function normalizeGuideData() {
+  GUIDE_BLOCK_KEYS.forEach(function (k) {
+    var arr = guideData[k];
+    if (!Array.isArray(arr)) {
+      guideData[k] = [];
+      return;
+    }
+    guideData[k] = arr.map(normalizeGuideItem);
+  });
+}
+
+normalizeGuideData();
+try {
+  var serialized = JSON.stringify(guideData);
+  if (window.localStorage && localStorage.getItem('pmGuideData') !== serialized) {
+    saveGuideData();
+  }
+} catch (err) {
+  saveGuideData();
+}
+
+function isSafeHttpUrl(s) {
+  if (!s || typeof s !== 'string') return false;
+  try {
+    var u = new URL(s.trim());
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch (err) {
+    return false;
+  }
+}
+
+var guideItemModalCtx = null;
+
+function openGuideItemModal(blockKey, itemId) {
+  if (typeof window.pmIsAdmin === 'function' && !window.pmIsAdmin()) {
+    alert('当前为普通用户身份，仅可查看。请在「设置 → 权限管理」中切换为管理员后再操作。');
+    return;
+  }
+  guideItemModalCtx = { blockKey: blockKey, itemId: itemId };
+  var mask = document.getElementById('guide-item-mask');
+  var heading = document.getElementById('guide-item-modal-heading');
+  var t = document.getElementById('guide-item-title');
+  var b = document.getElementById('guide-item-body');
+  var l = document.getElementById('guide-item-link');
+  if (itemId == null) {
+    heading.textContent = '添加指引';
+    t.value = '';
+    b.value = '';
+    l.value = '';
+  } else {
+    var arr = guideData[blockKey] || [];
+    var item = arr.find(function (x) { return x.id === itemId; });
+    if (!item) {
+      guideItemModalCtx = null;
+      return;
+    }
+    heading.textContent = '编辑指引';
+    t.value = item.title || '';
+    b.value = item.body || '';
+    l.value = item.link || '';
+  }
+  mask.classList.add('active');
+  mask.setAttribute('aria-hidden', 'false');
+  requestAnimationFrame(function () {
+    t.focus();
+  });
+}
+
+function closeGuideItemModal() {
+  guideItemModalCtx = null;
+  var mask = document.getElementById('guide-item-mask');
+  mask.classList.remove('active');
+  mask.setAttribute('aria-hidden', 'true');
+}
+
+function saveGuideItemModal() {
+  if (typeof window.pmIsAdmin === 'function' && !window.pmIsAdmin()) {
+    return;
+  }
+  var ctx = guideItemModalCtx;
+  if (!ctx) return;
+  var t = document.getElementById('guide-item-title');
+  var b = document.getElementById('guide-item-body');
+  var l = document.getElementById('guide-item-link');
+  var title = t.value.trim();
+  if (!title) {
+    alert('请填写标题');
+    t.focus();
+    return;
+  }
+  var body = b.value.trim();
+  var link = l.value.trim();
+  if (link && !isSafeHttpUrl(link)) {
+    alert('链接需为以 http:// 或 https:// 开头的完整地址');
+    l.focus();
+    return;
+  }
+  var arr = guideData[ctx.blockKey];
+  if (!Array.isArray(arr)) arr = guideData[ctx.blockKey] = [];
+  if (ctx.itemId == null) {
+    var nextId = arr.length ? Math.max.apply(null, arr.map(function (x) { return x.id; })) + 1 : 1;
+    arr.push({ id: nextId, title: title, body: body, link: link });
+  } else {
+    var obj = arr.find(function (x) { return x.id === ctx.itemId; });
+    if (obj) {
+      obj.title = title;
+      obj.body = body;
+      obj.link = link;
+    }
+  }
+  saveGuideData();
+  closeGuideItemModal();
+  renderGuideList(ctx.blockKey);
+}
+
+function openGuideDetailModal(item) {
+  var mask = document.getElementById('guide-detail-mask');
+  var titleEl = document.getElementById('guide-detail-title');
+  var bodyEl = document.getElementById('guide-detail-body');
+  var wrap = document.getElementById('guide-detail-link-wrap');
+  var a = document.getElementById('guide-detail-link');
+  titleEl.textContent = item.title || '';
+  var bodyText = item.body ? String(item.body) : '';
+  if (item.link && !isSafeHttpUrl(item.link)) {
+    bodyText = bodyText ? bodyText + '\n\n链接：' + item.link : '链接：' + item.link;
+  }
+  bodyEl.textContent = bodyText || '暂无详细说明。';
+  wrap.hidden = true;
+  a.removeAttribute('href');
+  mask.classList.add('active');
+  mask.setAttribute('aria-hidden', 'false');
+}
+
+function closeGuideDetailModal() {
+  var mask = document.getElementById('guide-detail-mask');
+  mask.classList.remove('active');
+  mask.setAttribute('aria-hidden', 'true');
+}
+
+function onGuideTitleClick(item) {
+  if (isSafeHttpUrl(item.link)) {
+    window.open(item.link.trim(), '_blank', 'noopener');
+    return;
+  }
+  openGuideDetailModal(item);
+}
+
+function setupGuideModals() {
+  var itemMask = document.getElementById('guide-item-mask');
+  var detailMask = document.getElementById('guide-detail-mask');
+  document.getElementById('guide-item-save').addEventListener('click', saveGuideItemModal);
+  document.getElementById('guide-item-cancel').addEventListener('click', closeGuideItemModal);
+  document.getElementById('guide-detail-close').addEventListener('click', closeGuideDetailModal);
+  itemMask.addEventListener('click', function (e) {
+    if (e.target === itemMask) closeGuideItemModal();
+  });
+  detailMask.addEventListener('click', function (e) {
+    if (e.target === detailMask) closeGuideDetailModal();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (itemMask.classList.contains('active')) {
+      e.preventDefault();
+      closeGuideItemModal();
+    } else if (detailMask.classList.contains('active')) {
+      e.preventDefault();
+      closeGuideDetailModal();
+    }
+  });
+}
+
+setupGuideModals();
+
+function renderGuideMenu() {
+  var p = document.getElementById('panel-guide');
+  if (!p) return;
+  var admin = typeof window.pmIsAdmin === 'function' && window.pmIsAdmin();
+  // 板块定义
+  var blocks = [
+    { key: 'design', name: '产品设计' },
+    { key: 'techDesign', name: '技术设计' },
+    { key: 'develop', name: '开发 + 测试' },
+    { key: 'operate', name: '运营' }
+  ];
+  let html = `
+    <div style="padding:2em 1.5em 2em 2em;max-width:780px;">
+      <div style="display: flex; gap: 2em; flex-wrap:wrap;">
+  `;
+  blocks.forEach(block => {
+    html += `
+      <div style="min-width:220px;flex:1 1 260px;background:var(--accent-soft);padding:1.1em 1em 2em 1.1em;margin-bottom:1.5em;border-radius:var(--radius-sm);">
+        <div style="font-weight:bold;font-size:1.07em;margin-bottom:1em;letter-spacing:.02em;">${block.name}</div>
+        <ul id="guide-list-${block.key}" style="list-style:none;padding:0;margin:0 0 1em 0;"></ul>
+        ${admin ? `<button type="button" class="guide-btn-open-add" data-guide-block="${block.key}">+ 添加指引</button>` : ''}
+      </div>
+    `;
+  });
+  html += `
+      </div>
+      <p style="color:var(--text-muted);margin-top:2em;font-size:14px;">
+        如需更多帮助请联系基础平台PMO。
+      </p>
+    </div>
+    <style>
+      .guide-btn-edit,.guide-btn-del {
+        background: none; border: none; color: var(--accent); cursor: pointer; font-size: 15px; margin-left: 3px; padding:2px 4px;border-radius:3px; flex-shrink:0;
+      }
+      .guide-btn-del { color: var(--danger);}
+      .guide-btn-edit:hover { background: #eee; }
+      .guide-btn-del:hover { background: var(--danger-soft);}
+    </style>
+  `;
+  p.innerHTML = html;
+
+  // 为每个菜单渲染当前列表
+  blocks.forEach(block => renderGuideList(block.key));
+  if (admin) {
+    p.querySelectorAll('.guide-btn-open-add').forEach(function (btn) {
+      btn.onclick = function () {
+        var key = btn.getAttribute('data-guide-block');
+        if (key) openGuideItemModal(key, null);
+      };
+    });
+  }
+}
+
+// 渲染单个list的菜单内容
+function renderGuideList(blockKey) {
+  var ul = document.getElementById("guide-list-"+blockKey);
+  if (!ul) return;
+  var admin = typeof window.pmIsAdmin === 'function' && window.pmIsAdmin();
+  var arr = guideData[blockKey] || [];
+  ul.innerHTML = "";
+  arr.forEach(function (item) {
+    var li = document.createElement('li');
+    li.style.display = 'flex';
+    li.style.alignItems = 'center';
+    li.style.gap = '8px';
+    li.style.padding = '0 0 8px 0';
+    li.setAttribute('data-id', item.id);
+
+    var titleBtn = document.createElement('button');
+    titleBtn.type = 'button';
+    titleBtn.className = 'guide-title-link';
+    titleBtn.setAttribute('title', isSafeHttpUrl(item.link) ? '打开链接（新标签页）' : '查看指引说明');
+    titleBtn.textContent = item.title || '（未命名）';
+    titleBtn.addEventListener('click', function () {
+      onGuideTitleClick(item);
+    });
+
+    li.appendChild(titleBtn);
+    if (admin) {
+      var editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'guide-btn-edit';
+      editBtn.title = '编辑';
+      editBtn.textContent = '编辑';
+      editBtn.addEventListener('click', function () {
+        openGuideItemModal(blockKey, item.id);
+      });
+
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'guide-btn-del';
+      delBtn.title = '删除';
+      delBtn.textContent = '删除';
+      delBtn.addEventListener('click', function () {
+        if (confirm('确认要删除该指引项？')) {
+          var list = guideData[blockKey];
+          var idx = list.findIndex(function (x) { return x.id === item.id; });
+          if (idx >= 0) list.splice(idx, 1);
+          saveGuideData();
+          renderGuideList(blockKey);
+        }
+      });
+      li.appendChild(editBtn);
+      li.appendChild(delBtn);
+    }
+    ul.appendChild(li);
+  });
+}
+
+window.__renderGuideMenu = renderGuideMenu;
+
+  </script>
 </body>
 </html>
