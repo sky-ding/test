@@ -27,6 +27,9 @@
   python scripts/import_registry_data.py --file path/to/data.json --module manpower --force
   python scripts/import_registry_data.py --file path/to/data.json --force
   python scripts/import_registry_data.py --file path/to/data.xlsx --dry-run
+
+从 import_excel_registry.py 生成的目录一次性导入（phase.json + manpower.json + risk.json）：
+  python scripts/import_registry_data.py --from-registry-dir data/registry-import --force
 """
 from __future__ import annotations
 
@@ -425,6 +428,36 @@ def _load_input(path: Path) -> dict[str, Any]:
     raise ValueError(f"不支持的文件类型：{path.suffix}（仅支持 .json / .xlsx）")
 
 
+def _load_registry_bundle_dir(dir_path: Path, module: str | None) -> dict[str, Any]:
+    """读取 import_excel_registry 输出目录下的三份 JSON，组装为统一顶层键。"""
+    dir_path = dir_path.expanduser().resolve()
+    if not dir_path.is_dir():
+        raise ValueError(f"不是目录：{dir_path}")
+
+    files_by_key: list[tuple[str, Path]] = [
+        (KEY_PHASE, dir_path / "phase.json"),
+        (KEY_MANPOWER, dir_path / "manpower.json"),
+        (KEY_RISK, dir_path / "risk.json"),
+    ]
+    if module:
+        files_by_key = [(k, p) for k, p in files_by_key if k == module]
+        if not files_by_key:
+            raise ValueError("internal: module filter empty")
+    out: dict[str, Any] = {}
+    for key, path in files_by_key:
+        if not path.is_file():
+            raise ValueError(f"目录中缺少文件：{path.name}（路径：{path}）")
+        body = _load_json(path)
+        if key == KEY_PHASE and "phaseData" not in body:
+            raise ValueError(f"{path.name} 缺少 phaseData")
+        if key == KEY_MANPOWER and ("data" not in body or "deptGroups" not in body):
+            raise ValueError(f"{path.name} 缺少 data 或 deptGroups")
+        if key == KEY_RISK and "riskRows" not in body:
+            raise ValueError(f"{path.name} 缺少 riskRows")
+        out[key] = body
+    return out
+
+
 def _extract_payloads(data: dict[str, Any], module: str | None) -> dict[str, dict[str, Any]]:
     payloads: dict[str, dict[str, Any]] = {}
 
@@ -499,7 +532,15 @@ def _import_to_db(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Import existing registry JSON into database")
-    parser.add_argument("--file", required=True, help="Path to input file (.json or .xlsx)")
+    src_group = parser.add_mutually_exclusive_group(required=True)
+    src_group.add_argument("--file", type=str, default="", help="Path to input file (.json or .xlsx)")
+    src_group.add_argument(
+        "--from-registry-dir",
+        type=str,
+        default="",
+        metavar="DIR",
+        help="含 phase.json、manpower.json、risk.json 的目录（Excel 导入脚本输出）",
+    )
     parser.add_argument(
         "--module",
         choices=["manpower", "phase", "risk"],
@@ -522,15 +563,18 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    src = Path(args.file).expanduser().resolve()
-    if not src.is_file():
-        print(f"文件不存在：{src}")
-        return 1
-
     try:
         module = _normalize_module(args.module)
-        data = _load_input(src)
-        payloads = _extract_payloads(data, module)
+        if args.from_registry_dir:
+            data = _load_registry_bundle_dir(Path(args.from_registry_dir), module)
+            payloads = _extract_payloads(data, None)
+        else:
+            src = Path(args.file).expanduser().resolve()
+            if not src.is_file():
+                print(f"文件不存在：{src}")
+                return 1
+            data = _load_input(src)
+            payloads = _extract_payloads(data, module)
         if not payloads:
             print("未识别到可导入的数据。支持 manpower/phase/risk 或 PM-tool-*-v1 键。")
             return 1

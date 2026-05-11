@@ -17,6 +17,9 @@ backend/.env
 backend/data/*.db
 backend/data/*.db-journal
 
+# 本机 MySQL 逻辑备份（勿提交）
+backend/data/mysql-backups/
+
 # Node（若使用根目录 npm 脚本）
 node_modules/
 

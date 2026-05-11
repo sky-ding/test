@@ -6,50 +6,31 @@
   <title>ProjectGuard · 项目管理登记</title>
   <style>
     :root {
-      /* Ant Design 5 风格 token（保留原变量名；行尾注释为改前取值） */
-      --bg: #f5f5f5; /* #f2f1ee */
+      --bg: #f2f1ee;
       --surface: #ffffff;
-      --border: #d9d9d9; /* #e0ddd8 */
-      --border-light: #f0f0f0; /* #eceae6 */
-      --text: rgba(0, 0, 0, 0.88); /* #2a2a2a */
-      --text-muted: rgba(0, 0, 0, 0.65); /* #6f6d6a */
-      --accent: #1677ff; /* #5a6b5c */
-      --accent-hover: #4096ff;
-      --accent-active: #0958d9;
-      --accent-soft: #e6f4ff; /* #eef1ee */
-      --header-bg: #fafafa; /* #ebe8e3 */
-      --header-bg-sub: #f5f5f5; /* #f4f2ef */
-      /* 部门 / 人力条纹：按计划保留原暖色区分块 */
+      --border: #e0ddd8;
+      --border-light: #eceae6;
+      --text: #2a2a2a;
+      --text-muted: #6f6d6a;
+      --accent: #5a6b5c;
+      --accent-soft: #eef1ee;
+      --header-bg: #ebe8e3;
+      --header-bg-sub: #f4f2ef;
       --dept-tech-bg: #dfe8eb;
       --dept-market-bg: #e8e3dc;
       --manpower-stripe-b-main: #e5e2dc;
       --manpower-stripe-b-sub: #ece9e4;
       --manpower-stripe-b-mp: #f3f1ec;
-      --danger: #ff4d4f; /* #9a4a4a */
-      --danger-soft: #fff2f0; /* #faf6f6 */
-      --focus-ring: 0 0 0 2px rgba(22, 119, 255, 0.2);
-      --table-row-hover: #fafafa;
-      --radius: 8px; /* 10px */
+      --danger: #9a4a4a;
+      --danger-soft: #faf6f6;
+      --radius: 10px;
       --radius-sm: 6px;
-      --shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02);
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
       --font: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
     }
 
     * {
       box-sizing: border-box;
-    }
-
-    .tabs .tab:focus-visible,
-    .manpower-subtab:focus-visible,
-    .risk-analysis-sort-btn:focus-visible,
-    .risk-th-sort-btn:focus-visible,
-    .settings-nav-btn:focus-visible,
-    .text-action:focus-visible,
-    .icon-btn:focus-visible,
-    .btn-add:focus-visible,
-    .btn-save-panel:focus-visible {
-      outline: none;
-      box-shadow: var(--focus-ring);
     }
 
     body {
@@ -109,7 +90,7 @@
       margin: 0 0 10px;
       background: var(--bg);
       border-bottom: 1px solid var(--border-light);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 2px 10px rgba(45, 42, 38, 0.06);
       box-sizing: border-box;
     }
 
@@ -211,103 +192,12 @@
 
     .table-shell {
       width: 100%;
-      overflow: auto;
-      position: relative;
-      isolation: isolate;
+      overflow-x: auto;
       margin-bottom: 8px;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       background: var(--surface);
       box-shadow: var(--shadow);
-    }
-
-    #panel-phase .table-shell,
-    #panel-manpower .table-shell,
-    #panel-manpower .table-shell-manpower-month-split {
-      max-height: calc(100vh - 260px);
-    }
-
-    /* 月度人力：Excel 式冻结——左三列独立表（仅纵向滚），右侧横向+纵向滚，不用 sticky 拼列 */
-    .table-shell-manpower-month-split {
-      display: flex;
-      flex-direction: row;
-      align-items: stretch;
-      overflow: hidden;
-      width: 100%;
-      position: relative;
-      isolation: isolate;
-      margin-bottom: 8px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--surface);
-      box-shadow: var(--shadow);
-    }
-
-    /* 左侧仅随右侧同步滚动：隐藏滚动条，避免双竖条像「下拉框」 */
-    .manpower-month-split-left {
-      flex: 0 0 auto;
-      max-width: 88vw;
-      overflow-x: hidden;
-      overflow-y: auto;
-      border-right: 1px solid var(--border-light);
-      box-shadow: 1px 0 0 rgba(15, 23, 42, 0.04);
-      background: var(--surface);
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-
-    .manpower-month-split-left::-webkit-scrollbar {
-      width: 0;
-      height: 0;
-      display: none;
-    }
-
-    .manpower-month-split-right {
-      flex: 1 1 0;
-      min-width: 0;
-      overflow: auto;
-      scrollbar-color: rgba(15, 23, 42, 0.16) transparent;
-      scrollbar-width: thin;
-    }
-
-    .manpower-month-split-right::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-
-    .manpower-month-split-right::-webkit-scrollbar-thumb {
-      background: rgba(15, 23, 42, 0.14);
-      border-radius: 6px;
-    }
-
-    .manpower-month-split-right::-webkit-scrollbar-thumb:hover {
-      background: rgba(15, 23, 42, 0.22);
-    }
-
-    #register-table-frozen,
-    #register-table-season-frozen,
-    #register-table-year-frozen {
-      table-layout: fixed;
-      border-collapse: collapse;
-      margin: 0;
-      width: max-content;
-      min-width: 0 !important;
-      background: var(--surface);
-    }
-
-    /* 月度冻结左表：与右侧「两行表头」对齐，第一行跨列占位 */
-    #register-table-frozen thead th.manpower-frozen-thead-r1,
-    #register-table-season-frozen thead th.manpower-frozen-thead-r1,
-    #register-table-year-frozen thead th.manpower-frozen-thead-r1 {
-      text-align: center;
-      vertical-align: middle;
-      padding: 10px 8px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-muted);
-      letter-spacing: 0.04em;
-      background: linear-gradient(180deg, #f8f9fb 0%, var(--header-bg) 100%) !important;
-      border-bottom: 1px solid var(--border-light);
     }
 
     table {
@@ -341,57 +231,32 @@
 
     #register-table {
       table-layout: fixed;
-      border-collapse: collapse;
     }
 
     #register-table thead th.col-set,
-    #register-table thead th.col-proj,
-    #register-table-frozen thead th.col-set,
-    #register-table-frozen thead th.col-proj,
-    #register-table-season-frozen thead th.col-set,
-    #register-table-season-frozen thead th.col-proj,
-    #register-table-year-frozen thead th.col-set,
-    #register-table-year-frozen thead th.col-proj {
+    #register-table thead th.col-proj {
       text-align: center;
     }
 
     #register-table td.col-set,
-    #register-table td.col-proj,
-    #register-table-frozen td.col-set,
-    #register-table-frozen td.col-proj,
-    #register-table-season-frozen td.col-set,
-    #register-table-season-frozen td.col-proj,
-    #register-table-year-frozen td.col-set,
-    #register-table-year-frozen td.col-proj {
+    #register-table td.col-proj {
       text-align: left;
     }
 
-    #register-table .col-set,
-    #register-table-frozen .col-set,
-    #register-table-season-frozen .col-set,
-    #register-table-year-frozen .col-set {
+    #register-table .col-set {
       min-width: 0;
       padding: 9px 10px;
       vertical-align: middle;
     }
 
-    #register-table .col-proj,
-    #register-table-frozen .col-proj,
-    #register-table-season-frozen .col-proj,
-    #register-table-year-frozen .col-proj {
+    #register-table .col-proj {
       min-width: 0;
       padding: 9px 10px;
       vertical-align: middle;
     }
 
     #register-table td.col-set .editable-text,
-    #register-table td.col-proj .editable-text,
-    #register-table-frozen td.col-set .editable-text,
-    #register-table-frozen td.col-proj .editable-text,
-    #register-table-season-frozen td.col-set .editable-text,
-    #register-table-season-frozen td.col-proj .editable-text,
-    #register-table-year-frozen td.col-set .editable-text,
-    #register-table-year-frozen td.col-proj .editable-text {
+    #register-table td.col-proj .editable-text {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -402,37 +267,19 @@
     }
 
     #register-table td.col-set .cell-head-inline,
-    #register-table td.col-proj .cell-head-inline,
-    #register-table-frozen td.col-set .cell-head-inline,
-    #register-table-frozen td.col-proj .cell-head-inline,
-    #register-table-season-frozen td.col-set .cell-head-inline,
-    #register-table-season-frozen td.col-proj .cell-head-inline,
-    #register-table-year-frozen td.col-set .cell-head-inline,
-    #register-table-year-frozen td.col-proj .cell-head-inline {
+    #register-table td.col-proj .cell-head-inline {
       flex-wrap: nowrap;
       justify-content: flex-start;
       gap: 8px;
     }
 
     #register-table td.col-set .cell-head-inline .editable-text,
-    #register-table td.col-proj .cell-head-inline .editable-text,
-    #register-table-frozen td.col-set .cell-head-inline .editable-text,
-    #register-table-frozen td.col-proj .cell-head-inline .editable-text,
-    #register-table-season-frozen td.col-set .cell-head-inline .editable-text,
-    #register-table-season-frozen td.col-proj .cell-head-inline .editable-text,
-    #register-table-year-frozen td.col-set .cell-head-inline .editable-text,
-    #register-table-year-frozen td.col-proj .cell-head-inline .editable-text {
+    #register-table td.col-proj .cell-head-inline .editable-text {
       text-align: left;
     }
 
     #register-table td.col-set .cell-head-inline > span:first-child,
-    #register-table td.col-proj .cell-head-inline > span:first-child,
-    #register-table-frozen td.col-set .cell-head-inline > span:first-child,
-    #register-table-frozen td.col-proj .cell-head-inline > span:first-child,
-    #register-table-season-frozen td.col-set .cell-head-inline > span:first-child,
-    #register-table-season-frozen td.col-proj .cell-head-inline > span:first-child,
-    #register-table-year-frozen td.col-set .cell-head-inline > span:first-child,
-    #register-table-year-frozen td.col-proj .cell-head-inline > span:first-child {
+    #register-table td.col-proj .cell-head-inline > span:first-child {
       text-align: left;
     }
 
@@ -440,14 +287,6 @@
       min-width: 0;
       padding: 9px 6px;
       box-sizing: border-box;
-    }
-
-    #register-table .col-sum,
-    #register-table .col-ratio {
-      min-width: 0;
-      padding: 9px 8px;
-      box-sizing: border-box;
-      white-space: nowrap;
     }
 
     #register-table .col-mp .input-p {
@@ -464,14 +303,6 @@
       font-weight: 600;
     }
 
-    #register-table thead th.col-sum,
-    #register-table thead th.col-ratio {
-      padding: 8px 6px;
-      font-size: 13px;
-      line-height: 1.4;
-      font-weight: 600;
-    }
-
     #register-table td.center-cell {
       min-width: 0;
       padding: 9px 6px;
@@ -481,141 +312,8 @@
       min-width: 0;
     }
 
-    #register-table td.center-cell.col-sum,
-    #register-table td.center-cell.col-ratio {
-      min-width: 0;
-    }
-
-    #register-table thead th,
-    #register-table-frozen thead th,
-    #register-table-season thead th,
-    #register-table-season-frozen thead th,
-    #register-table-year thead th,
-    #register-table-year-frozen thead th {
+    #register-table thead th {
       position: relative;
-    }
-
-    /* 阶段表：单行 thead，整块 sticky 即可 */
-    #phase-table thead {
-      position: sticky;
-      top: 0;
-      z-index: 22;
-    }
-
-    /*
-     * 人力：月度/季度/年度统一为左右分栏双表，表头按行 sticky。
-     * --manpower-thead-r1h 由 syncManpowerTableStickyLayout 同步。
-     */
-    #panel-manpower #register-table thead tr:first-child > th,
-    #panel-manpower #register-table-frozen thead tr:first-child > th,
-    #panel-manpower #register-table-season-frozen thead tr:first-child > th,
-    #panel-manpower #register-table-season thead tr:first-child > th,
-    #panel-manpower #register-table-year-frozen thead tr:first-child > th,
-    #panel-manpower #register-table-year thead tr:first-child > th {
-      position: sticky;
-      top: 0;
-      /* 须低于固定列 tbody(12)，避免横向滚动时盖住左侧三列 */
-      z-index: 9;
-    }
-
-    #panel-manpower #register-table thead tr:nth-child(2) > th,
-    #panel-manpower #register-table-frozen thead tr:nth-child(2) > th,
-    #panel-manpower #register-table-season-frozen thead tr:nth-child(2) > th,
-    #panel-manpower #register-table-season thead tr:nth-child(2) > th,
-    #panel-manpower #register-table-year-frozen thead tr:nth-child(2) > th,
-    #panel-manpower #register-table-year thead tr:nth-child(2) > th {
-      position: sticky;
-      top: var(--manpower-thead-r1h, 44px);
-      z-index: 8;
-    }
-
-    #phase-table .pin-col-1 {
-      position: sticky;
-      left: 0;
-      z-index: 12;
-      background: var(--surface);
-    }
-
-    #phase-table .pin-col-2 {
-      position: sticky;
-      left: var(--pin-left-2, 168px);
-      z-index: 12;
-      background: var(--surface);
-    }
-
-    #phase-table .pin-col-3 {
-      position: sticky;
-      left: var(--pin-left-3, 368px);
-      z-index: 12;
-      background: var(--surface);
-      box-shadow: 1px 0 0 var(--border-light), 8px 0 12px rgba(15, 23, 42, 0.06);
-    }
-
-    #phase-table thead .pin-col-1,
-    #phase-table thead .pin-col-2,
-    #phase-table thead .pin-col-3 {
-      z-index: 26;
-    }
-
-    .manpower-toolbar .manpower-subtabs {
-      margin-right: 8px;
-      flex-shrink: 0;
-    }
-
-    #panel-manpower #register-table-season .pin-col-1,
-    #panel-manpower #register-table-year .pin-col-1 {
-      position: sticky;
-      left: 0;
-      z-index: 12;
-      background: var(--surface);
-    }
-
-    #panel-manpower #register-table-season .pin-col-2,
-    #panel-manpower #register-table-year .pin-col-2 {
-      position: sticky;
-      left: var(--pin-left-2, 168px);
-      z-index: 12;
-      background: var(--surface);
-    }
-
-    #panel-manpower #register-table-season .pin-col-3,
-    #panel-manpower #register-table-year .pin-col-3 {
-      position: sticky;
-      left: var(--pin-left-3, 368px);
-      z-index: 12;
-      background: var(--surface);
-      box-shadow: 1px 0 0 var(--border-light), 8px 0 12px rgba(15, 23, 42, 0.06);
-    }
-
-    #panel-manpower #register-table-season thead .pin-col-1,
-    #panel-manpower #register-table-season thead .pin-col-2,
-    #panel-manpower #register-table-season thead .pin-col-3,
-    #panel-manpower #register-table-year thead .pin-col-1,
-    #panel-manpower #register-table-year thead .pin-col-2,
-    #panel-manpower #register-table-year thead .pin-col-3 {
-      z-index: 26;
-    }
-
-    #panel-manpower tbody tr.manpower-set-stripe-b td.main.pin-col-1,
-    #panel-manpower #register-table-frozen tbody tr.manpower-set-stripe-b td.main.col-set,
-    #panel-manpower #register-table-season-frozen tbody tr.manpower-set-stripe-b td.main.col-set,
-    #panel-manpower #register-table-year-frozen tbody tr.manpower-set-stripe-b td.main.col-set {
-      background: var(--manpower-stripe-b-main) !important;
-    }
-
-    #panel-manpower tbody tr.manpower-set-stripe-b td.sub.pin-col-2,
-    #panel-manpower tbody tr.manpower-set-stripe-b td.sub.pin-col-3,
-    #panel-manpower #register-table-frozen tbody tr.manpower-set-stripe-b td.sub.col-set,
-    #panel-manpower #register-table-frozen tbody tr.manpower-set-stripe-b td.sub.col-proj,
-    #panel-manpower #register-table-season-frozen tbody tr.manpower-set-stripe-b td.sub.col-set,
-    #panel-manpower #register-table-season-frozen tbody tr.manpower-set-stripe-b td.sub.col-proj,
-    #panel-manpower #register-table-year-frozen tbody tr.manpower-set-stripe-b td.sub.col-set,
-    #panel-manpower #register-table-year-frozen tbody tr.manpower-set-stripe-b td.sub.col-proj {
-      background: var(--manpower-stripe-b-sub) !important;
-    }
-
-    .manpower-panel-head:empty {
-      display: none;
     }
 
     .register-col-resize-handle {
@@ -631,7 +329,7 @@
     }
 
     .register-col-resize-handle:hover {
-      background: rgba(22, 119, 255, 0.12);
+      background: rgba(90, 107, 92, 0.18);
     }
 
     #register-table thead th.dept-g-0 {
@@ -704,12 +402,14 @@
       background: var(--danger-soft);
     }
 
+    #register-table tbody tr.manpower-set-stripe-b td.main,
     #register-table-season tbody tr.manpower-set-stripe-b td.main,
     #register-table-year tbody tr.manpower-set-stripe-b td.main,
     #phase-table tbody tr.manpower-set-stripe-b td.main {
       background: var(--manpower-stripe-b-main) !important;
     }
 
+    #register-table tbody tr.manpower-set-stripe-b td.sub,
     #register-table-season tbody tr.manpower-set-stripe-b td.sub,
     #register-table-year tbody tr.manpower-set-stripe-b td.sub,
     #phase-table tbody tr.manpower-set-stripe-b td.sub {
@@ -717,14 +417,8 @@
     }
 
     #register-table tbody tr.manpower-set-stripe-b td.center-cell.col-mp,
-    #register-table tbody tr.manpower-set-stripe-b td.center-cell.col-sum,
-    #register-table tbody tr.manpower-set-stripe-b td.center-cell.col-ratio,
     #register-table-season tbody tr.manpower-set-stripe-b td.center-cell.col-mp,
-    #register-table-season tbody tr.manpower-set-stripe-b td.center-cell.col-sum,
-    #register-table-season tbody tr.manpower-set-stripe-b td.center-cell.col-ratio,
     #register-table-year tbody tr.manpower-set-stripe-b td.center-cell.col-mp,
-    #register-table-year tbody tr.manpower-set-stripe-b td.center-cell.col-sum,
-    #register-table-year tbody tr.manpower-set-stripe-b td.center-cell.col-ratio,
     #phase-table tbody tr.manpower-set-stripe-b td.phase-field-cell {
       background: var(--manpower-stripe-b-mp) !important;
     }
@@ -732,8 +426,6 @@
     #phase-table {
       table-layout: fixed;
       width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
     }
 
     #phase-table thead th.col-set,
@@ -804,28 +496,6 @@
       cursor: default;
     }
 
-    #phase-table select.phase-field-select {
-      display: block;
-      width: 100%;
-      min-height: 36px;
-      max-width: 100%;
-      padding: 6px 8px;
-      border: 1px solid var(--border-light);
-      border-radius: var(--radius-sm);
-      font-family: inherit;
-      font-size: 13px;
-      line-height: 1.45;
-      box-sizing: border-box;
-      background: #fff;
-      color: var(--text);
-    }
-
-    #phase-table select.phase-field-select:disabled {
-      background: var(--header-bg-sub);
-      color: var(--text-muted);
-      cursor: default;
-    }
-
     #panel-phase .manpower-toolbar,
     #panel-phase .table-shell,
     #panel-phase .panel-actions {
@@ -837,10 +507,7 @@
     #register-table-season,
     #register-table-year {
       table-layout: fixed;
-      /* 跟随 colgroup 的拖拽列宽，避免 width:100% 二次压缩导致季/年视图错位 */
-      width: max-content;
-      min-width: 100%;
-      border-collapse: collapse;
+      width: 100%;
     }
 
     #register-table-season thead th.col-set,
@@ -864,15 +531,6 @@
       min-width: 0;
       padding: 9px 10px;
       vertical-align: middle;
-    }
-
-    #register-table-season .col-sum,
-    #register-table-season .col-ratio,
-    #register-table-year .col-sum,
-    #register-table-year .col-ratio {
-      min-width: 0;
-      padding: 9px 8px;
-      white-space: nowrap;
     }
 
     #register-table-season td.col-set .cell-head-inline,
@@ -916,8 +574,8 @@
     #register-table-season thead th.col-mp,
     #register-table-year thead th.col-mp {
       padding: 8px 4px;
-      font-size: 14px;
-      line-height: 1.4;
+      font-size: 12px;
+      line-height: 1.35;
       font-weight: 600;
     }
 
@@ -1036,7 +694,7 @@
     .input-p:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: var(--focus-ring);
+      box-shadow: 0 0 0 2px rgba(90, 107, 92, 0.15);
     }
 
     .manpower-panel-head {
@@ -1212,7 +870,7 @@
     }
 
     .manpower-toolbar .manpower-analysis-btn:hover {
-      background: #d6ebff;
+      background: #e2ebe3;
     }
 
     .manpower-toolbar select,
@@ -1238,25 +896,22 @@
       font-size: 14px;
       padding: 9px 22px;
       border-radius: var(--radius-sm);
-      background: var(--accent);
-      color: #fff;
-      border: 1px solid var(--accent);
+      background: var(--text);
+      color: var(--surface);
+      border: 1px solid var(--text);
       font-weight: 600;
       letter-spacing: 0.06em;
       cursor: pointer;
       font-family: inherit;
-      transition: background 0.2s, border-color 0.2s, transform 0.12s;
+      transition: opacity 0.2s, transform 0.12s;
     }
 
     .btn-add:hover {
-      background: var(--accent-hover);
-      border-color: var(--accent-hover);
+      opacity: 0.88;
     }
 
     .btn-add:active {
       transform: scale(0.98);
-      background: var(--accent-active);
-      border-color: var(--accent-active);
     }
 
     .btn-save-panel {
@@ -1333,16 +988,12 @@
     .risk-select:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: var(--focus-ring);
+      box-shadow: 0 0 0 2px rgba(90, 107, 92, 0.12);
     }
 
     textarea.risk-input {
       min-height: 44px;
       resize: vertical;
-    }
-
-    table#risk-table tbody tr:hover td {
-      background: var(--table-row-hover);
     }
 
     .risk-select.risk-color-progress { background: #e7f5ff; color: #0b5aa2; border-color: #b6ddff; }
@@ -1433,7 +1084,7 @@
 
     .modal-mask {
       z-index: 100;
-      background: rgba(0, 0, 0, 0.45);
+      background: rgba(45, 42, 38, 0.35);
       position: fixed;
       left: 0;
       top: 0;
@@ -1446,6 +1097,10 @@
 
     .modal-mask.active {
       display: flex;
+    }
+
+    .guide-modal-mask {
+      z-index: 150;
     }
 
     .manpower-analysis-mask {
@@ -1556,6 +1211,126 @@
       max-height: 70vh;
     }
 
+    .guide-item-dialog,
+    .guide-detail-dialog {
+      text-align: left;
+      max-width: 520px;
+      width: 92vw;
+    }
+
+    .guide-detail-dialog {
+      max-width: 640px;
+    }
+
+    .guide-item-dialog h3,
+    .guide-detail-dialog h3 {
+      margin: 0 0 4px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .guide-item-dialog label {
+      display: block;
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .guide-item-dialog input[type="text"],
+    .guide-item-dialog input[type="url"],
+    .guide-item-dialog textarea {
+      width: 100%;
+      margin-top: 6px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-family: inherit;
+      font-size: 14px;
+      box-sizing: border-box;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .guide-item-dialog textarea {
+      min-height: 120px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .guide-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 22px;
+      flex-wrap: wrap;
+    }
+
+    .guide-modal-actions button {
+      margin: 0;
+    }
+
+    .guide-detail-body {
+      margin-top: 14px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .guide-detail-body:empty {
+      display: none;
+    }
+
+    .guide-detail-link-wrap {
+      margin-top: 16px;
+    }
+
+    .guide-detail-link-wrap a {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .guide-title-link {
+      flex: 1 1 auto;
+      min-width: 0;
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      font-weight: 600;
+      color: var(--accent);
+      text-align: left;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .guide-title-link:hover {
+      color: var(--text);
+    }
+
+    .guide-btn-open-add {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px dashed var(--border);
+      background: var(--surface);
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .guide-btn-open-add:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
     .modal-box {
       background: var(--surface);
       color: var(--text);
@@ -1575,9 +1350,9 @@
     }
 
     .modal-box button {
-      background: var(--accent);
-      color: #fff;
-      border: 1px solid var(--accent);
+      background: var(--text);
+      color: var(--surface);
+      border: 1px solid var(--text);
       padding: 8px 20px;
       border-radius: var(--radius-sm);
       cursor: pointer;
@@ -1585,13 +1360,11 @@
       font-weight: 600;
       margin: 18px 8px 0;
       font-family: inherit;
-      transition: background 0.2s, border-color 0.2s, opacity 0.2s;
+      transition: opacity 0.2s;
     }
 
     .modal-box button:hover {
-      background: var(--accent-hover);
-      border-color: var(--accent-hover);
-      opacity: 1;
+      opacity: 0.9;
     }
 
     .modal-box button.cancel-btn {
@@ -2033,6 +1806,7 @@
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-phase">项目阶段状态</button>
         <button type="button" class="tab active" role="tab" aria-selected="true" data-target="panel-manpower">部门项目人力登记</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-risk">项目风险登记</button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-guide">PM操作指引</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-settings">设置</button>
       </div>
     </div>
@@ -2049,7 +1823,6 @@
     </div>
     <div class="table-shell">
       <table id="phase-table">
-        <colgroup id="phase-colgroup"></colgroup>
         <thead id="phase-thead"></thead>
         <tbody id="phase-table-body"></tbody>
       </table>
@@ -2075,21 +1848,12 @@
       <label>月份 <select id="manpower-month-select" aria-label="选择月份"></select></label>
       <button type="button" class="manpower-analysis-btn" id="btn-manpower-month-analysis" title="按当前所选年月汇总并展示图表">项目月度人力分析</button>
     </div>
-    <div class="table-shell table-shell-manpower-month-split" id="register-month-split-shell">
-      <div class="manpower-month-split-left" id="register-split-left-wrap">
-        <table id="register-table-frozen">
-          <colgroup id="register-colgroup-frozen"></colgroup>
-          <thead id="register-thead-frozen"></thead>
-          <tbody id="table-body-frozen"></tbody>
-        </table>
-      </div>
-      <div class="manpower-month-split-right" id="register-split-right-wrap">
-        <table id="register-table">
-          <colgroup id="register-colgroup"></colgroup>
-          <thead id="register-thead"></thead>
-          <tbody id="table-body"></tbody>
-        </table>
-      </div>
+    <div class="table-shell">
+      <table id="register-table">
+        <colgroup id="register-colgroup"></colgroup>
+        <thead id="register-thead"></thead>
+        <tbody id="table-body"></tbody>
+      </table>
     </div>
     <div class="panel-actions">
       <button type="button" class="btn-add" id="btn-manpower-edit-toggle" title="进入编辑模式后可修改并保存">编辑</button>
@@ -2104,21 +1868,11 @@
       <label>年份 <input type="number" class="manpower-year-input" id="manpower-year-season" min="2000" max="2099" step="1"></label>
       <label>季度 <select id="manpower-quarter-select" aria-label="选择季度"></select></label>
     </div>
-    <div class="table-shell table-shell-manpower-month-split" id="register-season-split-shell">
-      <div class="manpower-month-split-left" id="register-season-split-left-wrap">
-        <table id="register-table-season-frozen">
-          <colgroup id="register-season-colgroup-frozen"></colgroup>
-          <thead id="register-season-thead-frozen"></thead>
-          <tbody id="register-season-body-frozen"></tbody>
-        </table>
-      </div>
-      <div class="manpower-month-split-right" id="register-season-split-right-wrap">
-        <table id="register-table-season">
-          <colgroup id="register-season-colgroup"></colgroup>
-          <thead id="register-season-thead"></thead>
-          <tbody id="register-season-body"></tbody>
-        </table>
-      </div>
+    <div class="table-shell">
+      <table id="register-table-season">
+        <thead id="register-season-thead"></thead>
+        <tbody id="register-season-body"></tbody>
+      </table>
     </div>
   </div>
 
@@ -2126,21 +1880,11 @@
     <div class="manpower-toolbar">
       <label>年份 <input type="number" class="manpower-year-input" id="manpower-year-year" min="2000" max="2099" step="1"></label>
     </div>
-    <div class="table-shell table-shell-manpower-month-split" id="register-year-split-shell">
-      <div class="manpower-month-split-left" id="register-year-split-left-wrap">
-        <table id="register-table-year-frozen">
-          <colgroup id="register-year-colgroup-frozen"></colgroup>
-          <thead id="register-year-thead-frozen"></thead>
-          <tbody id="register-year-body-frozen"></tbody>
-        </table>
-      </div>
-      <div class="manpower-month-split-right" id="register-year-split-right-wrap">
-        <table id="register-table-year">
-          <colgroup id="register-year-colgroup"></colgroup>
-          <thead id="register-year-thead"></thead>
-          <tbody id="register-year-body"></tbody>
-        </table>
-      </div>
+    <div class="table-shell">
+      <table id="register-table-year">
+        <thead id="register-year-thead"></thead>
+        <tbody id="register-year-body"></tbody>
+      </table>
     </div>
   </div>
   </div>
@@ -2164,6 +1908,7 @@
       <button type="button" class="btn-save-panel risk-edit-only" onclick="saveRiskData()" title="仅保存本页风险登记到本机浏览器">保存</button>
     </div>
   </div>
+  <div id="panel-guide" class="tab-panel" role="tabpanel" aria-label="PM操作指引"></div>
   <div id="panel-settings" class="tab-panel" role="tabpanel" aria-label="设置">
     <div class="settings-layout">
       <nav class="settings-nav" aria-label="设置模块">
@@ -2239,6 +1984,11 @@
                 <td class="perm-col-muted"><span class="perm-tag viewer">仅查看</span>列表与字段内容，不可改、不可删、不可保存</td>
               </tr>
               <tr>
+                <td>PM操作指引</td>
+                <td class="perm-col-muted"><span class="perm-tag admin">增删改查</span>指引条目；可保存到本机</td>
+                <td class="perm-col-muted"><span class="perm-tag viewer">仅查看</span>可点击标题查看说明或打开链接，不可添加/编辑/删除</td>
+              </tr>
+              <tr>
                 <td>设置</td>
                 <td class="perm-col-muted"><span class="perm-tag admin">可访问</span>含本页说明与人员账号管理</td>
                 <td class="perm-col-muted"><span class="perm-tag viewer">可访问</span>查看权限说明；不可管理人员账号</td>
@@ -2266,6 +2016,35 @@
       <div id="modal-msg">确认删除？</div>
       <button type="button" id="modal-btn-confirm" onclick="confirmDelete()">确认</button>
       <button type="button" id="modal-btn-cancel" class="cancel-btn" onclick="closeModal()">取消</button>
+    </div>
+  </div>
+
+  <div class="modal-mask guide-modal-mask" id="guide-item-mask" aria-hidden="true">
+    <div class="modal-box guide-item-dialog" role="dialog" aria-modal="true" aria-labelledby="guide-item-modal-heading">
+      <h3 id="guide-item-modal-heading">添加指引</h3>
+      <label for="guide-item-title">标题 <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="guide-item-title" autocomplete="off" placeholder="简短标题，将显示在列表中">
+      <label for="guide-item-body">说明内容</label>
+      <textarea id="guide-item-body" placeholder="可填写操作说明、注意事项等（选填）"></textarea>
+      <label for="guide-item-link">链接</label>
+      <input type="url" id="guide-item-link" autocomplete="off" placeholder="https://… 选填，填写后点击标题可在新标签打开">
+      <div class="guide-modal-actions">
+        <button type="button" id="guide-item-save" class="guide-item-primary">保存</button>
+        <button type="button" id="guide-item-cancel" class="cancel-btn">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-mask guide-modal-mask" id="guide-detail-mask" aria-hidden="true">
+    <div class="modal-box guide-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="guide-detail-title">
+      <h3 id="guide-detail-title"></h3>
+      <div id="guide-detail-body" class="guide-detail-body"></div>
+      <div id="guide-detail-link-wrap" class="guide-detail-link-wrap" hidden>
+        <a id="guide-detail-link" href="#" target="_blank" rel="noopener noreferrer">在新标签页打开链接</a>
+      </div>
+      <div class="guide-modal-actions" style="justify-content:center">
+        <button type="button" id="guide-detail-close" class="cancel-btn">关闭</button>
+      </div>
     </div>
   </div>
 
@@ -2459,11 +2238,10 @@
 
     let phaseSelYear = new Date().getFullYear();
     let phaseSelMonth = new Date().getMonth() + 1;
-    const PHASE_FIELD_KEYS = ['goal', 'deliver', 'planMatch', 'highlight', 'weakness', 'nextNote'];
+    const PHASE_FIELD_KEYS = ['goal', 'deliver', 'highlight', 'weakness', 'nextNote'];
     const PHASE_FIELD_LABELS = {
       goal: '阶段交付目标',
       deliver: '实际交付评估',
-      planMatch: '是否符合计划',
       highlight: '执行过程分析',
       weakness: '问题分析',
       nextNote: '改进计划'
@@ -2486,7 +2264,7 @@
     }
 
     function newPhaseMonthRow() {
-      return { goal: '', deliver: '', planMatch: '', highlight: '', weakness: '', nextNote: '' };
+      return { goal: '', deliver: '', highlight: '', weakness: '', nextNote: '' };
     }
 
     function ensurePhaseByMonth(p) {
@@ -2704,11 +2482,6 @@
         s += getDeptValueForMonth(p, year, mo, deptIdx);
       });
       return s;
-    }
-
-    function formatManpowerRatio(numerator, denominator) {
-      if (!denominator || denominator <= 0) return '0%';
-      return ((numerator / denominator) * 100).toFixed(1) + '%';
     }
 
     function requireManpowerMonthViewForStructure() {
@@ -3021,7 +2794,6 @@
     }
 
     function initManpowerTimeUi() {
-      mountManpowerSubtabsIntoToolbar();
       var sm = document.getElementById('manpower-month-select');
       if (sm && sm.options.length === 0) {
         for (var mo = 1; mo <= 12; mo++) {
@@ -3057,7 +2829,6 @@
             el.classList.toggle('active', active);
             el.setAttribute('aria-hidden', active ? 'false' : 'true');
           });
-          mountManpowerSubtabsIntoToolbar();
           renderTable();
           scrollMainToTop();
         });
@@ -3111,49 +2882,27 @@
       }
       if (closeAn) closeAn.addEventListener('click', closeManpowerAnalysisModal);
       updateManpowerToolbarInputs();
-      if (!window._pmManpowerTheadResizeWired) {
-        window._pmManpowerTheadResizeWired = true;
-        window.addEventListener('resize', function () {
-          requestAnimationFrame(function () {
-            syncManpowerTableStickyLayout();
-            if (manpowerSubView === 'month') {
-              syncRegisterMonthSplitTheadHeights();
-              syncManpowerTableStickyLayout();
-            }
-          });
-        });
-      }
     }
 
     let registerColWidths = [];
     let registerColResizeDrag = null;
-    let phaseColWidths = [];
-    let phaseColResizeDrag = null;
 
     function getRegisterColCount() {
-      return 5 + deptFlatCount();
+      return 2 + deptFlatCount();
     }
 
     function getRegisterColMin(colIndex) {
-      var deptCount = deptFlatCount();
       if (colIndex === 0) return 100;
       if (colIndex === 1) return 120;
-      if (colIndex === 2) return 120;
-      if (colIndex === 3 + deptCount) return 88;
-      if (colIndex === 4 + deptCount) return 88;
       return 56;
     }
 
     function loadRegisterColWidths() {
       const n = getRegisterColCount();
       const def = [];
-      const deptCount = deptFlatCount();
       def[0] = 168;
       def[1] = 200;
-      def[2] = 200;
-      for (let i = 3; i < 3 + deptCount; i++) def[i] = 96;
-      def[3 + deptCount] = 108;
-      def[4 + deptCount] = 100;
+      for (let i = 2; i < n; i++) def[i] = 96;
       const merged = def.slice();
       try {
         const raw = localStorage.getItem(STORAGE_KEY_REGISTER_COLS);
@@ -3170,157 +2919,6 @@
       registerColWidths = merged;
     }
 
-    function defaultReadonlyColWidths() {
-      var widths = [];
-      var deptCount = deptFlatCount();
-      widths[0] = 168;
-      widths[1] = 200;
-      widths[2] = 200;
-      for (var i = 0; i < deptCount; i++) widths.push(96);
-      widths.push(108);
-      widths.push(100);
-      return widths;
-    }
-
-    /** 单列在表格中的「布局宽度」：取布局盒与绘制盒较大值，避免 sticky left 偏小导致列重叠 */
-    function pinCellLayoutWidth01(cell) {
-      if (!cell) return 0;
-      var br = cell.getBoundingClientRect();
-      var ow = cell.offsetWidth;
-      return Math.max(br.width || 0, ow || 0);
-    }
-
-    /**
-     * 从 DOM 量前两列真实宽度：优先 tbody 里「首格为 pin-col-1」的行（与数据列宽一致），
-     * 否则用 thead 第一行（表头 rowspan 格）；colgroup 数值常小于实际渲染宽，仅用数组会叠列。
-     */
-    function measurePin01WidthsFromTable(table) {
-      if (!table || !table.tHead || !table.tHead.rows[0]) return { w0: 168, w1: 200 };
-      var r0 = table.tHead.rows[0];
-      if (!r0.cells || r0.cells.length < 3) return { w0: 168, w1: 200 };
-      var tb = table.tBodies[0];
-      var probe = null;
-      if (tb && tb.rows.length) {
-        for (var i = 0; i < tb.rows.length; i++) {
-          var tr = tb.rows[i];
-          if (tr.cells.length >= 3 && tr.cells[0].classList && tr.cells[0].classList.contains('pin-col-1')) {
-            probe = tr;
-            break;
-          }
-        }
-      }
-      var src = probe || r0;
-      return {
-        w0: pinCellLayoutWidth01(src.cells[0]),
-        w1: pinCellLayoutWidth01(src.cells[1])
-      };
-    }
-
-    /** 触发布局后按 DOM 测量写 pin 列内联 left，并同步 table 上 --pin-left-* 供 CSS 兜底 */
-    function applyStickyPinLeftFromDom(table) {
-      if (!table) return;
-      void table.offsetHeight;
-      var m = measurePin01WidthsFromTable(table);
-      if (table.style) {
-        table.style.setProperty('--pin-left-2', m.w0 + 'px');
-        table.style.setProperty('--pin-left-3', (m.w0 + m.w1) + 'px');
-      }
-      applyStickyPinLeftInline(table, m.w0, m.w1);
-    }
-
-    /** 固定列横向偏移：内联 left；w0/w1 一般为 DOM 测量值（可含小数 px） */
-    function applyStickyPinLeftInline(table, w0, w1) {
-      if (!table) return;
-      var n0 = parseFloat(w0);
-      var n1 = parseFloat(w1);
-      if (isNaN(n0) || n0 < 0) n0 = 168;
-      if (isNaN(n1) || n1 < 0) n1 = 200;
-      var left2 = n0 + 'px';
-      var left3 = (n0 + n1) + 'px';
-      table.querySelectorAll('.pin-col-1').forEach(function (el) {
-        el.style.left = '0px';
-      });
-      table.querySelectorAll('.pin-col-2').forEach(function (el) {
-        el.style.left = left2;
-      });
-      table.querySelectorAll('.pin-col-3').forEach(function (el) {
-        el.style.left = left3;
-      });
-    }
-
-    /** 当前列宽快照：优先使用内存中的最新拖拽结果，再回退 localStorage/默认值 */
-    function getRegisterColWidthsSnapshot() {
-      var n = getRegisterColCount();
-      if (Array.isArray(registerColWidths) && registerColWidths.length === n) {
-        return registerColWidths.slice();
-      }
-      loadRegisterColWidths();
-      if (Array.isArray(registerColWidths) && registerColWidths.length === n) {
-        return registerColWidths.slice();
-      }
-      return defaultReadonlyColWidths();
-    }
-
-    /** 季/年只读表与月度共用列结构：优先用月度拖拽后的当前列宽，缺省回退 defaultReadonlyColWidths */
-    function readonlyColWidthsMergedWithSaved() {
-      var def = defaultReadonlyColWidths();
-      var latest = getRegisterColWidthsSnapshot();
-      var out = [];
-      for (var i = 0; i < def.length; i++) {
-        var w = latest[i];
-        var v = Number(w);
-        if (!isNaN(v) && v >= getRegisterColMin(i)) {
-          out.push(v);
-        } else {
-          out.push(def[i]);
-        }
-      }
-      return out;
-    }
-
-    function renderReadonlyColgroupWithWidths(colgroupId, widths) {
-      var cg = document.getElementById(colgroupId);
-      if (!cg) return;
-      cg.innerHTML = '';
-      widths.forEach(function (w) {
-        var col = document.createElement('col');
-        col.style.width = String(w) + 'px';
-        cg.appendChild(col);
-      });
-      var table = cg.parentElement;
-      if (table && table.id) {
-        requestAnimationFrame(function () {
-          applyStickyPinLeftFromDom(table);
-        });
-      }
-    }
-
-    function syncReadonlyColgroup(colgroupId) {
-      renderReadonlyColgroupWithWidths(colgroupId, readonlyColWidthsMergedWithSaved());
-    }
-
-    function renderReadonlySplitColgroups(frozenColgroupId, rightColgroupId) {
-      var widths = readonlyColWidthsMergedWithSaved();
-      var cgF = document.getElementById(frozenColgroupId);
-      var cgR = document.getElementById(rightColgroupId);
-      if (cgF) {
-        cgF.innerHTML = '';
-        for (var i = 0; i < 3 && i < widths.length; i++) {
-          var colF = document.createElement('col');
-          colF.style.width = String(widths[i]) + 'px';
-          cgF.appendChild(colF);
-        }
-      }
-      if (cgR) {
-        cgR.innerHTML = '';
-        for (var j = 3; j < widths.length; j++) {
-          var colR = document.createElement('col');
-          colR.style.width = String(widths[j]) + 'px';
-          cgR.appendChild(colR);
-        }
-      }
-    }
-
     function saveRegisterColWidths() {
       try {
         localStorage.setItem(STORAGE_KEY_REGISTER_COLS, JSON.stringify({
@@ -3331,34 +2929,11 @@
     }
 
     function applyRegisterColWidthsToDom() {
-      const cgF = document.getElementById('register-colgroup-frozen');
       const cg = document.getElementById('register-colgroup');
-      if (cgF && cg) {
-        const colsF = cgF.querySelectorAll('col');
-        for (let i = 0; i < colsF.length && i < registerColWidths.length && i < 3; i++) {
-          colsF[i].style.width = registerColWidths[i] + 'px';
-        }
-        const cols = cg.querySelectorAll('col');
-        for (let j = 0; j < cols.length && 3 + j < registerColWidths.length; j++) {
-          cols[j].style.width = registerColWidths[3 + j] + 'px';
-        }
-      } else if (cg) {
-        const cols = cg.querySelectorAll('col');
-        for (let i = 0; i < cols.length && i < registerColWidths.length; i++) {
-          cols[i].style.width = registerColWidths[i] + 'px';
-        }
-      } else {
-        return;
-      }
-      var regTable = document.getElementById('register-table');
-      var frTable = document.getElementById('register-table-frozen');
-      // 月度拖拽后，同步刷新季/年只读表 colgroup，避免切换后列宽错位。
-      renderReadonlySplitColgroups('register-season-colgroup-frozen', 'register-season-colgroup');
-      renderReadonlySplitColgroups('register-year-colgroup-frozen', 'register-year-colgroup');
-      void regTable && regTable.offsetHeight;
-      void frTable && frTable.offsetHeight;
-      if (!frTable) {
-        applyStickyPinLeftFromDom(regTable);
+      if (!cg) return;
+      const cols = cg.querySelectorAll('col');
+      for (let i = 0; i < cols.length && i < registerColWidths.length; i++) {
+        cols[i].style.width = registerColWidths[i] + 'px';
       }
     }
 
@@ -3398,7 +2973,6 @@
         document.body.style.cursor = '';
         registerColResizeDrag = null;
         saveRegisterColWidths();
-        requestAnimationFrame(syncManpowerTableStickyLayout);
       }
 
       document.addEventListener('mousemove', onMove);
@@ -3406,8 +2980,13 @@
     }
 
     function attachRegisterColResizeHandles() {
-      const theadF = document.getElementById('register-thead-frozen');
       const thead = document.getElementById('register-thead');
+      if (!thead || thead.rows.length < 2) return;
+      thead.querySelectorAll('.register-col-resize-handle').forEach(function (el) {
+        el.remove();
+      });
+      const tr1 = thead.rows[0];
+      const tr2 = thead.rows[1];
       function addHandle(th, colIndex) {
         if (!th) return;
         const h = document.createElement('div');
@@ -3420,330 +2999,24 @@
         });
         th.appendChild(h);
       }
-      if (theadF && thead && thead.rows.length >= 2 && theadF.rows.length >= 2) {
-        theadF.querySelectorAll('.register-col-resize-handle').forEach(function (el) {
-          el.remove();
-        });
-        thead.querySelectorAll('.register-col-resize-handle').forEach(function (el) {
-          el.remove();
-        });
-        const tr2F = theadF.rows[1];
-        addHandle(tr2F.cells[0], 0);
-        addHandle(tr2F.cells[1], 1);
-        addHandle(tr2F.cells[2], 2);
-        const tr1R = thead.rows[0];
-        const tr2R = thead.rows[1];
-        for (let i = 0; i < tr2R.cells.length; i++) {
-          addHandle(tr2R.cells[i], 3 + i);
-        }
-        const deptCount = deptFlatCount();
-        const sumIdx = 3 + deptCount;
-        const ratioIdx = 4 + deptCount;
-        if (tr1R.cells.length >= 2) {
-          addHandle(tr1R.cells[tr1R.cells.length - 2], sumIdx);
-          addHandle(tr1R.cells[tr1R.cells.length - 1], ratioIdx);
-        }
-        return;
-      }
-      if (!thead || thead.rows.length < 2) return;
-      thead.querySelectorAll('.register-col-resize-handle').forEach(function (el) {
-        el.remove();
-      });
-      const tr1 = thead.rows[0];
-      const tr2 = thead.rows[1];
       addHandle(tr1.cells[0], 0);
       addHandle(tr1.cells[1], 1);
-      addHandle(tr1.cells[2], 2);
       for (let i = 0; i < tr2.cells.length; i++) {
-        addHandle(tr2.cells[i], 3 + i);
+        addHandle(tr2.cells[i], 2 + i);
       }
     }
 
     function syncRegisterColgroup() {
       loadRegisterColWidths();
-      const cgF = document.getElementById('register-colgroup-frozen');
       const cg = document.getElementById('register-colgroup');
-      if (cgF && cg) {
-        cgF.innerHTML = '';
-        for (let i = 0; i < 3 && i < registerColWidths.length; i++) {
-          const col = document.createElement('col');
-          col.style.width = registerColWidths[i] + 'px';
-          cgF.appendChild(col);
-        }
-        cg.innerHTML = '';
-        for (let i = 3; i < registerColWidths.length; i++) {
-          const col = document.createElement('col');
-          col.style.width = registerColWidths[i] + 'px';
-          cg.appendChild(col);
-        }
-      } else if (cg) {
-        cg.innerHTML = '';
-        registerColWidths.forEach(function (w) {
-          const col = document.createElement('col');
-          col.style.width = w + 'px';
-          cg.appendChild(col);
-        });
-      } else {
-        return;
-      }
-      attachRegisterColResizeHandles();
-      requestAnimationFrame(function () {
-        if (!document.getElementById('register-colgroup-frozen')) {
-          applyStickyPinLeftFromDom(document.getElementById('register-table'));
-        }
-      });
-    }
-
-    function getPhaseColCount() {
-      return 3 + PHASE_FIELD_KEYS.length;
-    }
-
-    function getPhaseColMin(colIndex) {
-      if (colIndex === 0) return 100;
-      if (colIndex === 1) return 120;
-      if (colIndex === 2) return 120;
-      return 110;
-    }
-
-    function loadPhaseColWidths() {
-      var n = getPhaseColCount();
-      var def = [168, 200, 200];
-      for (var i = 3; i < n; i++) def[i] = 150;
-      var merged = def.slice();
-      try {
-        var raw = localStorage.getItem('PM-tool-phase-colwidths-v1');
-        if (raw) {
-          var o = JSON.parse(raw);
-          if (o && Array.isArray(o.widths)) {
-            for (var j = 0; j < n && j < o.widths.length; j++) {
-              var v = Number(o.widths[j]);
-              if (!isNaN(v) && v >= getPhaseColMin(j)) merged[j] = v;
-            }
-          }
-        }
-      } catch (e) {}
-      phaseColWidths = merged;
-    }
-
-    function savePhaseColWidths() {
-      try {
-        localStorage.setItem('PM-tool-phase-colwidths-v1', JSON.stringify({
-          widths: phaseColWidths,
-          savedAt: new Date().toISOString()
-        }));
-      } catch (e) {}
-    }
-
-    function applyPhaseColWidthsToDom() {
-      var cg = document.getElementById('phase-colgroup');
-      if (!cg) return;
-      var cols = cg.querySelectorAll('col');
-      for (var i = 0; i < cols.length && i < phaseColWidths.length; i++) {
-        cols[i].style.width = String(phaseColWidths[i]) + 'px';
-      }
-      var table = document.getElementById('phase-table');
-      if (table) {
-        void table.offsetHeight;
-        applyStickyPinLeftFromDom(table);
-      }
-    }
-
-    function syncPhaseColgroup() {
-      loadPhaseColWidths();
-      var cg = document.getElementById('phase-colgroup');
       if (!cg) return;
       cg.innerHTML = '';
-      phaseColWidths.forEach(function (w) {
-        var col = document.createElement('col');
-        col.style.width = String(w) + 'px';
+      registerColWidths.forEach(function (w) {
+        const col = document.createElement('col');
+        col.style.width = w + 'px';
         cg.appendChild(col);
       });
-      applyPhaseColWidthsToDom();
-    }
-
-    function startPhaseColResizeDrag(colIndex, clientX) {
-      phaseColResizeDrag = {
-        colIndex: colIndex,
-        startX: clientX,
-        startWidths: phaseColWidths.slice()
-      };
-      document.body.style.userSelect = 'none';
-      document.body.style.cursor = 'col-resize';
-      function onMove(e) {
-        if (!phaseColResizeDrag) return;
-        var idx = phaseColResizeDrag.colIndex;
-        var w = phaseColResizeDrag.startWidths;
-        var deltaRaw = e.clientX - phaseColResizeDrag.startX;
-        var delta = deltaRaw;
-        if (idx < w.length - 1) {
-          var minL = getPhaseColMin(idx);
-          var minR = getPhaseColMin(idx + 1);
-          var maxPos = w[idx + 1] - minR;
-          var maxNeg = -(w[idx] - minL);
-          delta = Math.max(maxNeg, Math.min(maxPos, delta));
-          phaseColWidths[idx] = w[idx] + delta;
-          phaseColWidths[idx + 1] = w[idx + 1] - delta;
-        } else {
-          phaseColWidths[idx] = Math.max(getPhaseColMin(idx), Math.min(520, w[idx] + deltaRaw));
-        }
-        applyPhaseColWidthsToDom();
-      }
-      function onUp() {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-        document.body.style.userSelect = '';
-        document.body.style.cursor = '';
-        phaseColResizeDrag = null;
-        savePhaseColWidths();
-      }
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    }
-
-    function attachPhaseColResizeHandles() {
-      var thead = document.getElementById('phase-thead');
-      if (!thead || thead.rows.length < 1) return;
-      thead.querySelectorAll('.register-col-resize-handle').forEach(function (el) { el.remove(); });
-      var tr = thead.rows[0];
-      for (var i = 0; i < tr.cells.length; i++) {
-        (function (colIndex) {
-          var th = tr.cells[colIndex];
-          if (!th) return;
-          var h = document.createElement('div');
-          h.className = 'register-col-resize-handle';
-          h.title = '拖动调整列宽';
-          h.addEventListener('mousedown', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            startPhaseColResizeDrag(colIndex, e.clientX);
-          });
-          th.appendChild(h);
-        })(i);
-      }
-    }
-
-    function mountManpowerSubtabsIntoToolbar() {
-      var tabs = document.querySelector('#panel-manpower .manpower-subtabs[aria-label="人力数据时间维度"]');
-      var toolbar = document.querySelector('#panel-manpower .manpower-subpage.active .manpower-toolbar');
-      if (!tabs || !toolbar) return;
-      if (tabs.parentElement !== toolbar) {
-        toolbar.insertBefore(tabs, toolbar.firstChild || null);
-      }
-    }
-
-    /**
-     * 人力表布局同步：① 第二行 thead sticky 的 top = 第一行实际高度（--manpower-thead-r1h）；
-     * ② 含 pin-col 的表（季/年只读表）再写 --pin-left-* 与内联 left。月度分栏左右表无 pin，跳过②。
-     */
-    function syncManpowerTableStickyLayout() {
-      ['register-table-frozen', 'register-table', 'register-table-season-frozen', 'register-table-season', 'register-table-year-frozen', 'register-table-year'].forEach(function (id) {
-        var table = document.getElementById(id);
-        if (!table || !table.tHead || table.tHead.rows.length < 1) return;
-        var r0 = table.tHead.rows[0];
-        if (!r0 || r0.cells.length < 1) return;
-        var row2Top = 0;
-        if (table.tHead.rows.length >= 2) {
-          // 两行表头时用第二行真实起点，避免 rowSpan 场景用第一行高度导致 sticky top 偏移错乱
-          row2Top = table.tHead.rows[1].offsetTop || 0;
-        }
-        if (!row2Top) {
-          var h = r0.getBoundingClientRect().height;
-          row2Top = Math.max(36, Math.ceil(h));
-        }
-        table.style.setProperty('--manpower-thead-r1h', Math.max(36, Math.ceil(row2Top)) + 'px');
-      });
-    }
-
-    /** 月度分栏：左右纵向滚动条同步（左表无横向滚） */
-    function ensureRegisterMonthScrollSync() {
-      var left = document.getElementById('register-split-left-wrap');
-      var right = document.getElementById('register-split-right-wrap');
-      if (!left || !right) return;
-      if (right._registerMonthScrollSyncBound) return;
-      right._registerMonthScrollSyncBound = true;
-      var syncing = false;
-      right.addEventListener('scroll', function () {
-        if (syncing) return;
-        syncing = true;
-        left.scrollTop = right.scrollTop;
-        syncing = false;
-      });
-      left.addEventListener('scroll', function () {
-        if (syncing) return;
-        syncing = true;
-        right.scrollTop = left.scrollTop;
-        syncing = false;
-      });
-    }
-
-    function ensureReadonlySplitScrollSync(leftId, rightId) {
-      var left = document.getElementById(leftId);
-      var right = document.getElementById(rightId);
-      if (!left || !right) return;
-      if (right._pmSplitSyncBound) return;
-      right._pmSplitSyncBound = true;
-      var syncing = false;
-      right.addEventListener('scroll', function () {
-        if (syncing) return;
-        syncing = true;
-        left.scrollTop = right.scrollTop;
-        syncing = false;
-      });
-      left.addEventListener('scroll', function () {
-        if (syncing) return;
-        syncing = true;
-        right.scrollTop = left.scrollTop;
-        syncing = false;
-      });
-    }
-
-    /** 月度双表：逐行拉齐 thead 行高，使左右两行表头 + tbody 与对侧同一 scrollTop 时对齐 */
-    function syncRegisterMonthSplitTheadHeights() {
-      var tf = document.getElementById('register-table-frozen');
-      var tr = document.getElementById('register-table');
-      if (!tf || !tr || !tf.tHead || !tr.tHead || tf.tHead.rows.length < 2 || tr.tHead.rows.length < 2) return;
-      var r0L = tf.tHead.rows[0];
-      var r1L = tf.tHead.rows[1];
-      var r0R = tr.tHead.rows[0];
-      var r1R = tr.tHead.rows[1];
-      r0L.style.height = '';
-      r1L.style.height = '';
-      r0R.style.height = '';
-      r1R.style.height = '';
-      void tf.offsetHeight;
-      void tr.offsetHeight;
-      var h0 = Math.max(r0L.getBoundingClientRect().height, r0R.getBoundingClientRect().height, 1);
-      var h1 = Math.max(r1L.getBoundingClientRect().height, r1R.getBoundingClientRect().height, 1);
-      var px0 = Math.ceil(h0) + 'px';
-      var px1 = Math.ceil(h1) + 'px';
-      r0L.style.height = px0;
-      r0R.style.height = px0;
-      r1L.style.height = px1;
-      r1R.style.height = px1;
-    }
-
-    function syncReadonlySplitTheadHeights(leftTableId, rightTableId) {
-      var tf = document.getElementById(leftTableId);
-      var tr = document.getElementById(rightTableId);
-      if (!tf || !tr || !tf.tHead || !tr.tHead || tf.tHead.rows.length < 2 || tr.tHead.rows.length < 2) return;
-      var r0L = tf.tHead.rows[0];
-      var r1L = tf.tHead.rows[1];
-      var r0R = tr.tHead.rows[0];
-      var r1R = tr.tHead.rows[1];
-      r0L.style.height = '';
-      r1L.style.height = '';
-      r0R.style.height = '';
-      r1R.style.height = '';
-      void tf.offsetHeight;
-      void tr.offsetHeight;
-      var h0 = Math.max(r0L.getBoundingClientRect().height, r0R.getBoundingClientRect().height, 1);
-      var h1 = Math.max(r1L.getBoundingClientRect().height, r1R.getBoundingClientRect().height, 1);
-      var px0 = Math.ceil(h0) + 'px';
-      var px1 = Math.ceil(h1) + 'px';
-      r0L.style.height = px0;
-      r0R.style.height = px0;
-      r1L.style.height = px1;
-      r1R.style.height = px1;
+      attachRegisterColResizeHandles();
     }
 
     // 用于弹窗时定位删除内容
@@ -3850,6 +3123,10 @@
         renderRiskTable();
         renderPhaseTable();
         updateSettingsPanelRoleUi();
+        var pg = document.getElementById('panel-guide');
+        if (pg && pg.classList.contains('active') && typeof window.__renderGuideMenu === 'function') {
+          window.__renderGuideMenu();
+        }
       } catch (e) {}
     }
 
@@ -3889,7 +3166,7 @@
       });
     }
 
-    /** 与 renderRiskTable 中 [data-risk-field] 一致，供 syncRiskRowsFromDom 使用 */
+    /** 与 renderRiskTable 中控件顺序一致，供 syncRiskRowsFromDom 使用 */
     const RISK_FIELD_ORDER = ['category', 'source', 'project', 'issue', 'solution', 'level', 'owner', 'regTime', 'closeTime', 'status'];
 
     let riskAnalysisCharts = [];
@@ -4509,12 +3786,10 @@
       trList.forEach(function (tr) {
         const tds = tr.querySelectorAll('td');
         if (tds.length < 10) return;
-        if (!riskRows[i]) return;
-        RISK_FIELD_ORDER.forEach(function (key) {
-          const el = tr.querySelector('[data-risk-field="' + key + '"]');
-          if (el && 'value' in el) {
-            riskRows[i][key] = el.value;
-          }
+        const fields = tr.querySelectorAll('input, select, textarea');
+        if (fields.length < RISK_FIELD_ORDER.length || !riskRows[i]) return;
+        RISK_FIELD_ORDER.forEach(function (key, j) {
+          riskRows[i][key] = fields[j].value;
         });
         i++;
       });
@@ -4754,10 +4029,10 @@
         var p = flat[ri];
         if (!p) return;
         var slice = getPhaseMonthSlice(p, phaseSelYear, phaseSelMonth);
-        var fields = tr.querySelectorAll('textarea.phase-field-input, select.phase-field-select');
-        if (fields.length < PHASE_FIELD_KEYS.length) return;
+        var tas = tr.querySelectorAll('textarea.phase-field-input');
+        if (tas.length < PHASE_FIELD_KEYS.length) return;
         PHASE_FIELD_KEYS.forEach(function (key, j) {
-          slice[key] = fields[j].value;
+          slice[key] = tas[j].value;
         });
         ri++;
       });
@@ -4979,7 +4254,6 @@
           const inp = document.createElement('input');
           inp.type = 'text';
           inp.className = 'risk-input';
-          inp.setAttribute('data-risk-field', field);
           inp.value = row[field] || '';
           inp.readOnly = !allowEdit;
           inp.addEventListener('change', function () {
@@ -5036,7 +4310,6 @@
           td.className = 'risk-cell' + (cls ? ' ' + cls : '');
           const sel = document.createElement('select');
           sel.className = 'risk-select';
-          sel.setAttribute('data-risk-field', field);
           const current = row[field] != null ? String(row[field]) : '';
           [['', '请选择']].concat(options).forEach(function (opt) {
             const o = document.createElement('option');
@@ -5063,7 +4336,6 @@
         tdIssue.className = 'risk-cell w-wide';
         const taIssue = document.createElement('textarea');
         taIssue.className = 'risk-input';
-        taIssue.setAttribute('data-risk-field', 'issue');
         taIssue.rows = 2;
         taIssue.value = row.issue || '';
         taIssue.readOnly = !allowEdit;
@@ -5077,7 +4349,6 @@
         tdSolution.className = 'risk-cell w-wide';
         const taSolution = document.createElement('textarea');
         taSolution.className = 'risk-input';
-        taSolution.setAttribute('data-risk-field', 'solution');
         taSolution.rows = 2;
         taSolution.value = row.solution || '';
         taSolution.readOnly = !allowEdit;
@@ -5096,7 +4367,6 @@
         const rin = document.createElement('input');
         rin.type = 'date';
         rin.className = 'risk-input';
-        rin.setAttribute('data-risk-field', 'regTime');
         rin.value = row.regTime || '';
         rin.disabled = !allowEdit;
         rin.addEventListener('change', function () {
@@ -5110,7 +4380,6 @@
         const din = document.createElement('input');
         din.type = 'date';
         din.className = 'risk-input';
-        din.setAttribute('data-risk-field', 'closeTime');
         din.value = row.closeTime || '';
         din.disabled = !allowEdit;
         din.addEventListener('change', function () {
@@ -5143,18 +4412,17 @@
     function renderPhaseThead() {
       var thead = document.getElementById('phase-thead');
       if (!thead) return;
-      syncPhaseColgroup();
       var tr = document.createElement('tr');
       var thSet = document.createElement('th');
-      thSet.className = 'main col-set pin-col-1';
+      thSet.className = 'main col-set';
       thSet.textContent = '项目集';
       tr.appendChild(thSet);
       var thSubSet = document.createElement('th');
-      thSubSet.className = 'sub col-set pin-col-2';
+      thSubSet.className = 'sub col-set';
       thSubSet.textContent = '子项目集';
       tr.appendChild(thSubSet);
       var thProj = document.createElement('th');
-      thProj.className = 'sub col-proj pin-col-3';
+      thProj.className = 'sub col-proj';
       thProj.textContent = '子项目';
       tr.appendChild(thProj);
       PHASE_FIELD_KEYS.forEach(function (key) {
@@ -5165,16 +4433,12 @@
       });
       thead.innerHTML = '';
       thead.appendChild(tr);
-      attachPhaseColResizeHandles();
-      requestAnimationFrame(function () {
-        applyStickyPinLeftFromDom(document.getElementById('phase-table'));
-      });
     }
 
     function appendPhaseRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin) {
       if (projectSetIdx === 0 && projIdx === 0) {
         var tdSet = document.createElement('td');
-        tdSet.className = 'main col-set pin-col-1';
+        tdSet.className = 'main col-set';
         tdSet.rowSpan = countSubProjectsInSet(set) || 1;
         if (admin) {
           tdSet.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseSetName(' + setIdx + ')">' + escapeHtml(set.name) + '</span><div class="actions"><button type="button" class="icon-btn" title="添加子项目集" onclick="addPhaseProjectSet(' + setIdx + ')">+</button><button type="button" class="icon-btn danger" title="删除项目集" onclick="showDeleteModal(\'set\',' + setIdx + ')">×</button></div></div>';
@@ -5185,7 +4449,7 @@
       }
       if (projIdx === 0) {
         var tdSubSet = document.createElement('td');
-        tdSubSet.className = 'sub col-set pin-col-2';
+        tdSubSet.className = 'sub col-set';
         tdSubSet.rowSpan = getSubProjects(projectSet).length || 1;
         if (admin) {
           tdSubSet.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseProjectSetName(' + setIdx + ',' + projectSetIdx + ')">' + escapeHtml(projectSet.name) + '</span><div class="actions"><button type="button" class="icon-btn" title="添加子项目" onclick="addPhaseProject(' + setIdx + ',' + projectSetIdx + ')">+</button><button type="button" class="icon-btn danger" title="删除子项目集" onclick="showDeleteModal(\'projectSet\',' + setIdx + ',' + projectSetIdx + ')">×</button></div></div>';
@@ -5195,7 +4459,7 @@
         tr.appendChild(tdSubSet);
       }
       var tdProj = document.createElement('td');
-      tdProj.className = 'sub col-proj pin-col-3';
+      tdProj.className = 'sub col-proj';
       if (admin) {
         tdProj.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseProjectName(' + setIdx + ',' + projectSetIdx + ',' + projIdx + ')">' + escapeHtml(proj.name) + '</span><div class="actions"><button type="button" class="icon-btn danger" title="删除子项目" onclick="showDeleteModal(\'project\',' + setIdx + ',' + projectSetIdx + ',' + projIdx + ')">×</button></div></div>';
       } else {
@@ -5227,9 +4491,6 @@
           : '暂无记录。普通用户仅可查看；管理员可添加与编辑。';
         trE.appendChild(tdE);
         tb.appendChild(trE);
-        requestAnimationFrame(function () {
-          applyStickyPinLeftFromDom(document.getElementById('phase-table'));
-        });
         return;
       }
 
@@ -5243,49 +4504,22 @@
             PHASE_FIELD_KEYS.forEach(function (key) {
               var td = document.createElement('td');
               td.className = 'phase-field-cell';
-              if (key === 'planMatch') {
-                var sel = document.createElement('select');
-                sel.className = 'phase-field-select';
-                var planOptions = [
-                  { value: '', label: '请选择' },
-                  { value: '是', label: '是' },
-                  { value: '否', label: '否' }
-                ];
-                planOptions.forEach(function (opt) {
-                  var o = document.createElement('option');
-                  o.value = opt.value;
-                  o.textContent = opt.label;
-                  if ((slice[key] || '') === opt.value) o.selected = true;
-                  sel.appendChild(o);
+              var ta = document.createElement('textarea');
+              ta.className = 'phase-field-input';
+              ta.value = slice[key] || '';
+              ta.readOnly = !admin;
+              ta.rows = 3;
+              if (admin) {
+                ta.addEventListener('input', function () {
+                  slice[key] = ta.value;
                 });
-                sel.disabled = !admin;
-                if (admin) {
-                  sel.addEventListener('change', function () {
-                    slice[key] = sel.value;
-                  });
-                }
-                td.appendChild(sel);
-              } else {
-                var ta = document.createElement('textarea');
-                ta.className = 'phase-field-input';
-                ta.value = slice[key] || '';
-                ta.readOnly = !admin;
-                ta.rows = 3;
-                if (admin) {
-                  ta.addEventListener('input', function () {
-                    slice[key] = ta.value;
-                  });
-                }
-                td.appendChild(ta);
               }
+              td.appendChild(ta);
               tr.appendChild(td);
             });
             tb.appendChild(tr);
           });
         });
-      });
-      requestAnimationFrame(function () {
-        applyStickyPinLeftFromDom(document.getElementById('phase-table'));
       });
     }
 
@@ -5436,35 +4670,28 @@
 
     function renderManpowerTheadMonth() {
       const thead = document.getElementById('register-thead');
-      const theadF = document.getElementById('register-thead-frozen');
-      if (!thead || !theadF) return;
+      if (!thead) return;
       const admin = canEditPanel('manpower');
       thead.innerHTML = '';
-      theadF.innerHTML = '';
 
-      const tr1F = document.createElement('tr');
-      const thCorner = document.createElement('th');
-      thCorner.colSpan = 3;
-      thCorner.className = 'main manpower-frozen-thead-r1';
-      thCorner.textContent = '项目结构';
-      tr1F.appendChild(thCorner);
-      theadF.appendChild(tr1F);
-      const tr2F = document.createElement('tr');
-      const thSetF = document.createElement('th');
-      thSetF.className = 'main col-set';
-      thSetF.textContent = '项目集';
-      tr2F.appendChild(thSetF);
-      const thSubF = document.createElement('th');
-      thSubF.className = 'sub col-set';
-      thSubF.textContent = '子项目集';
-      tr2F.appendChild(thSubF);
-      const thProjF = document.createElement('th');
-      thProjF.className = 'sub col-proj';
-      thProjF.textContent = '子项目';
-      tr2F.appendChild(thProjF);
-      theadF.appendChild(tr2F);
+      const tr1 = document.createElement('tr');
+      const thSet = document.createElement('th');
+      thSet.className = 'main col-set';
+      thSet.rowSpan = 2;
+      thSet.textContent = '项目集';
+      tr1.appendChild(thSet);
+      const thSubSet = document.createElement('th');
+      thSubSet.className = 'sub col-set';
+      thSubSet.rowSpan = 2;
+      thSubSet.textContent = '子项目集';
+      tr1.appendChild(thSubSet);
 
-      const tr1R = document.createElement('tr');
+      const thProj = document.createElement('th');
+      thProj.className = 'sub col-proj';
+      thProj.rowSpan = 2;
+      thProj.textContent = '子项目';
+      tr1.appendChild(thProj);
+
       deptGroups.forEach(function (g, gi) {
         const th = document.createElement('th');
         th.className = 'main dept-g-' + (gi % 2);
@@ -5492,20 +4719,9 @@
           wrap.appendChild(act);
         }
         th.appendChild(wrap);
-        tr1R.appendChild(th);
+        tr1.appendChild(th);
       });
-      const thSum = document.createElement('th');
-      thSum.className = 'sub col-sum';
-      thSum.rowSpan = 2;
-      thSum.textContent = '小计';
-      tr1R.appendChild(thSum);
-
-      const thRatio = document.createElement('th');
-      thRatio.className = 'sub col-ratio';
-      thRatio.rowSpan = 2;
-      thRatio.textContent = '人力占比';
-      tr1R.appendChild(thRatio);
-      thead.appendChild(tr1R);
+      thead.appendChild(tr1);
 
       const tr2 = document.createElement('tr');
       deptGroups.forEach(function (g, gi) {
@@ -5551,33 +4767,24 @@
 
     function renderManpowerTheadSeason() {
       const thead = document.getElementById('register-season-thead');
-      const theadF = document.getElementById('register-season-thead-frozen');
-      if (!thead || !theadF) return;
-      renderReadonlySplitColgroups('register-season-colgroup-frozen', 'register-season-colgroup');
+      if (!thead) return;
       thead.innerHTML = '';
-      theadF.innerHTML = '';
-      const tr1F = document.createElement('tr');
-      const thCornerF = document.createElement('th');
-      thCornerF.colSpan = 3;
-      thCornerF.className = 'main manpower-frozen-thead-r1';
-      thCornerF.textContent = '项目结构';
-      tr1F.appendChild(thCornerF);
-      theadF.appendChild(tr1F);
-      const tr2F = document.createElement('tr');
-      const thSetF = document.createElement('th');
-      thSetF.className = 'main col-set';
-      thSetF.textContent = '项目集';
-      tr2F.appendChild(thSetF);
-      const thSubSetF = document.createElement('th');
-      thSubSetF.className = 'sub col-set';
-      thSubSetF.textContent = '子项目集';
-      tr2F.appendChild(thSubSetF);
-      const thProjF = document.createElement('th');
-      thProjF.className = 'sub col-proj';
-      thProjF.textContent = '子项目';
-      tr2F.appendChild(thProjF);
-      theadF.appendChild(tr2F);
       const tr1 = document.createElement('tr');
+      const thSet = document.createElement('th');
+      thSet.className = 'main col-set';
+      thSet.rowSpan = 2;
+      thSet.textContent = '项目集';
+      tr1.appendChild(thSet);
+      const thSubSet = document.createElement('th');
+      thSubSet.className = 'sub col-set';
+      thSubSet.rowSpan = 2;
+      thSubSet.textContent = '子项目集';
+      tr1.appendChild(thSubSet);
+      const thProj = document.createElement('th');
+      thProj.className = 'sub col-proj';
+      thProj.rowSpan = 2;
+      thProj.textContent = '子项目';
+      tr1.appendChild(thProj);
       deptGroups.forEach(function (g, gi) {
         const th = document.createElement('th');
         th.className = 'main dept-g-' + (gi % 2);
@@ -5585,16 +4792,6 @@
         th.textContent = g.name;
         tr1.appendChild(th);
       });
-      const thSum = document.createElement('th');
-      thSum.className = 'sub col-sum';
-      thSum.rowSpan = 2;
-      thSum.textContent = '小计';
-      tr1.appendChild(thSum);
-      const thRatio = document.createElement('th');
-      thRatio.className = 'sub col-ratio';
-      thRatio.rowSpan = 2;
-      thRatio.textContent = '人力占比';
-      tr1.appendChild(thRatio);
       thead.appendChild(tr1);
       const tr2 = document.createElement('tr');
       deptGroups.forEach(function (g, gi) {
@@ -5610,33 +4807,24 @@
 
     function renderManpowerTheadYear() {
       const thead = document.getElementById('register-year-thead');
-      const theadF = document.getElementById('register-year-thead-frozen');
-      if (!thead || !theadF) return;
-      renderReadonlySplitColgroups('register-year-colgroup-frozen', 'register-year-colgroup');
+      if (!thead) return;
       thead.innerHTML = '';
-      theadF.innerHTML = '';
-      const tr1F = document.createElement('tr');
-      const thCornerF = document.createElement('th');
-      thCornerF.colSpan = 3;
-      thCornerF.className = 'main manpower-frozen-thead-r1';
-      thCornerF.textContent = '项目结构';
-      tr1F.appendChild(thCornerF);
-      theadF.appendChild(tr1F);
-      const tr2F = document.createElement('tr');
-      const thSetF = document.createElement('th');
-      thSetF.className = 'main col-set';
-      thSetF.textContent = '项目集';
-      tr2F.appendChild(thSetF);
-      const thSubSetF = document.createElement('th');
-      thSubSetF.className = 'sub col-set';
-      thSubSetF.textContent = '子项目集';
-      tr2F.appendChild(thSubSetF);
-      const thProjF = document.createElement('th');
-      thProjF.className = 'sub col-proj';
-      thProjF.textContent = '子项目';
-      tr2F.appendChild(thProjF);
-      theadF.appendChild(tr2F);
       const tr1 = document.createElement('tr');
+      const thSet = document.createElement('th');
+      thSet.className = 'main col-set';
+      thSet.rowSpan = 2;
+      thSet.textContent = '项目集';
+      tr1.appendChild(thSet);
+      const thSubSet = document.createElement('th');
+      thSubSet.className = 'sub col-set';
+      thSubSet.rowSpan = 2;
+      thSubSet.textContent = '子项目集';
+      tr1.appendChild(thSubSet);
+      const thProj = document.createElement('th');
+      thProj.className = 'sub col-proj';
+      thProj.rowSpan = 2;
+      thProj.textContent = '子项目';
+      tr1.appendChild(thProj);
       deptGroups.forEach(function (g, gi) {
         const th = document.createElement('th');
         th.className = 'main dept-g-' + (gi % 2);
@@ -5644,16 +4832,6 @@
         th.textContent = g.name;
         tr1.appendChild(th);
       });
-      const thSum = document.createElement('th');
-      thSum.className = 'sub col-sum';
-      thSum.rowSpan = 2;
-      thSum.textContent = '小计';
-      tr1.appendChild(thSum);
-      const thRatio = document.createElement('th');
-      thRatio.className = 'sub col-ratio';
-      thRatio.rowSpan = 2;
-      thRatio.textContent = '人力占比';
-      tr1.appendChild(thRatio);
       thead.appendChild(tr1);
       const tr2 = document.createElement('tr');
       deptGroups.forEach(function (g, gi) {
@@ -5782,11 +4960,10 @@
       renderTable();
     }
 
-    function appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, structureEditable, omitPinColClass) {
-      var usePin = !omitPinColClass;
+    function appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, structureEditable) {
       if (projectSetIdx === 0 && projIdx === 0) {
         const tdSet = document.createElement('td');
-        tdSet.className = usePin ? 'main col-set pin-col-1' : 'main col-set';
+        tdSet.className = 'main col-set';
         tdSet.rowSpan = countSubProjectsInSet(set) || 1;
         if (admin && structureEditable) {
           tdSet.innerHTML = `
@@ -5804,7 +4981,7 @@
       }
       if (projIdx === 0) {
         const tdSubSet = document.createElement('td');
-        tdSubSet.className = usePin ? 'sub col-set pin-col-2' : 'sub col-set';
+        tdSubSet.className = 'sub col-set';
         tdSubSet.rowSpan = getSubProjects(projectSet).length || 1;
         if (admin && structureEditable) {
           tdSubSet.innerHTML = `
@@ -5821,7 +4998,7 @@
         tr.appendChild(tdSubSet);
       }
       const tdProj = document.createElement('td');
-      tdProj.className = usePin ? 'sub col-proj pin-col-3' : 'sub col-proj';
+      tdProj.className = 'sub col-proj';
       if (admin && structureEditable) {
         tdProj.innerHTML = `
             <div class="cell-head-inline">
@@ -5838,47 +5015,20 @@
 
     function renderMonthTableBody() {
       const $body = document.getElementById('table-body');
-      const $bodyF = document.getElementById('table-body-frozen');
       if (!$body) return;
       $body.innerHTML = '';
-      if ($bodyF) $bodyF.innerHTML = '';
       const nCols = deptFlatCount();
-      var monthGrandTotal = 0;
-      data.forEach(function (set) {
-        getProgramProjectSets(set).forEach(function (projectSet) {
-          getSubProjects(projectSet).forEach(function (proj) {
-            var rowSum = 0;
-            for (let i = 0; i < nCols; ++i) {
-              var v = proj.manpower[i] != null ? Number(proj.manpower[i]) : 0;
-              if (!isNaN(v)) rowSum += v;
-            }
-            monthGrandTotal += rowSum;
-          });
-        });
-      });
       const admin = canEditPanel('manpower');
       data.forEach(function (set, setIdx) {
         getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
           getSubProjects(projectSet).forEach(function (proj, projIdx) {
             const tr = document.createElement('tr');
-            const trF = $bodyF ? document.createElement('tr') : null;
-            if (setIdx % 2 === 1) {
-              tr.classList.add('manpower-set-stripe-b');
-              if (trF) trF.classList.add('manpower-set-stripe-b');
-            }
-            if (trF) {
-              appendManpowerRowNameCells(trF, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, true, true);
-              $bodyF.appendChild(trF);
-            } else {
-              appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, true);
-            }
-            var rowTotal = 0;
+            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
+            appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, true);
             for (let i = 0; i < nCols; ++i) {
               const tdC = document.createElement('td');
               tdC.className = 'center-cell col-mp';
               const v = proj.manpower[i] != null ? proj.manpower[i] : 0;
-              var vn = Number(v);
-              if (!isNaN(vn)) rowTotal += vn;
               if (admin) {
                 tdC.innerHTML = `
                 <span id="v-${setIdx}-${projectSetIdx}-${projIdx}-${i}" ondblclick="editManpower(${setIdx},${projectSetIdx},${projIdx},${i})">${escapeHtml(String(v))}</span>
@@ -5890,14 +5040,6 @@
               }
               tr.appendChild(tdC);
             }
-            const tdSum = document.createElement('td');
-            tdSum.className = 'center-cell col-sum';
-            tdSum.textContent = String(rowTotal);
-            tr.appendChild(tdSum);
-            const tdRatio = document.createElement('td');
-            tdRatio.className = 'center-cell col-ratio';
-            tdRatio.textContent = formatManpowerRatio(rowTotal, monthGrandTotal);
-            tr.appendChild(tdRatio);
             $body.appendChild(tr);
           });
         });
@@ -5906,51 +5048,23 @@
 
     function renderSeasonTableBody() {
       const $body = document.getElementById('register-season-body');
-      const $bodyF = document.getElementById('register-season-body-frozen');
-      if (!$body || !$bodyF) return;
+      if (!$body) return;
       $body.innerHTML = '';
-      $bodyF.innerHTML = '';
       const nCols = deptFlatCount();
       const y = manpowerSelYear;
-      var seasonGrandTotal = 0;
-      data.forEach(function (set) {
-        getProgramProjectSets(set).forEach(function (projectSet) {
-          getSubProjects(projectSet).forEach(function (proj) {
-            var rowSum = 0;
-            for (let i = 0; i < nCols; ++i) rowSum += sumQuarterDept(proj, y, manpowerSelQuarter, i);
-            seasonGrandTotal += rowSum;
-          });
-        });
-      });
       const admin = canEditPanel('manpower');
       data.forEach(function (set, setIdx) {
         getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
           getSubProjects(projectSet).forEach(function (proj, projIdx) {
             const tr = document.createElement('tr');
-            const trF = document.createElement('tr');
-            if (setIdx % 2 === 1) {
-              tr.classList.add('manpower-set-stripe-b');
-              trF.classList.add('manpower-set-stripe-b');
-            }
-            appendManpowerRowNameCells(trF, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, false, true);
-            var rowTotal = 0;
+            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
+            appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, false);
             for (let i = 0; i < nCols; ++i) {
               const tdC = document.createElement('td');
               tdC.className = 'center-cell col-mp manpower-readonly-cell';
-              var v = sumQuarterDept(proj, y, manpowerSelQuarter, i);
-              rowTotal += v;
-              tdC.textContent = String(v);
+              tdC.textContent = String(sumQuarterDept(proj, y, manpowerSelQuarter, i));
               tr.appendChild(tdC);
             }
-            const tdSum = document.createElement('td');
-            tdSum.className = 'center-cell col-sum manpower-readonly-cell';
-            tdSum.textContent = String(rowTotal);
-            tr.appendChild(tdSum);
-            const tdRatio = document.createElement('td');
-            tdRatio.className = 'center-cell col-ratio manpower-readonly-cell';
-            tdRatio.textContent = formatManpowerRatio(rowTotal, seasonGrandTotal);
-            tr.appendChild(tdRatio);
-            $bodyF.appendChild(trF);
             $body.appendChild(tr);
           });
         });
@@ -5959,51 +5073,23 @@
 
     function renderYearTableBody() {
       const $body = document.getElementById('register-year-body');
-      const $bodyF = document.getElementById('register-year-body-frozen');
-      if (!$body || !$bodyF) return;
+      if (!$body) return;
       $body.innerHTML = '';
-      $bodyF.innerHTML = '';
       const nCols = deptFlatCount();
       const y = manpowerSelYear;
-      var yearGrandTotal = 0;
-      data.forEach(function (set) {
-        getProgramProjectSets(set).forEach(function (projectSet) {
-          getSubProjects(projectSet).forEach(function (proj) {
-            var rowSum = 0;
-            for (let i = 0; i < nCols; ++i) rowSum += sumYearDept(proj, y, i);
-            yearGrandTotal += rowSum;
-          });
-        });
-      });
       const admin = canEditPanel('manpower');
       data.forEach(function (set, setIdx) {
         getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
           getSubProjects(projectSet).forEach(function (proj, projIdx) {
             const tr = document.createElement('tr');
-            const trF = document.createElement('tr');
-            if (setIdx % 2 === 1) {
-              tr.classList.add('manpower-set-stripe-b');
-              trF.classList.add('manpower-set-stripe-b');
-            }
-            appendManpowerRowNameCells(trF, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, false, true);
-            var rowTotal = 0;
+            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
+            appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, false);
             for (let i = 0; i < nCols; ++i) {
               const tdC = document.createElement('td');
               tdC.className = 'center-cell col-mp manpower-readonly-cell';
-              var v = sumYearDept(proj, y, i);
-              rowTotal += v;
-              tdC.textContent = String(v);
+              tdC.textContent = String(sumYearDept(proj, y, i));
               tr.appendChild(tdC);
             }
-            const tdSum = document.createElement('td');
-            tdSum.className = 'center-cell col-sum manpower-readonly-cell';
-            tdSum.textContent = String(rowTotal);
-            tr.appendChild(tdSum);
-            const tdRatio = document.createElement('td');
-            tdRatio.className = 'center-cell col-ratio manpower-readonly-cell';
-            tdRatio.textContent = formatManpowerRatio(rowTotal, yearGrandTotal);
-            tr.appendChild(tdRatio);
-            $bodyF.appendChild(trF);
             $body.appendChild(tr);
           });
         });
@@ -6018,31 +5104,13 @@
         syncProjectManpowerPointerToMonth();
         renderManpowerTheadMonth();
         renderMonthTableBody();
-        ensureRegisterMonthScrollSync();
       } else if (manpowerSubView === 'season') {
         renderManpowerTheadSeason();
         renderSeasonTableBody();
-        ensureReadonlySplitScrollSync('register-season-split-left-wrap', 'register-season-split-right-wrap');
       } else {
         renderManpowerTheadYear();
         renderYearTableBody();
-        ensureReadonlySplitScrollSync('register-year-split-left-wrap', 'register-year-split-right-wrap');
       }
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          syncManpowerTableStickyLayout();
-          if (manpowerSubView === 'month') {
-            syncRegisterMonthSplitTheadHeights();
-            syncManpowerTableStickyLayout();
-          } else if (manpowerSubView === 'season') {
-            syncReadonlySplitTheadHeights('register-table-season-frozen', 'register-table-season');
-            syncManpowerTableStickyLayout();
-          } else {
-            syncReadonlySplitTheadHeights('register-table-year-frozen', 'register-table-year');
-            syncManpowerTableStickyLayout();
-          }
-        });
-      });
     }
 
     // 编辑项目集名称（以阶段表为准，同步到人力表）
@@ -6251,6 +5319,9 @@
             p.classList.toggle('active', p.id === target);
           });
           scrollMainToTop();
+          if (target === 'panel-guide' && typeof window.__renderGuideMenu === 'function') {
+            window.__renderGuideMenu();
+          }
           if (target === 'panel-settings') {
             initSettingsPanelOnce();
             updateSettingsPanelRoleUi();
@@ -6286,40 +5357,367 @@
         });
       })();
 
-      try {
-        await loadRegistryData();
-        loadAppSettings();
-        initManpowerTimeUi();
-        initPhaseTimeUi();
-        initRiskAnalysisUi();
-        renderTable();
-        renderRiskTable();
-        renderPhaseTable();
-        applyPermissionToAllUI();
-        initSettingsPanelOnce();
-        updateSettingsPanelRoleUi();
-      } catch (initErr) {
-        console.warn('[PM-tool] 初始化数据或渲染失败', initErr);
-        try {
-          alert('页面初始化出现异常，已尽力载入本地数据。详情见控制台。');
-        } catch (aErr) {}
-        try {
-          loadSavedData();
+      setTimeout(function () {
+        (async function () {
+          await loadRegistryData();
           loadAppSettings();
+          initManpowerTimeUi();
+          initPhaseTimeUi();
+          initRiskAnalysisUi();
           renderTable();
           renderRiskTable();
           renderPhaseTable();
           applyPermissionToAllUI();
           initSettingsPanelOnce();
           updateSettingsPanelRoleUi();
-        } catch (fallbackErr) {
-          console.warn('[PM-tool] 降级初始化仍失败', fallbackErr);
-        }
-      }
+        })();
+      }, 0);
     }
     pmBootstrap().catch(function (err) {
       console.warn('[PM-tool] pmBootstrap failed', err);
     });
+  </script>
+  <script>
+// 定义指引数据结构（模拟本地数据，实际可用localStorage或服务端替换）
+// 每项：title 列表标题（可点击）；body 说明正文；link 选填，合法 http(s) 时点击标题新开页
+var GUIDE_BLOCK_KEYS = ['design', 'techDesign', 'develop', 'operate'];
+var guideData = {
+  design: [
+    { id: 1, title: '完成需求文档撰写', body: '', link: '' },
+    { id: 2, title: '绘制原型并评审', body: '', link: '' }
+  ],
+  techDesign: [
+    { id: 1, title: '完成技术方案与接口设计', body: '', link: '' },
+    { id: 2, title: '组织技术评审并落实结论', body: '', link: '' }
+  ],
+  develop: [
+    { id: 1, title: '代码开发并提交MR', body: '', link: '' },
+    { id: 2, title: '完成自测及代码Review', body: '', link: '' }
+  ],
+  operate: [
+    { id: 1, title: '上线通知相关干系人', body: '', link: '' },
+    { id: 2, title: '监控数据并反馈问题', body: '', link: '' }
+  ]
+};
+
+// 保证下次刷新面板时同步内容
+function saveGuideData() {
+  if (window.localStorage) {
+    localStorage.setItem('pmGuideData', JSON.stringify(guideData));
+  }
+}
+function loadGuideData() {
+  if (window.localStorage) {
+    var s = localStorage.getItem('pmGuideData');
+    if (s) guideData = JSON.parse(s);
+  }
+}
+loadGuideData();
+
+if (!Array.isArray(guideData.techDesign)) {
+  guideData.techDesign = [
+    { id: 1, title: '完成技术方案与接口设计', body: '', link: '' },
+    { id: 2, title: '组织技术评审并落实结论', body: '', link: '' }
+  ];
+  saveGuideData();
+}
+
+function normalizeGuideItem(it) {
+  var tit = it.title != null ? String(it.title).trim() : '';
+  if (!tit && it.text != null) tit = String(it.text).trim();
+  if (!tit) tit = '（未命名）';
+  return {
+    id: it.id,
+    title: tit,
+    body: it.body != null ? String(it.body) : '',
+    link: it.link != null ? String(it.link).trim() : ''
+  };
+}
+
+function normalizeGuideData() {
+  GUIDE_BLOCK_KEYS.forEach(function (k) {
+    var arr = guideData[k];
+    if (!Array.isArray(arr)) {
+      guideData[k] = [];
+      return;
+    }
+    guideData[k] = arr.map(normalizeGuideItem);
+  });
+}
+
+normalizeGuideData();
+try {
+  var serialized = JSON.stringify(guideData);
+  if (window.localStorage && localStorage.getItem('pmGuideData') !== serialized) {
+    saveGuideData();
+  }
+} catch (err) {
+  saveGuideData();
+}
+
+function isSafeHttpUrl(s) {
+  if (!s || typeof s !== 'string') return false;
+  try {
+    var u = new URL(s.trim());
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch (err) {
+    return false;
+  }
+}
+
+var guideItemModalCtx = null;
+
+function openGuideItemModal(blockKey, itemId) {
+  if (typeof window.pmIsAdmin === 'function' && !window.pmIsAdmin()) {
+    alert('当前为普通用户身份，仅可查看。请在「设置 → 权限管理」中切换为管理员后再操作。');
+    return;
+  }
+  guideItemModalCtx = { blockKey: blockKey, itemId: itemId };
+  var mask = document.getElementById('guide-item-mask');
+  var heading = document.getElementById('guide-item-modal-heading');
+  var t = document.getElementById('guide-item-title');
+  var b = document.getElementById('guide-item-body');
+  var l = document.getElementById('guide-item-link');
+  if (itemId == null) {
+    heading.textContent = '添加指引';
+    t.value = '';
+    b.value = '';
+    l.value = '';
+  } else {
+    var arr = guideData[blockKey] || [];
+    var item = arr.find(function (x) { return x.id === itemId; });
+    if (!item) {
+      guideItemModalCtx = null;
+      return;
+    }
+    heading.textContent = '编辑指引';
+    t.value = item.title || '';
+    b.value = item.body || '';
+    l.value = item.link || '';
+  }
+  mask.classList.add('active');
+  mask.setAttribute('aria-hidden', 'false');
+  requestAnimationFrame(function () {
+    t.focus();
+  });
+}
+
+function closeGuideItemModal() {
+  guideItemModalCtx = null;
+  var mask = document.getElementById('guide-item-mask');
+  mask.classList.remove('active');
+  mask.setAttribute('aria-hidden', 'true');
+}
+
+function saveGuideItemModal() {
+  if (typeof window.pmIsAdmin === 'function' && !window.pmIsAdmin()) {
+    return;
+  }
+  var ctx = guideItemModalCtx;
+  if (!ctx) return;
+  var t = document.getElementById('guide-item-title');
+  var b = document.getElementById('guide-item-body');
+  var l = document.getElementById('guide-item-link');
+  var title = t.value.trim();
+  if (!title) {
+    alert('请填写标题');
+    t.focus();
+    return;
+  }
+  var body = b.value.trim();
+  var link = l.value.trim();
+  if (link && !isSafeHttpUrl(link)) {
+    alert('链接需为以 http:// 或 https:// 开头的完整地址');
+    l.focus();
+    return;
+  }
+  var arr = guideData[ctx.blockKey];
+  if (!Array.isArray(arr)) arr = guideData[ctx.blockKey] = [];
+  if (ctx.itemId == null) {
+    var nextId = arr.length ? Math.max.apply(null, arr.map(function (x) { return x.id; })) + 1 : 1;
+    arr.push({ id: nextId, title: title, body: body, link: link });
+  } else {
+    var obj = arr.find(function (x) { return x.id === ctx.itemId; });
+    if (obj) {
+      obj.title = title;
+      obj.body = body;
+      obj.link = link;
+    }
+  }
+  saveGuideData();
+  closeGuideItemModal();
+  renderGuideList(ctx.blockKey);
+}
+
+function openGuideDetailModal(item) {
+  var mask = document.getElementById('guide-detail-mask');
+  var titleEl = document.getElementById('guide-detail-title');
+  var bodyEl = document.getElementById('guide-detail-body');
+  var wrap = document.getElementById('guide-detail-link-wrap');
+  var a = document.getElementById('guide-detail-link');
+  titleEl.textContent = item.title || '';
+  var bodyText = item.body ? String(item.body) : '';
+  if (item.link && !isSafeHttpUrl(item.link)) {
+    bodyText = bodyText ? bodyText + '\n\n链接：' + item.link : '链接：' + item.link;
+  }
+  bodyEl.textContent = bodyText || '暂无详细说明。';
+  wrap.hidden = true;
+  a.removeAttribute('href');
+  mask.classList.add('active');
+  mask.setAttribute('aria-hidden', 'false');
+}
+
+function closeGuideDetailModal() {
+  var mask = document.getElementById('guide-detail-mask');
+  mask.classList.remove('active');
+  mask.setAttribute('aria-hidden', 'true');
+}
+
+function onGuideTitleClick(item) {
+  if (isSafeHttpUrl(item.link)) {
+    window.open(item.link.trim(), '_blank', 'noopener');
+    return;
+  }
+  openGuideDetailModal(item);
+}
+
+function setupGuideModals() {
+  var itemMask = document.getElementById('guide-item-mask');
+  var detailMask = document.getElementById('guide-detail-mask');
+  document.getElementById('guide-item-save').addEventListener('click', saveGuideItemModal);
+  document.getElementById('guide-item-cancel').addEventListener('click', closeGuideItemModal);
+  document.getElementById('guide-detail-close').addEventListener('click', closeGuideDetailModal);
+  itemMask.addEventListener('click', function (e) {
+    if (e.target === itemMask) closeGuideItemModal();
+  });
+  detailMask.addEventListener('click', function (e) {
+    if (e.target === detailMask) closeGuideDetailModal();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (itemMask.classList.contains('active')) {
+      e.preventDefault();
+      closeGuideItemModal();
+    } else if (detailMask.classList.contains('active')) {
+      e.preventDefault();
+      closeGuideDetailModal();
+    }
+  });
+}
+
+setupGuideModals();
+
+function renderGuideMenu() {
+  var p = document.getElementById('panel-guide');
+  if (!p) return;
+  var admin = typeof window.pmIsAdmin === 'function' && window.pmIsAdmin();
+  // 板块定义
+  var blocks = [
+    { key: 'design', name: '产品设计' },
+    { key: 'techDesign', name: '技术设计' },
+    { key: 'develop', name: '开发 + 测试' },
+    { key: 'operate', name: '运营' }
+  ];
+  let html = `
+    <div style="padding:2em 1.5em 2em 2em;max-width:780px;">
+      <div style="display: flex; gap: 2em; flex-wrap:wrap;">
+  `;
+  blocks.forEach(block => {
+    html += `
+      <div style="min-width:220px;flex:1 1 260px;background:var(--accent-soft);padding:1.1em 1em 2em 1.1em;margin-bottom:1.5em;border-radius:var(--radius-sm);">
+        <div style="font-weight:bold;font-size:1.07em;margin-bottom:1em;letter-spacing:.02em;">${block.name}</div>
+        <ul id="guide-list-${block.key}" style="list-style:none;padding:0;margin:0 0 1em 0;"></ul>
+        ${admin ? `<button type="button" class="guide-btn-open-add" data-guide-block="${block.key}">+ 添加指引</button>` : ''}
+      </div>
+    `;
+  });
+  html += `
+      </div>
+      <p style="color:var(--text-muted);margin-top:2em;font-size:14px;">
+        如需更多帮助请联系基础平台PMO。
+      </p>
+    </div>
+    <style>
+      .guide-btn-edit,.guide-btn-del {
+        background: none; border: none; color: var(--accent); cursor: pointer; font-size: 15px; margin-left: 3px; padding:2px 4px;border-radius:3px; flex-shrink:0;
+      }
+      .guide-btn-del { color: var(--danger);}
+      .guide-btn-edit:hover { background: #eee; }
+      .guide-btn-del:hover { background: var(--danger-soft);}
+    </style>
+  `;
+  p.innerHTML = html;
+
+  // 为每个菜单渲染当前列表
+  blocks.forEach(block => renderGuideList(block.key));
+  if (admin) {
+    p.querySelectorAll('.guide-btn-open-add').forEach(function (btn) {
+      btn.onclick = function () {
+        var key = btn.getAttribute('data-guide-block');
+        if (key) openGuideItemModal(key, null);
+      };
+    });
+  }
+}
+
+// 渲染单个list的菜单内容
+function renderGuideList(blockKey) {
+  var ul = document.getElementById("guide-list-"+blockKey);
+  if (!ul) return;
+  var admin = typeof window.pmIsAdmin === 'function' && window.pmIsAdmin();
+  var arr = guideData[blockKey] || [];
+  ul.innerHTML = "";
+  arr.forEach(function (item) {
+    var li = document.createElement('li');
+    li.style.display = 'flex';
+    li.style.alignItems = 'center';
+    li.style.gap = '8px';
+    li.style.padding = '0 0 8px 0';
+    li.setAttribute('data-id', item.id);
+
+    var titleBtn = document.createElement('button');
+    titleBtn.type = 'button';
+    titleBtn.className = 'guide-title-link';
+    titleBtn.setAttribute('title', isSafeHttpUrl(item.link) ? '打开链接（新标签页）' : '查看指引说明');
+    titleBtn.textContent = item.title || '（未命名）';
+    titleBtn.addEventListener('click', function () {
+      onGuideTitleClick(item);
+    });
+
+    li.appendChild(titleBtn);
+    if (admin) {
+      var editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'guide-btn-edit';
+      editBtn.title = '编辑';
+      editBtn.textContent = '编辑';
+      editBtn.addEventListener('click', function () {
+        openGuideItemModal(blockKey, item.id);
+      });
+
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'guide-btn-del';
+      delBtn.title = '删除';
+      delBtn.textContent = '删除';
+      delBtn.addEventListener('click', function () {
+        if (confirm('确认要删除该指引项？')) {
+          var list = guideData[blockKey];
+          var idx = list.findIndex(function (x) { return x.id === item.id; });
+          if (idx >= 0) list.splice(idx, 1);
+          saveGuideData();
+          renderGuideList(blockKey);
+        }
+      });
+      li.appendChild(editBtn);
+      li.appendChild(delBtn);
+    }
+    ul.appendChild(li);
+  });
+}
+
+window.__renderGuideMenu = renderGuideMenu;
+
   </script>
 </body>
 </html>

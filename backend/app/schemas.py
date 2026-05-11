@@ -3,7 +3,7 @@
 
 人力：data[].name / projects[].name / manpowerByMonth / manpower（可选，运行时列）
       deptGroups[].name / depts
-阶段：phaseData[].name / projects[].name / phaseByMonth[yyyy-MM].{goal,deliver,highlight,weakness,nextNote}
+阶段：phaseData[].name / projects[].name / phaseByMonth[yyyy-MM].{goal,deliver,planMatch,highlight,weakness,nextNote}
 风险：riskRows[].{project,regTime,registrant,desc,assessment,level,status,resolveEta}
 """
 
@@ -66,12 +66,13 @@ class ManpowerState(BaseModel):
 
 
 class PhaseMonthRow(BaseModel):
-    """phaseByMonth 中单月一行：PHASE_FIELD_KEYS / newPhaseMonthRow。"""
+    """phaseByMonth 中单月一行：与前端 PHASE_FIELD_KEYS / newPhaseMonthRow 一致。"""
 
     model_config = ConfigDict(extra="forbid")
 
     goal: str = ""
     deliver: str = ""
+    planMatch: str = ""
     highlight: str = ""
     weakness: str = ""
     nextNote: str = ""
