@@ -6,31 +6,50 @@
   <title>ProjectGuard · 项目管理登记</title>
   <style>
     :root {
-      --bg: #f2f1ee;
+      /* Ant Design 5 风格 token（保留原变量名；行尾注释为改前取值） */
+      --bg: #f5f5f5; /* #f2f1ee */
       --surface: #ffffff;
-      --border: #e0ddd8;
-      --border-light: #eceae6;
-      --text: #2a2a2a;
-      --text-muted: #6f6d6a;
-      --accent: #5a6b5c;
-      --accent-soft: #eef1ee;
-      --header-bg: #ebe8e3;
-      --header-bg-sub: #f4f2ef;
+      --border: #d9d9d9; /* #e0ddd8 */
+      --border-light: #f0f0f0; /* #eceae6 */
+      --text: rgba(0, 0, 0, 0.88); /* #2a2a2a */
+      --text-muted: rgba(0, 0, 0, 0.65); /* #6f6d6a */
+      --accent: #1677ff; /* #5a6b5c */
+      --accent-hover: #4096ff;
+      --accent-active: #0958d9;
+      --accent-soft: #e6f4ff; /* #eef1ee */
+      --header-bg: #fafafa; /* #ebe8e3 */
+      --header-bg-sub: #f5f5f5; /* #f4f2ef */
+      /* 部门 / 人力条纹：按计划保留原暖色区分块 */
       --dept-tech-bg: #dfe8eb;
       --dept-market-bg: #e8e3dc;
       --manpower-stripe-b-main: #e5e2dc;
       --manpower-stripe-b-sub: #ece9e4;
       --manpower-stripe-b-mp: #f3f1ec;
-      --danger: #9a4a4a;
-      --danger-soft: #faf6f6;
-      --radius: 10px;
+      --danger: #ff4d4f; /* #9a4a4a */
+      --danger-soft: #fff2f0; /* #faf6f6 */
+      --focus-ring: 0 0 0 2px rgba(22, 119, 255, 0.2);
+      --table-row-hover: #fafafa;
+      --radius: 8px; /* 10px */
       --radius-sm: 6px;
-      --shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02);
       --font: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
     }
 
     * {
       box-sizing: border-box;
+    }
+
+    .tabs .tab:focus-visible,
+    .manpower-subtab:focus-visible,
+    .risk-analysis-sort-btn:focus-visible,
+    .risk-th-sort-btn:focus-visible,
+    .settings-nav-btn:focus-visible,
+    .text-action:focus-visible,
+    .icon-btn:focus-visible,
+    .btn-add:focus-visible,
+    .btn-save-panel:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
     }
 
     body {
@@ -90,7 +109,7 @@
       margin: 0 0 10px;
       background: var(--bg);
       border-bottom: 1px solid var(--border-light);
-      box-shadow: 0 2px 10px rgba(45, 42, 38, 0.06);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
       box-sizing: border-box;
     }
 
@@ -329,7 +348,7 @@
     }
 
     .register-col-resize-handle:hover {
-      background: rgba(90, 107, 92, 0.18);
+      background: rgba(22, 119, 255, 0.12);
     }
 
     #register-table thead th.dept-g-0 {
@@ -694,7 +713,7 @@
     .input-p:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(90, 107, 92, 0.15);
+      box-shadow: var(--focus-ring);
     }
 
     .manpower-panel-head {
@@ -870,7 +889,7 @@
     }
 
     .manpower-toolbar .manpower-analysis-btn:hover {
-      background: #e2ebe3;
+      background: #d6ebff;
     }
 
     .manpower-toolbar select,
@@ -896,22 +915,25 @@
       font-size: 14px;
       padding: 9px 22px;
       border-radius: var(--radius-sm);
-      background: var(--text);
-      color: var(--surface);
-      border: 1px solid var(--text);
+      background: var(--accent);
+      color: #fff;
+      border: 1px solid var(--accent);
       font-weight: 600;
       letter-spacing: 0.06em;
       cursor: pointer;
       font-family: inherit;
-      transition: opacity 0.2s, transform 0.12s;
+      transition: background 0.2s, border-color 0.2s, transform 0.12s;
     }
 
     .btn-add:hover {
-      opacity: 0.88;
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
     }
 
     .btn-add:active {
       transform: scale(0.98);
+      background: var(--accent-active);
+      border-color: var(--accent-active);
     }
 
     .btn-save-panel {
@@ -988,12 +1010,16 @@
     .risk-select:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 2px rgba(90, 107, 92, 0.12);
+      box-shadow: var(--focus-ring);
     }
 
     textarea.risk-input {
       min-height: 44px;
       resize: vertical;
+    }
+
+    table#risk-table tbody tr:hover td {
+      background: var(--table-row-hover);
     }
 
     .risk-select.risk-color-progress { background: #e7f5ff; color: #0b5aa2; border-color: #b6ddff; }
@@ -1084,7 +1110,7 @@
 
     .modal-mask {
       z-index: 100;
-      background: rgba(45, 42, 38, 0.35);
+      background: rgba(0, 0, 0, 0.45);
       position: fixed;
       left: 0;
       top: 0;
@@ -1097,10 +1123,6 @@
 
     .modal-mask.active {
       display: flex;
-    }
-
-    .guide-modal-mask {
-      z-index: 150;
     }
 
     .manpower-analysis-mask {
@@ -1211,126 +1233,6 @@
       max-height: 70vh;
     }
 
-    .guide-item-dialog,
-    .guide-detail-dialog {
-      text-align: left;
-      max-width: 520px;
-      width: 92vw;
-    }
-
-    .guide-detail-dialog {
-      max-width: 640px;
-    }
-
-    .guide-item-dialog h3,
-    .guide-detail-dialog h3 {
-      margin: 0 0 4px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .guide-item-dialog label {
-      display: block;
-      margin-top: 14px;
-      font-size: 13px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-
-    .guide-item-dialog input[type="text"],
-    .guide-item-dialog input[type="url"],
-    .guide-item-dialog textarea {
-      width: 100%;
-      margin-top: 6px;
-      padding: 8px 10px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-      font-family: inherit;
-      font-size: 14px;
-      box-sizing: border-box;
-      background: #fff;
-      color: var(--text);
-    }
-
-    .guide-item-dialog textarea {
-      min-height: 120px;
-      resize: vertical;
-      line-height: 1.5;
-    }
-
-    .guide-modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 22px;
-      flex-wrap: wrap;
-    }
-
-    .guide-modal-actions button {
-      margin: 0;
-    }
-
-    .guide-detail-body {
-      margin-top: 14px;
-      font-size: 14px;
-      line-height: 1.6;
-      color: var(--text);
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .guide-detail-body:empty {
-      display: none;
-    }
-
-    .guide-detail-link-wrap {
-      margin-top: 16px;
-    }
-
-    .guide-detail-link-wrap a {
-      color: var(--accent);
-      font-weight: 600;
-    }
-
-    .guide-title-link {
-      flex: 1 1 auto;
-      min-width: 0;
-      background: none;
-      border: none;
-      padding: 0;
-      margin: 0;
-      font: inherit;
-      font-weight: 600;
-      color: var(--accent);
-      text-align: left;
-      cursor: pointer;
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-
-    .guide-title-link:hover {
-      color: var(--text);
-    }
-
-    .guide-btn-open-add {
-      width: 100%;
-      padding: 8px 12px;
-      border-radius: var(--radius-sm);
-      border: 1px dashed var(--border);
-      background: var(--surface);
-      color: var(--accent);
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      font-family: inherit;
-    }
-
-    .guide-btn-open-add:hover {
-      border-color: var(--accent);
-      background: var(--accent-soft);
-    }
-
     .modal-box {
       background: var(--surface);
       color: var(--text);
@@ -1350,9 +1252,9 @@
     }
 
     .modal-box button {
-      background: var(--text);
-      color: var(--surface);
-      border: 1px solid var(--text);
+      background: var(--accent);
+      color: #fff;
+      border: 1px solid var(--accent);
       padding: 8px 20px;
       border-radius: var(--radius-sm);
       cursor: pointer;
@@ -1360,11 +1262,13 @@
       font-weight: 600;
       margin: 18px 8px 0;
       font-family: inherit;
-      transition: opacity 0.2s;
+      transition: background 0.2s, border-color 0.2s, opacity 0.2s;
     }
 
     .modal-box button:hover {
-      opacity: 0.9;
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+      opacity: 1;
     }
 
     .modal-box button.cancel-btn {
@@ -1806,7 +1710,6 @@
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-phase">项目阶段状态</button>
         <button type="button" class="tab active" role="tab" aria-selected="true" data-target="panel-manpower">部门项目人力登记</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-risk">项目风险登记</button>
-        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-guide">PM操作指引</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-settings">设置</button>
       </div>
     </div>
@@ -1908,7 +1811,6 @@
       <button type="button" class="btn-save-panel risk-edit-only" onclick="saveRiskData()" title="仅保存本页风险登记到本机浏览器">保存</button>
     </div>
   </div>
-  <div id="panel-guide" class="tab-panel" role="tabpanel" aria-label="PM操作指引"></div>
   <div id="panel-settings" class="tab-panel" role="tabpanel" aria-label="设置">
     <div class="settings-layout">
       <nav class="settings-nav" aria-label="设置模块">
@@ -1984,11 +1886,6 @@
                 <td class="perm-col-muted"><span class="perm-tag viewer">仅查看</span>列表与字段内容，不可改、不可删、不可保存</td>
               </tr>
               <tr>
-                <td>PM操作指引</td>
-                <td class="perm-col-muted"><span class="perm-tag admin">增删改查</span>指引条目；可保存到本机</td>
-                <td class="perm-col-muted"><span class="perm-tag viewer">仅查看</span>可点击标题查看说明或打开链接，不可添加/编辑/删除</td>
-              </tr>
-              <tr>
                 <td>设置</td>
                 <td class="perm-col-muted"><span class="perm-tag admin">可访问</span>含本页说明与人员账号管理</td>
                 <td class="perm-col-muted"><span class="perm-tag viewer">可访问</span>查看权限说明；不可管理人员账号</td>
@@ -2016,35 +1913,6 @@
       <div id="modal-msg">确认删除？</div>
       <button type="button" id="modal-btn-confirm" onclick="confirmDelete()">确认</button>
       <button type="button" id="modal-btn-cancel" class="cancel-btn" onclick="closeModal()">取消</button>
-    </div>
-  </div>
-
-  <div class="modal-mask guide-modal-mask" id="guide-item-mask" aria-hidden="true">
-    <div class="modal-box guide-item-dialog" role="dialog" aria-modal="true" aria-labelledby="guide-item-modal-heading">
-      <h3 id="guide-item-modal-heading">添加指引</h3>
-      <label for="guide-item-title">标题 <span style="color:var(--danger)">*</span></label>
-      <input type="text" id="guide-item-title" autocomplete="off" placeholder="简短标题，将显示在列表中">
-      <label for="guide-item-body">说明内容</label>
-      <textarea id="guide-item-body" placeholder="可填写操作说明、注意事项等（选填）"></textarea>
-      <label for="guide-item-link">链接</label>
-      <input type="url" id="guide-item-link" autocomplete="off" placeholder="https://… 选填，填写后点击标题可在新标签打开">
-      <div class="guide-modal-actions">
-        <button type="button" id="guide-item-save" class="guide-item-primary">保存</button>
-        <button type="button" id="guide-item-cancel" class="cancel-btn">取消</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-mask guide-modal-mask" id="guide-detail-mask" aria-hidden="true">
-    <div class="modal-box guide-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="guide-detail-title">
-      <h3 id="guide-detail-title"></h3>
-      <div id="guide-detail-body" class="guide-detail-body"></div>
-      <div id="guide-detail-link-wrap" class="guide-detail-link-wrap" hidden>
-        <a id="guide-detail-link" href="#" target="_blank" rel="noopener noreferrer">在新标签页打开链接</a>
-      </div>
-      <div class="guide-modal-actions" style="justify-content:center">
-        <button type="button" id="guide-detail-close" class="cancel-btn">关闭</button>
-      </div>
     </div>
   </div>
 
@@ -3123,10 +2991,6 @@
         renderRiskTable();
         renderPhaseTable();
         updateSettingsPanelRoleUi();
-        var pg = document.getElementById('panel-guide');
-        if (pg && pg.classList.contains('active') && typeof window.__renderGuideMenu === 'function') {
-          window.__renderGuideMenu();
-        }
       } catch (e) {}
     }
 
@@ -5319,9 +5183,6 @@
             p.classList.toggle('active', p.id === target);
           });
           scrollMainToTop();
-          if (target === 'panel-guide' && typeof window.__renderGuideMenu === 'function') {
-            window.__renderGuideMenu();
-          }
           if (target === 'panel-settings') {
             initSettingsPanelOnce();
             updateSettingsPanelRoleUi();
@@ -5376,348 +5237,6 @@
     pmBootstrap().catch(function (err) {
       console.warn('[PM-tool] pmBootstrap failed', err);
     });
-  </script>
-  <script>
-// 定义指引数据结构（模拟本地数据，实际可用localStorage或服务端替换）
-// 每项：title 列表标题（可点击）；body 说明正文；link 选填，合法 http(s) 时点击标题新开页
-var GUIDE_BLOCK_KEYS = ['design', 'techDesign', 'develop', 'operate'];
-var guideData = {
-  design: [
-    { id: 1, title: '完成需求文档撰写', body: '', link: '' },
-    { id: 2, title: '绘制原型并评审', body: '', link: '' }
-  ],
-  techDesign: [
-    { id: 1, title: '完成技术方案与接口设计', body: '', link: '' },
-    { id: 2, title: '组织技术评审并落实结论', body: '', link: '' }
-  ],
-  develop: [
-    { id: 1, title: '代码开发并提交MR', body: '', link: '' },
-    { id: 2, title: '完成自测及代码Review', body: '', link: '' }
-  ],
-  operate: [
-    { id: 1, title: '上线通知相关干系人', body: '', link: '' },
-    { id: 2, title: '监控数据并反馈问题', body: '', link: '' }
-  ]
-};
-
-// 保证下次刷新面板时同步内容
-function saveGuideData() {
-  if (window.localStorage) {
-    localStorage.setItem('pmGuideData', JSON.stringify(guideData));
-  }
-}
-function loadGuideData() {
-  if (window.localStorage) {
-    var s = localStorage.getItem('pmGuideData');
-    if (s) guideData = JSON.parse(s);
-  }
-}
-loadGuideData();
-
-if (!Array.isArray(guideData.techDesign)) {
-  guideData.techDesign = [
-    { id: 1, title: '完成技术方案与接口设计', body: '', link: '' },
-    { id: 2, title: '组织技术评审并落实结论', body: '', link: '' }
-  ];
-  saveGuideData();
-}
-
-function normalizeGuideItem(it) {
-  var tit = it.title != null ? String(it.title).trim() : '';
-  if (!tit && it.text != null) tit = String(it.text).trim();
-  if (!tit) tit = '（未命名）';
-  return {
-    id: it.id,
-    title: tit,
-    body: it.body != null ? String(it.body) : '',
-    link: it.link != null ? String(it.link).trim() : ''
-  };
-}
-
-function normalizeGuideData() {
-  GUIDE_BLOCK_KEYS.forEach(function (k) {
-    var arr = guideData[k];
-    if (!Array.isArray(arr)) {
-      guideData[k] = [];
-      return;
-    }
-    guideData[k] = arr.map(normalizeGuideItem);
-  });
-}
-
-normalizeGuideData();
-try {
-  var serialized = JSON.stringify(guideData);
-  if (window.localStorage && localStorage.getItem('pmGuideData') !== serialized) {
-    saveGuideData();
-  }
-} catch (err) {
-  saveGuideData();
-}
-
-function isSafeHttpUrl(s) {
-  if (!s || typeof s !== 'string') return false;
-  try {
-    var u = new URL(s.trim());
-    return u.protocol === 'http:' || u.protocol === 'https:';
-  } catch (err) {
-    return false;
-  }
-}
-
-var guideItemModalCtx = null;
-
-function openGuideItemModal(blockKey, itemId) {
-  if (typeof window.pmIsAdmin === 'function' && !window.pmIsAdmin()) {
-    alert('当前为普通用户身份，仅可查看。请在「设置 → 权限管理」中切换为管理员后再操作。');
-    return;
-  }
-  guideItemModalCtx = { blockKey: blockKey, itemId: itemId };
-  var mask = document.getElementById('guide-item-mask');
-  var heading = document.getElementById('guide-item-modal-heading');
-  var t = document.getElementById('guide-item-title');
-  var b = document.getElementById('guide-item-body');
-  var l = document.getElementById('guide-item-link');
-  if (itemId == null) {
-    heading.textContent = '添加指引';
-    t.value = '';
-    b.value = '';
-    l.value = '';
-  } else {
-    var arr = guideData[blockKey] || [];
-    var item = arr.find(function (x) { return x.id === itemId; });
-    if (!item) {
-      guideItemModalCtx = null;
-      return;
-    }
-    heading.textContent = '编辑指引';
-    t.value = item.title || '';
-    b.value = item.body || '';
-    l.value = item.link || '';
-  }
-  mask.classList.add('active');
-  mask.setAttribute('aria-hidden', 'false');
-  requestAnimationFrame(function () {
-    t.focus();
-  });
-}
-
-function closeGuideItemModal() {
-  guideItemModalCtx = null;
-  var mask = document.getElementById('guide-item-mask');
-  mask.classList.remove('active');
-  mask.setAttribute('aria-hidden', 'true');
-}
-
-function saveGuideItemModal() {
-  if (typeof window.pmIsAdmin === 'function' && !window.pmIsAdmin()) {
-    return;
-  }
-  var ctx = guideItemModalCtx;
-  if (!ctx) return;
-  var t = document.getElementById('guide-item-title');
-  var b = document.getElementById('guide-item-body');
-  var l = document.getElementById('guide-item-link');
-  var title = t.value.trim();
-  if (!title) {
-    alert('请填写标题');
-    t.focus();
-    return;
-  }
-  var body = b.value.trim();
-  var link = l.value.trim();
-  if (link && !isSafeHttpUrl(link)) {
-    alert('链接需为以 http:// 或 https:// 开头的完整地址');
-    l.focus();
-    return;
-  }
-  var arr = guideData[ctx.blockKey];
-  if (!Array.isArray(arr)) arr = guideData[ctx.blockKey] = [];
-  if (ctx.itemId == null) {
-    var nextId = arr.length ? Math.max.apply(null, arr.map(function (x) { return x.id; })) + 1 : 1;
-    arr.push({ id: nextId, title: title, body: body, link: link });
-  } else {
-    var obj = arr.find(function (x) { return x.id === ctx.itemId; });
-    if (obj) {
-      obj.title = title;
-      obj.body = body;
-      obj.link = link;
-    }
-  }
-  saveGuideData();
-  closeGuideItemModal();
-  renderGuideList(ctx.blockKey);
-}
-
-function openGuideDetailModal(item) {
-  var mask = document.getElementById('guide-detail-mask');
-  var titleEl = document.getElementById('guide-detail-title');
-  var bodyEl = document.getElementById('guide-detail-body');
-  var wrap = document.getElementById('guide-detail-link-wrap');
-  var a = document.getElementById('guide-detail-link');
-  titleEl.textContent = item.title || '';
-  var bodyText = item.body ? String(item.body) : '';
-  if (item.link && !isSafeHttpUrl(item.link)) {
-    bodyText = bodyText ? bodyText + '\n\n链接：' + item.link : '链接：' + item.link;
-  }
-  bodyEl.textContent = bodyText || '暂无详细说明。';
-  wrap.hidden = true;
-  a.removeAttribute('href');
-  mask.classList.add('active');
-  mask.setAttribute('aria-hidden', 'false');
-}
-
-function closeGuideDetailModal() {
-  var mask = document.getElementById('guide-detail-mask');
-  mask.classList.remove('active');
-  mask.setAttribute('aria-hidden', 'true');
-}
-
-function onGuideTitleClick(item) {
-  if (isSafeHttpUrl(item.link)) {
-    window.open(item.link.trim(), '_blank', 'noopener');
-    return;
-  }
-  openGuideDetailModal(item);
-}
-
-function setupGuideModals() {
-  var itemMask = document.getElementById('guide-item-mask');
-  var detailMask = document.getElementById('guide-detail-mask');
-  document.getElementById('guide-item-save').addEventListener('click', saveGuideItemModal);
-  document.getElementById('guide-item-cancel').addEventListener('click', closeGuideItemModal);
-  document.getElementById('guide-detail-close').addEventListener('click', closeGuideDetailModal);
-  itemMask.addEventListener('click', function (e) {
-    if (e.target === itemMask) closeGuideItemModal();
-  });
-  detailMask.addEventListener('click', function (e) {
-    if (e.target === detailMask) closeGuideDetailModal();
-  });
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape') return;
-    if (itemMask.classList.contains('active')) {
-      e.preventDefault();
-      closeGuideItemModal();
-    } else if (detailMask.classList.contains('active')) {
-      e.preventDefault();
-      closeGuideDetailModal();
-    }
-  });
-}
-
-setupGuideModals();
-
-function renderGuideMenu() {
-  var p = document.getElementById('panel-guide');
-  if (!p) return;
-  var admin = typeof window.pmIsAdmin === 'function' && window.pmIsAdmin();
-  // 板块定义
-  var blocks = [
-    { key: 'design', name: '产品设计' },
-    { key: 'techDesign', name: '技术设计' },
-    { key: 'develop', name: '开发 + 测试' },
-    { key: 'operate', name: '运营' }
-  ];
-  let html = `
-    <div style="padding:2em 1.5em 2em 2em;max-width:780px;">
-      <div style="display: flex; gap: 2em; flex-wrap:wrap;">
-  `;
-  blocks.forEach(block => {
-    html += `
-      <div style="min-width:220px;flex:1 1 260px;background:var(--accent-soft);padding:1.1em 1em 2em 1.1em;margin-bottom:1.5em;border-radius:var(--radius-sm);">
-        <div style="font-weight:bold;font-size:1.07em;margin-bottom:1em;letter-spacing:.02em;">${block.name}</div>
-        <ul id="guide-list-${block.key}" style="list-style:none;padding:0;margin:0 0 1em 0;"></ul>
-        ${admin ? `<button type="button" class="guide-btn-open-add" data-guide-block="${block.key}">+ 添加指引</button>` : ''}
-      </div>
-    `;
-  });
-  html += `
-      </div>
-      <p style="color:var(--text-muted);margin-top:2em;font-size:14px;">
-        如需更多帮助请联系基础平台PMO。
-      </p>
-    </div>
-    <style>
-      .guide-btn-edit,.guide-btn-del {
-        background: none; border: none; color: var(--accent); cursor: pointer; font-size: 15px; margin-left: 3px; padding:2px 4px;border-radius:3px; flex-shrink:0;
-      }
-      .guide-btn-del { color: var(--danger);}
-      .guide-btn-edit:hover { background: #eee; }
-      .guide-btn-del:hover { background: var(--danger-soft);}
-    </style>
-  `;
-  p.innerHTML = html;
-
-  // 为每个菜单渲染当前列表
-  blocks.forEach(block => renderGuideList(block.key));
-  if (admin) {
-    p.querySelectorAll('.guide-btn-open-add').forEach(function (btn) {
-      btn.onclick = function () {
-        var key = btn.getAttribute('data-guide-block');
-        if (key) openGuideItemModal(key, null);
-      };
-    });
-  }
-}
-
-// 渲染单个list的菜单内容
-function renderGuideList(blockKey) {
-  var ul = document.getElementById("guide-list-"+blockKey);
-  if (!ul) return;
-  var admin = typeof window.pmIsAdmin === 'function' && window.pmIsAdmin();
-  var arr = guideData[blockKey] || [];
-  ul.innerHTML = "";
-  arr.forEach(function (item) {
-    var li = document.createElement('li');
-    li.style.display = 'flex';
-    li.style.alignItems = 'center';
-    li.style.gap = '8px';
-    li.style.padding = '0 0 8px 0';
-    li.setAttribute('data-id', item.id);
-
-    var titleBtn = document.createElement('button');
-    titleBtn.type = 'button';
-    titleBtn.className = 'guide-title-link';
-    titleBtn.setAttribute('title', isSafeHttpUrl(item.link) ? '打开链接（新标签页）' : '查看指引说明');
-    titleBtn.textContent = item.title || '（未命名）';
-    titleBtn.addEventListener('click', function () {
-      onGuideTitleClick(item);
-    });
-
-    li.appendChild(titleBtn);
-    if (admin) {
-      var editBtn = document.createElement('button');
-      editBtn.type = 'button';
-      editBtn.className = 'guide-btn-edit';
-      editBtn.title = '编辑';
-      editBtn.textContent = '编辑';
-      editBtn.addEventListener('click', function () {
-        openGuideItemModal(blockKey, item.id);
-      });
-
-      var delBtn = document.createElement('button');
-      delBtn.type = 'button';
-      delBtn.className = 'guide-btn-del';
-      delBtn.title = '删除';
-      delBtn.textContent = '删除';
-      delBtn.addEventListener('click', function () {
-        if (confirm('确认要删除该指引项？')) {
-          var list = guideData[blockKey];
-          var idx = list.findIndex(function (x) { return x.id === item.id; });
-          if (idx >= 0) list.splice(idx, 1);
-          saveGuideData();
-          renderGuideList(blockKey);
-        }
-      });
-      li.appendChild(editBtn);
-      li.appendChild(delBtn);
-    }
-    ul.appendChild(li);
-  });
-}
-
-window.__renderGuideMenu = renderGuideMenu;
-
   </script>
 </body>
 </html>
