@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Production deployment script
 Creates a deployable package with backend + built frontend
