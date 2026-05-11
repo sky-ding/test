@@ -10,6 +10,7 @@
 若目标库中已有 users 或 registry 数据，默认会退出；可加 --force 清空两表后再导入。
 
 建议：先配置好 MySQL 并确保能连接，再运行本脚本；表不存在时会自动 create_all。
+迁移完成后请执行 `python scripts/check_db.py` 并做一次管理员 GET/PUT 冒烟（见 backend/README.md）。
 若已启动过应用且 seed 写入了 Sky，需使用 --force 或先手动清空表。
 """
 from __future__ import annotations

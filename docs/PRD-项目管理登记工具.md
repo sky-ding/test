@@ -1,8 +1,8 @@
 # 产品需求文档（PRD）
 
 **产品名称**：项目管理登记（Web 工具）  
-**文档版本**：1.2  
-**对应代码库**：前端 [`frontend/index.html`](../frontend/index.html)（主应用）、[`frontend/login.html`](../frontend/login.html)（登录页）；后端 [`backend/`](../backend/)（FastAPI + SQLite + 会话鉴权）  
+**文档版本**：1.3  
+**对应代码库**：前端 [`frontend/index.html`](../frontend/index.html)（主应用）、[`frontend/login.html`](../frontend/login.html)（登录页）；后端 [`backend/`](../backend/)（FastAPI + SQLAlchemy；**生产/团队推荐 MySQL**，未配置时本地可用 SQLite `backend/data/app.db`）+ 会话鉴权  
 **文档说明**：本文档基于当前代码实现梳理，用于产品对齐、验收与迭代规划。
 
 ---
@@ -16,7 +16,7 @@
 **持久化（当前实现）**：
 
 - **浏览器端**：人力、阶段、风险、列宽等仍可通过 **`localStorage`** 保存在本机浏览器（与早期单机版行为一致）。  
-- **服务端**：**FastAPI** 提供 **会话 Cookie 鉴权**（`POST /api/v1/auth/login` 等），并对 **项目阶段状态、部门项目人力登记、项目风险登记** 提供 **REST 接口** 读写 **SQLite**（`backend/data/app.db`）。**GET** 需登录；**PUT** 仅 **管理员**。前端主流程在启动时请求当前用户；未登录跳转 `login.html`。
+- **服务端**：**FastAPI** 提供 **会话 Cookie 鉴权**（`POST /api/v1/auth/login` 等），并对 **项目阶段状态、部门项目人力登记、项目风险登记** 提供 **REST 接口** 读写 **`registry`（与 `users` 同库）**：配置 **`PM_MYSQL_*`** 时使用 **MySQL**（多实例应指向同一库）；否则使用本地 **SQLite** `backend/data/app.db`。**GET** 需登录；**PUT** 仅 **管理员**。前端主流程在启动时请求当前用户；未登录跳转 `login.html`。
 
 适合本机或内网「静态页 + API」部署、轻量台账，以及需要 **账号级权限** 的小团队用法。
 
@@ -194,7 +194,7 @@ flowchart TD
 | `PM-tool-app-settings-v1` | 通用设置等（**不用于切换登录角色**） |
 | `PM-tool-register-colwidths-v1` | 月度表列宽 |
 
-### 5.2 服务端（SQLite，`registry` 文档表）
+### 5.2 服务端（MySQL 或 SQLite，`registry` 文档表）
 
 | 逻辑键 | HTTP | 载荷（与上表 JSON 结构对齐） |
 |--------|------|------------------------------|
@@ -202,7 +202,7 @@ flowchart TD
 | `phase` | `GET`/`PUT` `/api/v1/phase` | `{ phaseData, savedAt }` |
 | `risk` | `GET`/`PUT` `/api/v1/risk` | `{ riskRows, savedAt }` |
 
-**用户表（SQLite `users`）**：登录账号、密码哈希、角色、是否启用等；首次启动种子用户 **Sky**（初始密码见环境变量说明，默认 `123123`）。
+**用户表（`users`）**：登录账号、密码哈希、角色、是否启用等；首次启动种子用户 **Sky**（初始密码见环境变量说明，默认 `123123`）。表结构与 ORM 对 MySQL / SQLite 一致。
 
 **单租户 MVP**：`registry` 全局各类型一条快照；已支持 **多登录账号** 与 **管理员维护用户**，无多工作区隔离（可后续扩展）。
 
@@ -213,9 +213,9 @@ flowchart TD
 | 类别 | 说明 |
 |------|------|
 | 运行环境 | 现代浏览器；需联网加载 Chart.js CDN。使用登录与 API 时，前端须通过 **HTTP(S)** 访问（勿依赖 `file://`），以便 **Cookie 会话** 生效。 |
-| 后端 | Python 3 + FastAPI；SQLite 于 `backend/data/`；**会话密钥** `PM_SESSION_SECRET` 生产必填；CORS 见 `PM_CORS_ORIGINS`（默认含常见本机静态端口如 5500、3000）。 |
+| 后端 | Python 3 + FastAPI；**生产/团队** 使用 **MySQL**（`PM_MYSQL_*`）；本地开发可回落 **SQLite** `backend/data/app.db`。**会话密钥** `PM_SESSION_SECRET` 生产必填，**多实例须一致**；CORS 见 `PM_CORS_ORIGINS`。 |
 | 安全 | **基于 Cookie 的会话**；业务 **GET 需登录**，**PUT 需管理员**。`PM_AUTH_DISABLED=true` 仅本地调试。外链打开使用 `noopener`。 |
-| 容量 | localStorage 受浏览器配额限制；服务端受磁盘与 SQLite 单文件规模限制。 |
+| 容量 | localStorage 受浏览器配额限制；服务端受 MySQL 或 SQLite 部署规模与备份策略限制。 |
 | 多设备 | 浏览器存储不跨设备；同一后端 + 登录账号可共享服务端 `registry` 快照（单租户全局数据）。 |
 | 无障碍 | 部分 Tab、表格具备 `role`/`aria-*`；未完整审计 WCAG。 |
 
@@ -239,6 +239,7 @@ flowchart TD
 | 1.0 | 2026-04-11 | 初版，基于根目录单文件 `index.html` 梳理 |
 | 1.1 | 2026-04-11 | 前后端分目录；补充 FastAPI + SQLite 与服务端持久化说明；前端入口改为 `frontend/index.html` |
 | 1.2 | 2026-04-12 | 对齐 **登录与会话**、**服务端角色与人员账号**、**registry API 鉴权**；补充 `login.html`、退出与启动流程说明 |
+| 1.3 | 2026-05-12 | **团队生产推荐 MySQL**（`PM_MYSQL_*`）；与本地 SQLite 二选一说明；多实例共享 `PM_SESSION_SECRET` |
 
 ---
 

@@ -39,11 +39,11 @@ def main():
     print('Copying backend application...')
     copy_dir(os.path.join(backend_dir, 'app'), os.path.join(dist_dir, 'app'))
 
-    # Copy backend data if present
+    # 可选：复制 backend/data 中非库文件（不复制 *.db，避免把开发机 SQLite 打进生产包；团队生产应使用 MySQL）
     backend_data_dir = os.path.join(backend_dir, 'data')
     if os.path.exists(backend_data_dir):
-        print('Copying backend data...')
-        copy_dir(backend_data_dir, os.path.join(dist_dir, 'data'))
+        print('Copying backend data (excluding SQLite *.db / *.db-journal)...')
+        copy_dir_skip_sqlite_files(backend_data_dir, os.path.join(dist_dir, 'data'))
 
     # Step 4: Copy built frontend
     print('Copying frontend build...')
@@ -76,6 +76,7 @@ def main():
     print('')
     print('To deploy:')
     print('   cd {}'.format(dist_dir))
+    print('   # 团队生产：复制 backend/.env.example 为 .env 并配置 PM_MYSQL_* 与 PM_SESSION_SECRET')
     print('   python -m uvicorn app.main:app --host 0.0.0.0 --port 8001')
     print('')
     print('Package contents:')
@@ -95,6 +96,24 @@ def copy_dir(src, dest):
             shutil.copy2(src_path, dest_path)
         elif os.path.isdir(src_path) and item != '__pycache__':
             copy_dir(src_path, dest_path)
+
+
+def copy_dir_skip_sqlite_files(src, dest):
+    """Copy directory but skip SQLite database files (team production uses shared MySQL)."""
+    if not os.path.exists(dest):
+        os.makedirs(dest)
+
+    for item in sorted(os.listdir(src)):
+        lower = item.lower()
+        src_path = os.path.join(src, item)
+        if lower.endswith('.db') or lower.endswith('.db-journal'):
+            print('   skip: {}'.format(src_path))
+            continue
+        dest_path = os.path.join(dest, item)
+        if os.path.isfile(src_path):
+            shutil.copy2(src_path, dest_path)
+        elif os.path.isdir(src_path) and item != '__pycache__':
+            copy_dir_skip_sqlite_files(src_path, dest_path)
 
 
 def list_dir_contents(dir_path, base_dir=None, prefix=''):

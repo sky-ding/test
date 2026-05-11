@@ -1,6 +1,6 @@
 # 项目管理登记工具
 
-前后端分目录：**前端**静态页面在 `frontend/`，**后端**为 `backend/`（FastAPI + SQLite）。
+前后端分目录：**前端**静态页面在 `frontend/`，**后端**为 `backend/`（FastAPI + SQLAlchemy）。**团队/生产** 请使用 **MySQL** 多实例共享数据；未配置 MySQL 时本地开发仍可用 **SQLite**（`backend/data/app.db`）。详见 [backend/README.md](backend/README.md) 与 `backend/.env.example`。
 
 ## 目录说明
 
@@ -26,7 +26,8 @@
 
 | 变量 | 说明 |
 |------|------|
-| `PM_SESSION_SECRET` | 会话签名密钥，**生产必填**（勿使用仓库默认值） |
+| `PM_SESSION_SECRET` | 会话签名密钥，**生产必填**（勿使用仓库默认值）；**多实例必须相同** |
+| `PM_MYSQL_HOST` / `PM_MYSQL_USER` / `PM_MYSQL_DATABASE` 等 | 同时配置则使用 **MySQL**（团队共享）；见 `backend/.env.example` |
 | `PM_SKY_INITIAL_PASSWORD` | 可选。覆盖首次创建 **`Sky`** 的初始密码；**不设置时默认为 `123123`**（生产请改为强密码并建议设置本变量） |
 | `PM_AUTH_DISABLED` | 设为 `true` 时关闭鉴权（**仅本地调试**，勿用于生产） |
 | `PM_SESSION_SAME_SITE` | Cookie `SameSite`，默认 `lax`；跨站调试可试 `none`（常需配合 HTTPS） |
@@ -42,7 +43,7 @@ $env:PM_SESSION_SECRET="your-long-random-secret"
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 ```
 
-首次启动后可用用户名 **Sky**、密码 **123123** 登录（若未设置 `PM_SKY_INITIAL_PASSWORD`）。若库中已有旧 Sky 账号，需删除 `backend/data/app.db` 重建或请管理员重置密码。
+首次启动后可用用户名 **Sky**、密码 **123123** 登录（若未设置 `PM_SKY_INITIAL_PASSWORD`）。**仅使用本地 SQLite 时**，若需重置内置账号，可删除 `backend/data/app.db` 后重启；**使用 MySQL 时**请在库内由管理员处理账号或走迁移文档。
 
 ## 启动后端
 

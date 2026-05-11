@@ -13,6 +13,31 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+## 团队 / 生产：推荐 MySQL（多实例共享数据）
+
+多机或多 Pod 跑同一套 API 时，应共用 **同一 MySQL 库**，勿各带一份 `app.db`（SQLite）。
+
+1. 在 MySQL 中**预先创建**数据库（字符集建议 **utf8mb4**），并授予应用账号建表/读写权限。  
+2. 复制 **[.env.example](.env.example)** 为 `backend/.env`，填写 **`PM_MYSQL_HOST` / `PM_MYSQL_USER` / `PM_MYSQL_DATABASE`**（及密码、端口等）；**所有实例**使用**相同**的 `PM_MYSQL_*` 与 **`PM_SESSION_SECRET`**（否则 Cookie 会话在实例间无效）。  
+3. 启动应用会自动 `create_all` 建表；首次启动会 seed 内置用户（若库中尚无同名账号）。  
+4. 连接与表行数冒烟：
+
+```bash
+python scripts/check_db.py
+```
+
+5. **从现有 SQLite 迁移**（本机已有 `data/app.db` 且已配置 `PM_MYSQL_*`）：
+
+```bash
+python scripts/migrate_sqlite_to_mysql.py
+```
+
+目标 MySQL 里若已有 `users`/`registry` 数据，脚本默认会拒绝覆盖；需使用 `--force`（**会清空** MySQL 侧这两张表后再导入）。
+
+6. **迁移后验证（建议每台实例或每次发版执行）**：`python scripts/check_db.py`；再用管理员账号调 `GET/PUT /api/v1/manpower`、`phase`、`risk`（见 `/docs`）。
+
+未配置 `PM_MYSQL_*` 时仍回落 **本地 SQLite** `backend/data/app.db`，便于单人本机开发。
+
 ## 启动
 
 在 `backend` 目录下（已激活 venv）：
@@ -49,9 +74,9 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 
 另：若不存在用户名为 `sky`（不区分大小写）的账号，仍会创建兼容用的管理员 **`Sky`**。生产环境请尽快修改各账号密码。
 
-## MySQL（可选）
+## MySQL 环境变量说明
 
-同时设置以下变量时，应用使用 **MySQL**；否则仍使用 `backend/data/app.db`（SQLite）。
+同时设置 **`PM_MYSQL_HOST` + `PM_MYSQL_USER` + `PM_MYSQL_DATABASE`**（均非空）时，应用使用 **MySQL**；否则使用 `backend/data/app.db`（SQLite）。
 
 | 变量 | 说明 |
 |------|------|

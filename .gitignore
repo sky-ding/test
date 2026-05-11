@@ -9,6 +9,10 @@ build/
 venv/
 backend/.venv/
 
+# 本地密钥与库连接（勿提交）
+.env
+backend/.env
+
 # SQLite（运行时生成）
 backend/data/*.db
 backend/data/*.db-journal
