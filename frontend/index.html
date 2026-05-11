@@ -211,12 +211,99 @@
 
     .table-shell {
       width: 100%;
-      overflow-x: auto;
+      overflow: auto;
+      position: relative;
+      isolation: isolate;
       margin-bottom: 8px;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       background: var(--surface);
       box-shadow: var(--shadow);
+    }
+
+    #panel-phase .table-shell,
+    #panel-manpower .table-shell,
+    #panel-manpower .table-shell-manpower-month-split {
+      max-height: calc(100vh - 260px);
+    }
+
+    /* 月度人力：Excel 式冻结——左三列独立表（仅纵向滚），右侧横向+纵向滚，不用 sticky 拼列 */
+    .table-shell-manpower-month-split {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      overflow: hidden;
+      width: 100%;
+      position: relative;
+      isolation: isolate;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    /* 左侧仅随右侧同步滚动：隐藏滚动条，避免双竖条像「下拉框」 */
+    .manpower-month-split-left {
+      flex: 0 0 auto;
+      max-width: 88vw;
+      overflow-x: hidden;
+      overflow-y: auto;
+      border-right: 1px solid var(--border-light);
+      box-shadow: 1px 0 0 rgba(15, 23, 42, 0.04);
+      background: var(--surface);
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .manpower-month-split-left::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
+    }
+
+    .manpower-month-split-right {
+      flex: 1 1 0;
+      min-width: 0;
+      overflow: auto;
+      scrollbar-color: rgba(15, 23, 42, 0.16) transparent;
+      scrollbar-width: thin;
+    }
+
+    .manpower-month-split-right::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .manpower-month-split-right::-webkit-scrollbar-thumb {
+      background: rgba(15, 23, 42, 0.14);
+      border-radius: 6px;
+    }
+
+    .manpower-month-split-right::-webkit-scrollbar-thumb:hover {
+      background: rgba(15, 23, 42, 0.22);
+    }
+
+    #register-table-frozen {
+      table-layout: fixed;
+      border-collapse: collapse;
+      margin: 0;
+      width: max-content;
+      min-width: 0 !important;
+      background: var(--surface);
+    }
+
+    /* 月度冻结左表：与右侧「两行表头」对齐，第一行跨列占位 */
+    #register-table-frozen thead th.manpower-frozen-thead-r1 {
+      text-align: center;
+      vertical-align: middle;
+      padding: 10px 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      background: linear-gradient(180deg, #f8f9fb 0%, var(--header-bg) 100%) !important;
+      border-bottom: 1px solid var(--border-light);
     }
 
     table {
@@ -250,32 +337,41 @@
 
     #register-table {
       table-layout: fixed;
+      border-collapse: collapse;
     }
 
     #register-table thead th.col-set,
-    #register-table thead th.col-proj {
+    #register-table thead th.col-proj,
+    #register-table-frozen thead th.col-set,
+    #register-table-frozen thead th.col-proj {
       text-align: center;
     }
 
     #register-table td.col-set,
-    #register-table td.col-proj {
+    #register-table td.col-proj,
+    #register-table-frozen td.col-set,
+    #register-table-frozen td.col-proj {
       text-align: left;
     }
 
-    #register-table .col-set {
+    #register-table .col-set,
+    #register-table-frozen .col-set {
       min-width: 0;
       padding: 9px 10px;
       vertical-align: middle;
     }
 
-    #register-table .col-proj {
+    #register-table .col-proj,
+    #register-table-frozen .col-proj {
       min-width: 0;
       padding: 9px 10px;
       vertical-align: middle;
     }
 
     #register-table td.col-set .editable-text,
-    #register-table td.col-proj .editable-text {
+    #register-table td.col-proj .editable-text,
+    #register-table-frozen td.col-set .editable-text,
+    #register-table-frozen td.col-proj .editable-text {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -286,19 +382,25 @@
     }
 
     #register-table td.col-set .cell-head-inline,
-    #register-table td.col-proj .cell-head-inline {
+    #register-table td.col-proj .cell-head-inline,
+    #register-table-frozen td.col-set .cell-head-inline,
+    #register-table-frozen td.col-proj .cell-head-inline {
       flex-wrap: nowrap;
       justify-content: flex-start;
       gap: 8px;
     }
 
     #register-table td.col-set .cell-head-inline .editable-text,
-    #register-table td.col-proj .cell-head-inline .editable-text {
+    #register-table td.col-proj .cell-head-inline .editable-text,
+    #register-table-frozen td.col-set .cell-head-inline .editable-text,
+    #register-table-frozen td.col-proj .cell-head-inline .editable-text {
       text-align: left;
     }
 
     #register-table td.col-set .cell-head-inline > span:first-child,
-    #register-table td.col-proj .cell-head-inline > span:first-child {
+    #register-table td.col-proj .cell-head-inline > span:first-child,
+    #register-table-frozen td.col-set .cell-head-inline > span:first-child,
+    #register-table-frozen td.col-proj .cell-head-inline > span:first-child {
       text-align: left;
     }
 
@@ -306,6 +408,14 @@
       min-width: 0;
       padding: 9px 6px;
       box-sizing: border-box;
+    }
+
+    #register-table .col-sum,
+    #register-table .col-ratio {
+      min-width: 0;
+      padding: 9px 8px;
+      box-sizing: border-box;
+      white-space: nowrap;
     }
 
     #register-table .col-mp .input-p {
@@ -322,6 +432,14 @@
       font-weight: 600;
     }
 
+    #register-table thead th.col-sum,
+    #register-table thead th.col-ratio {
+      padding: 8px 6px;
+      font-size: 13px;
+      line-height: 1.4;
+      font-weight: 600;
+    }
+
     #register-table td.center-cell {
       min-width: 0;
       padding: 9px 6px;
@@ -331,8 +449,127 @@
       min-width: 0;
     }
 
-    #register-table thead th {
+    #register-table td.center-cell.col-sum,
+    #register-table td.center-cell.col-ratio {
+      min-width: 0;
+    }
+
+    #register-table thead th,
+    #register-table-frozen thead th {
       position: relative;
+    }
+
+    /* 阶段表：单行 thead，整块 sticky 即可 */
+    #phase-table thead {
+      position: sticky;
+      top: 0;
+      z-index: 22;
+    }
+
+    /*
+     * 人力：月度为左右分栏双表，表头按行 sticky；季/年为单表，按行 sticky + 首三列横向 pin。
+     * --manpower-thead-r1h 与 pin 位移由 syncManpowerTableStickyLayout / applyStickyPinLeftFromDom 同步。
+     */
+    #panel-manpower #register-table thead tr:first-child > th,
+    #panel-manpower #register-table-frozen thead tr:first-child > th,
+    #panel-manpower #register-table-season thead tr:first-child > th,
+    #panel-manpower #register-table-year thead tr:first-child > th {
+      position: sticky;
+      top: 0;
+      /* 须低于固定列 tbody(12)，避免横向滚动时盖住左侧三列 */
+      z-index: 9;
+    }
+
+    #panel-manpower #register-table thead tr:nth-child(2) > th,
+    #panel-manpower #register-table-frozen thead tr:nth-child(2) > th,
+    #panel-manpower #register-table-season thead tr:nth-child(2) > th,
+    #panel-manpower #register-table-year thead tr:nth-child(2) > th {
+      position: sticky;
+      top: var(--manpower-thead-r1h, 44px);
+      z-index: 8;
+    }
+
+    #phase-table .pin-col-1 {
+      position: sticky;
+      left: 0;
+      z-index: 12;
+      background: var(--surface);
+    }
+
+    #phase-table .pin-col-2 {
+      position: sticky;
+      left: var(--pin-left-2, 168px);
+      z-index: 12;
+      background: var(--surface);
+    }
+
+    #phase-table .pin-col-3 {
+      position: sticky;
+      left: var(--pin-left-3, 368px);
+      z-index: 12;
+      background: var(--surface);
+      box-shadow: 1px 0 0 var(--border-light), 8px 0 12px rgba(15, 23, 42, 0.06);
+    }
+
+    #phase-table thead .pin-col-1,
+    #phase-table thead .pin-col-2,
+    #phase-table thead .pin-col-3 {
+      z-index: 26;
+    }
+
+    .manpower-toolbar .manpower-subtabs {
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+
+    #panel-manpower #register-table-season .pin-col-1,
+    #panel-manpower #register-table-year .pin-col-1 {
+      position: sticky;
+      left: 0;
+      z-index: 12;
+      background: var(--surface);
+    }
+
+    #panel-manpower #register-table-season .pin-col-2,
+    #panel-manpower #register-table-year .pin-col-2 {
+      position: sticky;
+      left: var(--pin-left-2, 168px);
+      z-index: 12;
+      background: var(--surface);
+    }
+
+    #panel-manpower #register-table-season .pin-col-3,
+    #panel-manpower #register-table-year .pin-col-3 {
+      position: sticky;
+      left: var(--pin-left-3, 368px);
+      z-index: 12;
+      background: var(--surface);
+      box-shadow: 1px 0 0 var(--border-light), 8px 0 12px rgba(15, 23, 42, 0.06);
+    }
+
+    #panel-manpower #register-table-season thead .pin-col-1,
+    #panel-manpower #register-table-season thead .pin-col-2,
+    #panel-manpower #register-table-season thead .pin-col-3,
+    #panel-manpower #register-table-year thead .pin-col-1,
+    #panel-manpower #register-table-year thead .pin-col-2,
+    #panel-manpower #register-table-year thead .pin-col-3 {
+      z-index: 26;
+    }
+
+    #panel-manpower tbody tr.manpower-set-stripe-b td.main.pin-col-1,
+    #panel-manpower #register-table-frozen tbody tr.manpower-set-stripe-b td.main.col-set {
+      background: var(--manpower-stripe-b-main) !important;
+    }
+
+    #panel-manpower tbody tr.manpower-set-stripe-b td.sub.pin-col-2,
+    #panel-manpower tbody tr.manpower-set-stripe-b td.sub.pin-col-3,
+    #panel-manpower #register-table-frozen tbody tr.manpower-set-stripe-b td.sub.col-set,
+    #panel-manpower #register-table-frozen tbody tr.manpower-set-stripe-b td.sub.col-proj {
+      background: var(--manpower-stripe-b-sub) !important;
+    }
+
+    .manpower-panel-head:empty {
+      display: none;
     }
 
     .register-col-resize-handle {
@@ -421,14 +658,12 @@
       background: var(--danger-soft);
     }
 
-    #register-table tbody tr.manpower-set-stripe-b td.main,
     #register-table-season tbody tr.manpower-set-stripe-b td.main,
     #register-table-year tbody tr.manpower-set-stripe-b td.main,
     #phase-table tbody tr.manpower-set-stripe-b td.main {
       background: var(--manpower-stripe-b-main) !important;
     }
 
-    #register-table tbody tr.manpower-set-stripe-b td.sub,
     #register-table-season tbody tr.manpower-set-stripe-b td.sub,
     #register-table-year tbody tr.manpower-set-stripe-b td.sub,
     #phase-table tbody tr.manpower-set-stripe-b td.sub {
@@ -436,8 +671,14 @@
     }
 
     #register-table tbody tr.manpower-set-stripe-b td.center-cell.col-mp,
+    #register-table tbody tr.manpower-set-stripe-b td.center-cell.col-sum,
+    #register-table tbody tr.manpower-set-stripe-b td.center-cell.col-ratio,
     #register-table-season tbody tr.manpower-set-stripe-b td.center-cell.col-mp,
+    #register-table-season tbody tr.manpower-set-stripe-b td.center-cell.col-sum,
+    #register-table-season tbody tr.manpower-set-stripe-b td.center-cell.col-ratio,
     #register-table-year tbody tr.manpower-set-stripe-b td.center-cell.col-mp,
+    #register-table-year tbody tr.manpower-set-stripe-b td.center-cell.col-sum,
+    #register-table-year tbody tr.manpower-set-stripe-b td.center-cell.col-ratio,
     #phase-table tbody tr.manpower-set-stripe-b td.phase-field-cell {
       background: var(--manpower-stripe-b-mp) !important;
     }
@@ -445,6 +686,8 @@
     #phase-table {
       table-layout: fixed;
       width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
     }
 
     #phase-table thead th.col-set,
@@ -515,6 +758,28 @@
       cursor: default;
     }
 
+    #phase-table select.phase-field-select {
+      display: block;
+      width: 100%;
+      min-height: 36px;
+      max-width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 13px;
+      line-height: 1.45;
+      box-sizing: border-box;
+      background: #fff;
+      color: var(--text);
+    }
+
+    #phase-table select.phase-field-select:disabled {
+      background: var(--header-bg-sub);
+      color: var(--text-muted);
+      cursor: default;
+    }
+
     #panel-phase .manpower-toolbar,
     #panel-phase .table-shell,
     #panel-phase .panel-actions {
@@ -527,6 +792,7 @@
     #register-table-year {
       table-layout: fixed;
       width: 100%;
+      border-collapse: collapse;
     }
 
     #register-table-season thead th.col-set,
@@ -550,6 +816,15 @@
       min-width: 0;
       padding: 9px 10px;
       vertical-align: middle;
+    }
+
+    #register-table-season .col-sum,
+    #register-table-season .col-ratio,
+    #register-table-year .col-sum,
+    #register-table-year .col-ratio {
+      min-width: 0;
+      padding: 9px 8px;
+      white-space: nowrap;
     }
 
     #register-table-season td.col-set .cell-head-inline,
@@ -593,8 +868,8 @@
     #register-table-season thead th.col-mp,
     #register-table-year thead th.col-mp {
       padding: 8px 4px;
-      font-size: 12px;
-      line-height: 1.35;
+      font-size: 14px;
+      line-height: 1.4;
       font-weight: 600;
     }
 
@@ -1726,6 +2001,7 @@
     </div>
     <div class="table-shell">
       <table id="phase-table">
+        <colgroup id="phase-colgroup"></colgroup>
         <thead id="phase-thead"></thead>
         <tbody id="phase-table-body"></tbody>
       </table>
@@ -1751,12 +2027,21 @@
       <label>月份 <select id="manpower-month-select" aria-label="选择月份"></select></label>
       <button type="button" class="manpower-analysis-btn" id="btn-manpower-month-analysis" title="按当前所选年月汇总并展示图表">项目月度人力分析</button>
     </div>
-    <div class="table-shell">
-      <table id="register-table">
-        <colgroup id="register-colgroup"></colgroup>
-        <thead id="register-thead"></thead>
-        <tbody id="table-body"></tbody>
-      </table>
+    <div class="table-shell table-shell-manpower-month-split" id="register-month-split-shell">
+      <div class="manpower-month-split-left" id="register-split-left-wrap">
+        <table id="register-table-frozen">
+          <colgroup id="register-colgroup-frozen"></colgroup>
+          <thead id="register-thead-frozen"></thead>
+          <tbody id="table-body-frozen"></tbody>
+        </table>
+      </div>
+      <div class="manpower-month-split-right" id="register-split-right-wrap">
+        <table id="register-table">
+          <colgroup id="register-colgroup"></colgroup>
+          <thead id="register-thead"></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
     </div>
     <div class="panel-actions">
       <button type="button" class="btn-add" id="btn-manpower-edit-toggle" title="进入编辑模式后可修改并保存">编辑</button>
@@ -1773,6 +2058,7 @@
     </div>
     <div class="table-shell">
       <table id="register-table-season">
+        <colgroup id="register-season-colgroup"></colgroup>
         <thead id="register-season-thead"></thead>
         <tbody id="register-season-body"></tbody>
       </table>
@@ -1785,6 +2071,7 @@
     </div>
     <div class="table-shell">
       <table id="register-table-year">
+        <colgroup id="register-year-colgroup"></colgroup>
         <thead id="register-year-thead"></thead>
         <tbody id="register-year-body"></tbody>
       </table>
@@ -2106,10 +2393,11 @@
 
     let phaseSelYear = new Date().getFullYear();
     let phaseSelMonth = new Date().getMonth() + 1;
-    const PHASE_FIELD_KEYS = ['goal', 'deliver', 'highlight', 'weakness', 'nextNote'];
+    const PHASE_FIELD_KEYS = ['goal', 'deliver', 'planMatch', 'highlight', 'weakness', 'nextNote'];
     const PHASE_FIELD_LABELS = {
       goal: '阶段交付目标',
       deliver: '实际交付评估',
+      planMatch: '是否符合计划',
       highlight: '执行过程分析',
       weakness: '问题分析',
       nextNote: '改进计划'
@@ -2132,7 +2420,7 @@
     }
 
     function newPhaseMonthRow() {
-      return { goal: '', deliver: '', highlight: '', weakness: '', nextNote: '' };
+      return { goal: '', deliver: '', planMatch: '', highlight: '', weakness: '', nextNote: '' };
     }
 
     function ensurePhaseByMonth(p) {
@@ -2350,6 +2638,11 @@
         s += getDeptValueForMonth(p, year, mo, deptIdx);
       });
       return s;
+    }
+
+    function formatManpowerRatio(numerator, denominator) {
+      if (!denominator || denominator <= 0) return '0%';
+      return ((numerator / denominator) * 100).toFixed(1) + '%';
     }
 
     function requireManpowerMonthViewForStructure() {
@@ -2662,6 +2955,7 @@
     }
 
     function initManpowerTimeUi() {
+      mountManpowerSubtabsIntoToolbar();
       var sm = document.getElementById('manpower-month-select');
       if (sm && sm.options.length === 0) {
         for (var mo = 1; mo <= 12; mo++) {
@@ -2697,6 +2991,7 @@
             el.classList.toggle('active', active);
             el.setAttribute('aria-hidden', active ? 'false' : 'true');
           });
+          mountManpowerSubtabsIntoToolbar();
           renderTable();
           scrollMainToTop();
         });
@@ -2750,27 +3045,49 @@
       }
       if (closeAn) closeAn.addEventListener('click', closeManpowerAnalysisModal);
       updateManpowerToolbarInputs();
+      if (!window._pmManpowerTheadResizeWired) {
+        window._pmManpowerTheadResizeWired = true;
+        window.addEventListener('resize', function () {
+          requestAnimationFrame(function () {
+            syncManpowerTableStickyLayout();
+            if (manpowerSubView === 'month') {
+              syncRegisterMonthSplitTheadHeights();
+              syncManpowerTableStickyLayout();
+            }
+          });
+        });
+      }
     }
 
     let registerColWidths = [];
     let registerColResizeDrag = null;
+    let phaseColWidths = [];
+    let phaseColResizeDrag = null;
 
     function getRegisterColCount() {
-      return 2 + deptFlatCount();
+      return 5 + deptFlatCount();
     }
 
     function getRegisterColMin(colIndex) {
+      var deptCount = deptFlatCount();
       if (colIndex === 0) return 100;
       if (colIndex === 1) return 120;
+      if (colIndex === 2) return 120;
+      if (colIndex === 3 + deptCount) return 88;
+      if (colIndex === 4 + deptCount) return 88;
       return 56;
     }
 
     function loadRegisterColWidths() {
       const n = getRegisterColCount();
       const def = [];
+      const deptCount = deptFlatCount();
       def[0] = 168;
       def[1] = 200;
-      for (let i = 2; i < n; i++) def[i] = 96;
+      def[2] = 200;
+      for (let i = 3; i < 3 + deptCount; i++) def[i] = 96;
+      def[3 + deptCount] = 108;
+      def[4 + deptCount] = 100;
       const merged = def.slice();
       try {
         const raw = localStorage.getItem(STORAGE_KEY_REGISTER_COLS);
@@ -2787,6 +3104,102 @@
       registerColWidths = merged;
     }
 
+    function defaultReadonlyColWidths() {
+      var widths = [];
+      var deptCount = deptFlatCount();
+      widths[0] = 168;
+      widths[1] = 200;
+      widths[2] = 200;
+      for (var i = 0; i < deptCount; i++) widths.push(96);
+      widths.push(108);
+      widths.push(100);
+      return widths;
+    }
+
+    /** 单列在表格中的「布局宽度」：取布局盒与绘制盒较大值，避免 sticky left 偏小导致列重叠 */
+    function pinCellLayoutWidth01(cell) {
+      if (!cell) return 0;
+      var br = cell.getBoundingClientRect();
+      var ow = cell.offsetWidth;
+      return Math.max(br.width || 0, ow || 0);
+    }
+
+    /**
+     * 从 DOM 量前两列真实宽度：优先 tbody 里「首格为 pin-col-1」的行（与数据列宽一致），
+     * 否则用 thead 第一行（表头 rowspan 格）；colgroup 数值常小于实际渲染宽，仅用数组会叠列。
+     */
+    function measurePin01WidthsFromTable(table) {
+      if (!table || !table.tHead || !table.tHead.rows[0]) return { w0: 168, w1: 200 };
+      var r0 = table.tHead.rows[0];
+      if (!r0.cells || r0.cells.length < 3) return { w0: 168, w1: 200 };
+      var tb = table.tBodies[0];
+      var probe = null;
+      if (tb && tb.rows.length) {
+        for (var i = 0; i < tb.rows.length; i++) {
+          var tr = tb.rows[i];
+          if (tr.cells.length >= 3 && tr.cells[0].classList && tr.cells[0].classList.contains('pin-col-1')) {
+            probe = tr;
+            break;
+          }
+        }
+      }
+      var src = probe || r0;
+      return {
+        w0: pinCellLayoutWidth01(src.cells[0]),
+        w1: pinCellLayoutWidth01(src.cells[1])
+      };
+    }
+
+    /** 触发布局后按 DOM 测量写 pin 列内联 left，并同步 table 上 --pin-left-* 供 CSS 兜底 */
+    function applyStickyPinLeftFromDom(table) {
+      if (!table) return;
+      void table.offsetHeight;
+      var m = measurePin01WidthsFromTable(table);
+      if (table.style) {
+        table.style.setProperty('--pin-left-2', m.w0 + 'px');
+        table.style.setProperty('--pin-left-3', (m.w0 + m.w1) + 'px');
+      }
+      applyStickyPinLeftInline(table, m.w0, m.w1);
+    }
+
+    /** 固定列横向偏移：内联 left；w0/w1 一般为 DOM 测量值（可含小数 px） */
+    function applyStickyPinLeftInline(table, w0, w1) {
+      if (!table) return;
+      var n0 = parseFloat(w0);
+      var n1 = parseFloat(w1);
+      if (isNaN(n0) || n0 < 0) n0 = 168;
+      if (isNaN(n1) || n1 < 0) n1 = 200;
+      var left2 = n0 + 'px';
+      var left3 = (n0 + n1) + 'px';
+      table.querySelectorAll('.pin-col-1').forEach(function (el) {
+        el.style.left = '0px';
+      });
+      table.querySelectorAll('.pin-col-2').forEach(function (el) {
+        el.style.left = left2;
+      });
+      table.querySelectorAll('.pin-col-3').forEach(function (el) {
+        el.style.left = left3;
+      });
+    }
+
+    function syncReadonlyColgroup(colgroupId) {
+      var cg = document.getElementById(colgroupId);
+      if (!cg) return;
+      var widths = defaultReadonlyColWidths();
+      cg.innerHTML = '';
+      widths.forEach(function (w) {
+        var col = document.createElement('col');
+        col.style.width = String(w) + 'px';
+        cg.appendChild(col);
+      });
+      var table = cg.parentElement;
+      if (table && table.id) {
+        requestAnimationFrame(function () {
+          applyStickyPinLeftFromDom(table);
+        });
+      }
+    }
+
     function saveRegisterColWidths() {
       try {
         localStorage.setItem(STORAGE_KEY_REGISTER_COLS, JSON.stringify({
@@ -2797,11 +3210,31 @@
     }
 
     function applyRegisterColWidthsToDom() {
+      const cgF = document.getElementById('register-colgroup-frozen');
       const cg = document.getElementById('register-colgroup');
-      if (!cg) return;
-      const cols = cg.querySelectorAll('col');
-      for (let i = 0; i < cols.length && i < registerColWidths.length; i++) {
-        cols[i].style.width = registerColWidths[i] + 'px';
+      if (cgF && cg) {
+        const colsF = cgF.querySelectorAll('col');
+        for (let i = 0; i < colsF.length && i < registerColWidths.length && i < 3; i++) {
+          colsF[i].style.width = registerColWidths[i] + 'px';
+        }
+        const cols = cg.querySelectorAll('col');
+        for (let j = 0; j < cols.length && 3 + j < registerColWidths.length; j++) {
+          cols[j].style.width = registerColWidths[3 + j] + 'px';
+        }
+      } else if (cg) {
+        const cols = cg.querySelectorAll('col');
+        for (let i = 0; i < cols.length && i < registerColWidths.length; i++) {
+          cols[i].style.width = registerColWidths[i] + 'px';
+        }
+      } else {
+        return;
+      }
+      var regTable = document.getElementById('register-table');
+      var frTable = document.getElementById('register-table-frozen');
+      void regTable && regTable.offsetHeight;
+      void frTable && frTable.offsetHeight;
+      if (!frTable) {
+        applyStickyPinLeftFromDom(regTable);
       }
     }
 
@@ -2841,6 +3274,7 @@
         document.body.style.cursor = '';
         registerColResizeDrag = null;
         saveRegisterColWidths();
+        requestAnimationFrame(syncManpowerTableStickyLayout);
       }
 
       document.addEventListener('mousemove', onMove);
@@ -2848,13 +3282,8 @@
     }
 
     function attachRegisterColResizeHandles() {
+      const theadF = document.getElementById('register-thead-frozen');
       const thead = document.getElementById('register-thead');
-      if (!thead || thead.rows.length < 2) return;
-      thead.querySelectorAll('.register-col-resize-handle').forEach(function (el) {
-        el.remove();
-      });
-      const tr1 = thead.rows[0];
-      const tr2 = thead.rows[1];
       function addHandle(th, colIndex) {
         if (!th) return;
         const h = document.createElement('div');
@@ -2867,24 +3296,280 @@
         });
         th.appendChild(h);
       }
+      if (theadF && thead && thead.rows.length >= 2 && theadF.rows.length >= 2) {
+        theadF.querySelectorAll('.register-col-resize-handle').forEach(function (el) {
+          el.remove();
+        });
+        thead.querySelectorAll('.register-col-resize-handle').forEach(function (el) {
+          el.remove();
+        });
+        const tr2F = theadF.rows[1];
+        addHandle(tr2F.cells[0], 0);
+        addHandle(tr2F.cells[1], 1);
+        addHandle(tr2F.cells[2], 2);
+        const tr1R = thead.rows[0];
+        const tr2R = thead.rows[1];
+        for (let i = 0; i < tr2R.cells.length; i++) {
+          addHandle(tr2R.cells[i], 3 + i);
+        }
+        const deptCount = deptFlatCount();
+        const sumIdx = 3 + deptCount;
+        const ratioIdx = 4 + deptCount;
+        if (tr1R.cells.length >= 2) {
+          addHandle(tr1R.cells[tr1R.cells.length - 2], sumIdx);
+          addHandle(tr1R.cells[tr1R.cells.length - 1], ratioIdx);
+        }
+        return;
+      }
+      if (!thead || thead.rows.length < 2) return;
+      thead.querySelectorAll('.register-col-resize-handle').forEach(function (el) {
+        el.remove();
+      });
+      const tr1 = thead.rows[0];
+      const tr2 = thead.rows[1];
       addHandle(tr1.cells[0], 0);
       addHandle(tr1.cells[1], 1);
+      addHandle(tr1.cells[2], 2);
       for (let i = 0; i < tr2.cells.length; i++) {
-        addHandle(tr2.cells[i], 2 + i);
+        addHandle(tr2.cells[i], 3 + i);
       }
     }
 
     function syncRegisterColgroup() {
       loadRegisterColWidths();
+      const cgF = document.getElementById('register-colgroup-frozen');
       const cg = document.getElementById('register-colgroup');
+      if (cgF && cg) {
+        cgF.innerHTML = '';
+        for (let i = 0; i < 3 && i < registerColWidths.length; i++) {
+          const col = document.createElement('col');
+          col.style.width = registerColWidths[i] + 'px';
+          cgF.appendChild(col);
+        }
+        cg.innerHTML = '';
+        for (let i = 3; i < registerColWidths.length; i++) {
+          const col = document.createElement('col');
+          col.style.width = registerColWidths[i] + 'px';
+          cg.appendChild(col);
+        }
+      } else if (cg) {
+        cg.innerHTML = '';
+        registerColWidths.forEach(function (w) {
+          const col = document.createElement('col');
+          col.style.width = w + 'px';
+          cg.appendChild(col);
+        });
+      } else {
+        return;
+      }
+      attachRegisterColResizeHandles();
+      requestAnimationFrame(function () {
+        if (!document.getElementById('register-colgroup-frozen')) {
+          applyStickyPinLeftFromDom(document.getElementById('register-table'));
+        }
+      });
+    }
+
+    function getPhaseColCount() {
+      return 3 + PHASE_FIELD_KEYS.length;
+    }
+
+    function getPhaseColMin(colIndex) {
+      if (colIndex === 0) return 100;
+      if (colIndex === 1) return 120;
+      if (colIndex === 2) return 120;
+      return 110;
+    }
+
+    function loadPhaseColWidths() {
+      var n = getPhaseColCount();
+      var def = [168, 200, 200];
+      for (var i = 3; i < n; i++) def[i] = 150;
+      var merged = def.slice();
+      try {
+        var raw = localStorage.getItem('PM-tool-phase-colwidths-v1');
+        if (raw) {
+          var o = JSON.parse(raw);
+          if (o && Array.isArray(o.widths)) {
+            for (var j = 0; j < n && j < o.widths.length; j++) {
+              var v = Number(o.widths[j]);
+              if (!isNaN(v) && v >= getPhaseColMin(j)) merged[j] = v;
+            }
+          }
+        }
+      } catch (e) {}
+      phaseColWidths = merged;
+    }
+
+    function savePhaseColWidths() {
+      try {
+        localStorage.setItem('PM-tool-phase-colwidths-v1', JSON.stringify({
+          widths: phaseColWidths,
+          savedAt: new Date().toISOString()
+        }));
+      } catch (e) {}
+    }
+
+    function applyPhaseColWidthsToDom() {
+      var cg = document.getElementById('phase-colgroup');
+      if (!cg) return;
+      var cols = cg.querySelectorAll('col');
+      for (var i = 0; i < cols.length && i < phaseColWidths.length; i++) {
+        cols[i].style.width = String(phaseColWidths[i]) + 'px';
+      }
+      var table = document.getElementById('phase-table');
+      if (table) {
+        void table.offsetHeight;
+        applyStickyPinLeftFromDom(table);
+      }
+    }
+
+    function syncPhaseColgroup() {
+      loadPhaseColWidths();
+      var cg = document.getElementById('phase-colgroup');
       if (!cg) return;
       cg.innerHTML = '';
-      registerColWidths.forEach(function (w) {
-        const col = document.createElement('col');
-        col.style.width = w + 'px';
+      phaseColWidths.forEach(function (w) {
+        var col = document.createElement('col');
+        col.style.width = String(w) + 'px';
         cg.appendChild(col);
       });
-      attachRegisterColResizeHandles();
+      applyPhaseColWidthsToDom();
+    }
+
+    function startPhaseColResizeDrag(colIndex, clientX) {
+      phaseColResizeDrag = {
+        colIndex: colIndex,
+        startX: clientX,
+        startWidths: phaseColWidths.slice()
+      };
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'col-resize';
+      function onMove(e) {
+        if (!phaseColResizeDrag) return;
+        var idx = phaseColResizeDrag.colIndex;
+        var w = phaseColResizeDrag.startWidths;
+        var deltaRaw = e.clientX - phaseColResizeDrag.startX;
+        var delta = deltaRaw;
+        if (idx < w.length - 1) {
+          var minL = getPhaseColMin(idx);
+          var minR = getPhaseColMin(idx + 1);
+          var maxPos = w[idx + 1] - minR;
+          var maxNeg = -(w[idx] - minL);
+          delta = Math.max(maxNeg, Math.min(maxPos, delta));
+          phaseColWidths[idx] = w[idx] + delta;
+          phaseColWidths[idx + 1] = w[idx + 1] - delta;
+        } else {
+          phaseColWidths[idx] = Math.max(getPhaseColMin(idx), Math.min(520, w[idx] + deltaRaw));
+        }
+        applyPhaseColWidthsToDom();
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.userSelect = '';
+        document.body.style.cursor = '';
+        phaseColResizeDrag = null;
+        savePhaseColWidths();
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    }
+
+    function attachPhaseColResizeHandles() {
+      var thead = document.getElementById('phase-thead');
+      if (!thead || thead.rows.length < 1) return;
+      thead.querySelectorAll('.register-col-resize-handle').forEach(function (el) { el.remove(); });
+      var tr = thead.rows[0];
+      for (var i = 0; i < tr.cells.length; i++) {
+        (function (colIndex) {
+          var th = tr.cells[colIndex];
+          if (!th) return;
+          var h = document.createElement('div');
+          h.className = 'register-col-resize-handle';
+          h.title = '拖动调整列宽';
+          h.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            startPhaseColResizeDrag(colIndex, e.clientX);
+          });
+          th.appendChild(h);
+        })(i);
+      }
+    }
+
+    function mountManpowerSubtabsIntoToolbar() {
+      var tabs = document.querySelector('#panel-manpower .manpower-subtabs[aria-label="人力数据时间维度"]');
+      var toolbar = document.querySelector('#panel-manpower .manpower-subpage.active .manpower-toolbar');
+      if (!tabs || !toolbar) return;
+      if (tabs.parentElement !== toolbar) {
+        toolbar.insertBefore(tabs, toolbar.firstChild || null);
+      }
+    }
+
+    /**
+     * 人力表布局同步：① 第二行 thead sticky 的 top = 第一行实际高度（--manpower-thead-r1h）；
+     * ② 含 pin-col 的表（季/年只读表）再写 --pin-left-* 与内联 left。月度分栏左右表无 pin，跳过②。
+     */
+    function syncManpowerTableStickyLayout() {
+      ['register-table-frozen', 'register-table', 'register-table-season', 'register-table-year'].forEach(function (id) {
+        var table = document.getElementById(id);
+        if (!table || !table.tHead || table.tHead.rows.length < 1) return;
+        var r0 = table.tHead.rows[0];
+        if (!r0 || r0.cells.length < 1) return;
+        var h = r0.getBoundingClientRect().height;
+        table.style.setProperty('--manpower-thead-r1h', Math.max(36, Math.ceil(h)) + 'px');
+        if (id !== 'register-table-frozen' && id !== 'register-table') {
+          applyStickyPinLeftFromDom(table);
+        }
+      });
+    }
+
+    /** 月度分栏：左右纵向滚动条同步（左表无横向滚） */
+    function ensureRegisterMonthScrollSync() {
+      var left = document.getElementById('register-split-left-wrap');
+      var right = document.getElementById('register-split-right-wrap');
+      if (!left || !right) return;
+      if (right._registerMonthScrollSyncBound) return;
+      right._registerMonthScrollSyncBound = true;
+      var syncing = false;
+      right.addEventListener('scroll', function () {
+        if (syncing) return;
+        syncing = true;
+        left.scrollTop = right.scrollTop;
+        syncing = false;
+      });
+      left.addEventListener('scroll', function () {
+        if (syncing) return;
+        syncing = true;
+        right.scrollTop = left.scrollTop;
+        syncing = false;
+      });
+    }
+
+    /** 月度双表：逐行拉齐 thead 行高，使左右两行表头 + tbody 与对侧同一 scrollTop 时对齐 */
+    function syncRegisterMonthSplitTheadHeights() {
+      var tf = document.getElementById('register-table-frozen');
+      var tr = document.getElementById('register-table');
+      if (!tf || !tr || !tf.tHead || !tr.tHead || tf.tHead.rows.length < 2 || tr.tHead.rows.length < 2) return;
+      var r0L = tf.tHead.rows[0];
+      var r1L = tf.tHead.rows[1];
+      var r0R = tr.tHead.rows[0];
+      var r1R = tr.tHead.rows[1];
+      r0L.style.height = '';
+      r1L.style.height = '';
+      r0R.style.height = '';
+      r1R.style.height = '';
+      void tf.offsetHeight;
+      void tr.offsetHeight;
+      var h0 = Math.max(r0L.getBoundingClientRect().height, r0R.getBoundingClientRect().height, 1);
+      var h1 = Math.max(r1L.getBoundingClientRect().height, r1R.getBoundingClientRect().height, 1);
+      var px0 = Math.ceil(h0) + 'px';
+      var px1 = Math.ceil(h1) + 'px';
+      r0L.style.height = px0;
+      r0R.style.height = px0;
+      r1L.style.height = px1;
+      r1R.style.height = px1;
     }
 
     // 用于弹窗时定位删除内容
@@ -3893,10 +4578,10 @@
         var p = flat[ri];
         if (!p) return;
         var slice = getPhaseMonthSlice(p, phaseSelYear, phaseSelMonth);
-        var tas = tr.querySelectorAll('textarea.phase-field-input');
-        if (tas.length < PHASE_FIELD_KEYS.length) return;
+        var fields = tr.querySelectorAll('textarea.phase-field-input, select.phase-field-select');
+        if (fields.length < PHASE_FIELD_KEYS.length) return;
         PHASE_FIELD_KEYS.forEach(function (key, j) {
-          slice[key] = tas[j].value;
+          slice[key] = fields[j].value;
         });
         ri++;
       });
@@ -4276,17 +4961,18 @@
     function renderPhaseThead() {
       var thead = document.getElementById('phase-thead');
       if (!thead) return;
+      syncPhaseColgroup();
       var tr = document.createElement('tr');
       var thSet = document.createElement('th');
-      thSet.className = 'main col-set';
+      thSet.className = 'main col-set pin-col-1';
       thSet.textContent = '项目集';
       tr.appendChild(thSet);
       var thSubSet = document.createElement('th');
-      thSubSet.className = 'sub col-set';
+      thSubSet.className = 'sub col-set pin-col-2';
       thSubSet.textContent = '子项目集';
       tr.appendChild(thSubSet);
       var thProj = document.createElement('th');
-      thProj.className = 'sub col-proj';
+      thProj.className = 'sub col-proj pin-col-3';
       thProj.textContent = '子项目';
       tr.appendChild(thProj);
       PHASE_FIELD_KEYS.forEach(function (key) {
@@ -4297,12 +4983,16 @@
       });
       thead.innerHTML = '';
       thead.appendChild(tr);
+      attachPhaseColResizeHandles();
+      requestAnimationFrame(function () {
+        applyStickyPinLeftFromDom(document.getElementById('phase-table'));
+      });
     }
 
     function appendPhaseRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin) {
       if (projectSetIdx === 0 && projIdx === 0) {
         var tdSet = document.createElement('td');
-        tdSet.className = 'main col-set';
+        tdSet.className = 'main col-set pin-col-1';
         tdSet.rowSpan = countSubProjectsInSet(set) || 1;
         if (admin) {
           tdSet.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseSetName(' + setIdx + ')">' + escapeHtml(set.name) + '</span><div class="actions"><button type="button" class="icon-btn" title="添加子项目集" onclick="addPhaseProjectSet(' + setIdx + ')">+</button><button type="button" class="icon-btn danger" title="删除项目集" onclick="showDeleteModal(\'set\',' + setIdx + ')">×</button></div></div>';
@@ -4313,7 +5003,7 @@
       }
       if (projIdx === 0) {
         var tdSubSet = document.createElement('td');
-        tdSubSet.className = 'sub col-set';
+        tdSubSet.className = 'sub col-set pin-col-2';
         tdSubSet.rowSpan = getSubProjects(projectSet).length || 1;
         if (admin) {
           tdSubSet.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseProjectSetName(' + setIdx + ',' + projectSetIdx + ')">' + escapeHtml(projectSet.name) + '</span><div class="actions"><button type="button" class="icon-btn" title="添加子项目" onclick="addPhaseProject(' + setIdx + ',' + projectSetIdx + ')">+</button><button type="button" class="icon-btn danger" title="删除子项目集" onclick="showDeleteModal(\'projectSet\',' + setIdx + ',' + projectSetIdx + ')">×</button></div></div>';
@@ -4323,7 +5013,7 @@
         tr.appendChild(tdSubSet);
       }
       var tdProj = document.createElement('td');
-      tdProj.className = 'sub col-proj';
+      tdProj.className = 'sub col-proj pin-col-3';
       if (admin) {
         tdProj.innerHTML = '<div class="cell-head-inline"><span class="editable-text" onclick="editPhaseProjectName(' + setIdx + ',' + projectSetIdx + ',' + projIdx + ')">' + escapeHtml(proj.name) + '</span><div class="actions"><button type="button" class="icon-btn danger" title="删除子项目" onclick="showDeleteModal(\'project\',' + setIdx + ',' + projectSetIdx + ',' + projIdx + ')">×</button></div></div>';
       } else {
@@ -4355,6 +5045,9 @@
           : '暂无记录。普通用户仅可查看；管理员可添加与编辑。';
         trE.appendChild(tdE);
         tb.appendChild(trE);
+        requestAnimationFrame(function () {
+          applyStickyPinLeftFromDom(document.getElementById('phase-table'));
+        });
         return;
       }
 
@@ -4368,22 +5061,49 @@
             PHASE_FIELD_KEYS.forEach(function (key) {
               var td = document.createElement('td');
               td.className = 'phase-field-cell';
-              var ta = document.createElement('textarea');
-              ta.className = 'phase-field-input';
-              ta.value = slice[key] || '';
-              ta.readOnly = !admin;
-              ta.rows = 3;
-              if (admin) {
-                ta.addEventListener('input', function () {
-                  slice[key] = ta.value;
+              if (key === 'planMatch') {
+                var sel = document.createElement('select');
+                sel.className = 'phase-field-select';
+                var planOptions = [
+                  { value: '', label: '请选择' },
+                  { value: '是', label: '是' },
+                  { value: '否', label: '否' }
+                ];
+                planOptions.forEach(function (opt) {
+                  var o = document.createElement('option');
+                  o.value = opt.value;
+                  o.textContent = opt.label;
+                  if ((slice[key] || '') === opt.value) o.selected = true;
+                  sel.appendChild(o);
                 });
+                sel.disabled = !admin;
+                if (admin) {
+                  sel.addEventListener('change', function () {
+                    slice[key] = sel.value;
+                  });
+                }
+                td.appendChild(sel);
+              } else {
+                var ta = document.createElement('textarea');
+                ta.className = 'phase-field-input';
+                ta.value = slice[key] || '';
+                ta.readOnly = !admin;
+                ta.rows = 3;
+                if (admin) {
+                  ta.addEventListener('input', function () {
+                    slice[key] = ta.value;
+                  });
+                }
+                td.appendChild(ta);
               }
-              td.appendChild(ta);
               tr.appendChild(td);
             });
             tb.appendChild(tr);
           });
         });
+      });
+      requestAnimationFrame(function () {
+        applyStickyPinLeftFromDom(document.getElementById('phase-table'));
       });
     }
 
@@ -4534,28 +5254,35 @@
 
     function renderManpowerTheadMonth() {
       const thead = document.getElementById('register-thead');
-      if (!thead) return;
+      const theadF = document.getElementById('register-thead-frozen');
+      if (!thead || !theadF) return;
       const admin = canEditPanel('manpower');
       thead.innerHTML = '';
+      theadF.innerHTML = '';
 
-      const tr1 = document.createElement('tr');
-      const thSet = document.createElement('th');
-      thSet.className = 'main col-set';
-      thSet.rowSpan = 2;
-      thSet.textContent = '项目集';
-      tr1.appendChild(thSet);
-      const thSubSet = document.createElement('th');
-      thSubSet.className = 'sub col-set';
-      thSubSet.rowSpan = 2;
-      thSubSet.textContent = '子项目集';
-      tr1.appendChild(thSubSet);
+      const tr1F = document.createElement('tr');
+      const thCorner = document.createElement('th');
+      thCorner.colSpan = 3;
+      thCorner.className = 'main manpower-frozen-thead-r1';
+      thCorner.textContent = '项目结构';
+      tr1F.appendChild(thCorner);
+      theadF.appendChild(tr1F);
+      const tr2F = document.createElement('tr');
+      const thSetF = document.createElement('th');
+      thSetF.className = 'main col-set';
+      thSetF.textContent = '项目集';
+      tr2F.appendChild(thSetF);
+      const thSubF = document.createElement('th');
+      thSubF.className = 'sub col-set';
+      thSubF.textContent = '子项目集';
+      tr2F.appendChild(thSubF);
+      const thProjF = document.createElement('th');
+      thProjF.className = 'sub col-proj';
+      thProjF.textContent = '子项目';
+      tr2F.appendChild(thProjF);
+      theadF.appendChild(tr2F);
 
-      const thProj = document.createElement('th');
-      thProj.className = 'sub col-proj';
-      thProj.rowSpan = 2;
-      thProj.textContent = '子项目';
-      tr1.appendChild(thProj);
-
+      const tr1R = document.createElement('tr');
       deptGroups.forEach(function (g, gi) {
         const th = document.createElement('th');
         th.className = 'main dept-g-' + (gi % 2);
@@ -4583,9 +5310,20 @@
           wrap.appendChild(act);
         }
         th.appendChild(wrap);
-        tr1.appendChild(th);
+        tr1R.appendChild(th);
       });
-      thead.appendChild(tr1);
+      const thSum = document.createElement('th');
+      thSum.className = 'sub col-sum';
+      thSum.rowSpan = 2;
+      thSum.textContent = '小计';
+      tr1R.appendChild(thSum);
+
+      const thRatio = document.createElement('th');
+      thRatio.className = 'sub col-ratio';
+      thRatio.rowSpan = 2;
+      thRatio.textContent = '人力占比';
+      tr1R.appendChild(thRatio);
+      thead.appendChild(tr1R);
 
       const tr2 = document.createElement('tr');
       deptGroups.forEach(function (g, gi) {
@@ -4632,20 +5370,21 @@
     function renderManpowerTheadSeason() {
       const thead = document.getElementById('register-season-thead');
       if (!thead) return;
+      syncReadonlyColgroup('register-season-colgroup');
       thead.innerHTML = '';
       const tr1 = document.createElement('tr');
       const thSet = document.createElement('th');
-      thSet.className = 'main col-set';
+      thSet.className = 'main col-set pin-col-1';
       thSet.rowSpan = 2;
       thSet.textContent = '项目集';
       tr1.appendChild(thSet);
       const thSubSet = document.createElement('th');
-      thSubSet.className = 'sub col-set';
+      thSubSet.className = 'sub col-set pin-col-2';
       thSubSet.rowSpan = 2;
       thSubSet.textContent = '子项目集';
       tr1.appendChild(thSubSet);
       const thProj = document.createElement('th');
-      thProj.className = 'sub col-proj';
+      thProj.className = 'sub col-proj pin-col-3';
       thProj.rowSpan = 2;
       thProj.textContent = '子项目';
       tr1.appendChild(thProj);
@@ -4656,6 +5395,16 @@
         th.textContent = g.name;
         tr1.appendChild(th);
       });
+      const thSum = document.createElement('th');
+      thSum.className = 'sub col-sum';
+      thSum.rowSpan = 2;
+      thSum.textContent = '小计';
+      tr1.appendChild(thSum);
+      const thRatio = document.createElement('th');
+      thRatio.className = 'sub col-ratio';
+      thRatio.rowSpan = 2;
+      thRatio.textContent = '人力占比';
+      tr1.appendChild(thRatio);
       thead.appendChild(tr1);
       const tr2 = document.createElement('tr');
       deptGroups.forEach(function (g, gi) {
@@ -4672,20 +5421,21 @@
     function renderManpowerTheadYear() {
       const thead = document.getElementById('register-year-thead');
       if (!thead) return;
+      syncReadonlyColgroup('register-year-colgroup');
       thead.innerHTML = '';
       const tr1 = document.createElement('tr');
       const thSet = document.createElement('th');
-      thSet.className = 'main col-set';
+      thSet.className = 'main col-set pin-col-1';
       thSet.rowSpan = 2;
       thSet.textContent = '项目集';
       tr1.appendChild(thSet);
       const thSubSet = document.createElement('th');
-      thSubSet.className = 'sub col-set';
+      thSubSet.className = 'sub col-set pin-col-2';
       thSubSet.rowSpan = 2;
       thSubSet.textContent = '子项目集';
       tr1.appendChild(thSubSet);
       const thProj = document.createElement('th');
-      thProj.className = 'sub col-proj';
+      thProj.className = 'sub col-proj pin-col-3';
       thProj.rowSpan = 2;
       thProj.textContent = '子项目';
       tr1.appendChild(thProj);
@@ -4696,6 +5446,16 @@
         th.textContent = g.name;
         tr1.appendChild(th);
       });
+      const thSum = document.createElement('th');
+      thSum.className = 'sub col-sum';
+      thSum.rowSpan = 2;
+      thSum.textContent = '小计';
+      tr1.appendChild(thSum);
+      const thRatio = document.createElement('th');
+      thRatio.className = 'sub col-ratio';
+      thRatio.rowSpan = 2;
+      thRatio.textContent = '人力占比';
+      tr1.appendChild(thRatio);
       thead.appendChild(tr1);
       const tr2 = document.createElement('tr');
       deptGroups.forEach(function (g, gi) {
@@ -4824,10 +5584,11 @@
       renderTable();
     }
 
-    function appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, structureEditable) {
+    function appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, structureEditable, omitPinColClass) {
+      var usePin = !omitPinColClass;
       if (projectSetIdx === 0 && projIdx === 0) {
         const tdSet = document.createElement('td');
-        tdSet.className = 'main col-set';
+        tdSet.className = usePin ? 'main col-set pin-col-1' : 'main col-set';
         tdSet.rowSpan = countSubProjectsInSet(set) || 1;
         if (admin && structureEditable) {
           tdSet.innerHTML = `
@@ -4845,7 +5606,7 @@
       }
       if (projIdx === 0) {
         const tdSubSet = document.createElement('td');
-        tdSubSet.className = 'sub col-set';
+        tdSubSet.className = usePin ? 'sub col-set pin-col-2' : 'sub col-set';
         tdSubSet.rowSpan = getSubProjects(projectSet).length || 1;
         if (admin && structureEditable) {
           tdSubSet.innerHTML = `
@@ -4862,7 +5623,7 @@
         tr.appendChild(tdSubSet);
       }
       const tdProj = document.createElement('td');
-      tdProj.className = 'sub col-proj';
+      tdProj.className = usePin ? 'sub col-proj pin-col-3' : 'sub col-proj';
       if (admin && structureEditable) {
         tdProj.innerHTML = `
             <div class="cell-head-inline">
@@ -4879,20 +5640,47 @@
 
     function renderMonthTableBody() {
       const $body = document.getElementById('table-body');
+      const $bodyF = document.getElementById('table-body-frozen');
       if (!$body) return;
       $body.innerHTML = '';
+      if ($bodyF) $bodyF.innerHTML = '';
       const nCols = deptFlatCount();
+      var monthGrandTotal = 0;
+      data.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (proj) {
+            var rowSum = 0;
+            for (let i = 0; i < nCols; ++i) {
+              var v = proj.manpower[i] != null ? Number(proj.manpower[i]) : 0;
+              if (!isNaN(v)) rowSum += v;
+            }
+            monthGrandTotal += rowSum;
+          });
+        });
+      });
       const admin = canEditPanel('manpower');
       data.forEach(function (set, setIdx) {
         getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
           getSubProjects(projectSet).forEach(function (proj, projIdx) {
             const tr = document.createElement('tr');
-            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
-            appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, true);
+            const trF = $bodyF ? document.createElement('tr') : null;
+            if (setIdx % 2 === 1) {
+              tr.classList.add('manpower-set-stripe-b');
+              if (trF) trF.classList.add('manpower-set-stripe-b');
+            }
+            if (trF) {
+              appendManpowerRowNameCells(trF, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, true, true);
+              $bodyF.appendChild(trF);
+            } else {
+              appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, true);
+            }
+            var rowTotal = 0;
             for (let i = 0; i < nCols; ++i) {
               const tdC = document.createElement('td');
               tdC.className = 'center-cell col-mp';
               const v = proj.manpower[i] != null ? proj.manpower[i] : 0;
+              var vn = Number(v);
+              if (!isNaN(vn)) rowTotal += vn;
               if (admin) {
                 tdC.innerHTML = `
                 <span id="v-${setIdx}-${projectSetIdx}-${projIdx}-${i}" ondblclick="editManpower(${setIdx},${projectSetIdx},${projIdx},${i})">${escapeHtml(String(v))}</span>
@@ -4904,6 +5692,14 @@
               }
               tr.appendChild(tdC);
             }
+            const tdSum = document.createElement('td');
+            tdSum.className = 'center-cell col-sum';
+            tdSum.textContent = String(rowTotal);
+            tr.appendChild(tdSum);
+            const tdRatio = document.createElement('td');
+            tdRatio.className = 'center-cell col-ratio';
+            tdRatio.textContent = formatManpowerRatio(rowTotal, monthGrandTotal);
+            tr.appendChild(tdRatio);
             $body.appendChild(tr);
           });
         });
@@ -4916,6 +5712,16 @@
       $body.innerHTML = '';
       const nCols = deptFlatCount();
       const y = manpowerSelYear;
+      var seasonGrandTotal = 0;
+      data.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (proj) {
+            var rowSum = 0;
+            for (let i = 0; i < nCols; ++i) rowSum += sumQuarterDept(proj, y, manpowerSelQuarter, i);
+            seasonGrandTotal += rowSum;
+          });
+        });
+      });
       const admin = canEditPanel('manpower');
       data.forEach(function (set, setIdx) {
         getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
@@ -4923,12 +5729,23 @@
             const tr = document.createElement('tr');
             if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
             appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, false);
+            var rowTotal = 0;
             for (let i = 0; i < nCols; ++i) {
               const tdC = document.createElement('td');
               tdC.className = 'center-cell col-mp manpower-readonly-cell';
-              tdC.textContent = String(sumQuarterDept(proj, y, manpowerSelQuarter, i));
+              var v = sumQuarterDept(proj, y, manpowerSelQuarter, i);
+              rowTotal += v;
+              tdC.textContent = String(v);
               tr.appendChild(tdC);
             }
+            const tdSum = document.createElement('td');
+            tdSum.className = 'center-cell col-sum manpower-readonly-cell';
+            tdSum.textContent = String(rowTotal);
+            tr.appendChild(tdSum);
+            const tdRatio = document.createElement('td');
+            tdRatio.className = 'center-cell col-ratio manpower-readonly-cell';
+            tdRatio.textContent = formatManpowerRatio(rowTotal, seasonGrandTotal);
+            tr.appendChild(tdRatio);
             $body.appendChild(tr);
           });
         });
@@ -4941,6 +5758,16 @@
       $body.innerHTML = '';
       const nCols = deptFlatCount();
       const y = manpowerSelYear;
+      var yearGrandTotal = 0;
+      data.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (proj) {
+            var rowSum = 0;
+            for (let i = 0; i < nCols; ++i) rowSum += sumYearDept(proj, y, i);
+            yearGrandTotal += rowSum;
+          });
+        });
+      });
       const admin = canEditPanel('manpower');
       data.forEach(function (set, setIdx) {
         getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
@@ -4948,12 +5775,23 @@
             const tr = document.createElement('tr');
             if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
             appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, false);
+            var rowTotal = 0;
             for (let i = 0; i < nCols; ++i) {
               const tdC = document.createElement('td');
               tdC.className = 'center-cell col-mp manpower-readonly-cell';
-              tdC.textContent = String(sumYearDept(proj, y, i));
+              var v = sumYearDept(proj, y, i);
+              rowTotal += v;
+              tdC.textContent = String(v);
               tr.appendChild(tdC);
             }
+            const tdSum = document.createElement('td');
+            tdSum.className = 'center-cell col-sum manpower-readonly-cell';
+            tdSum.textContent = String(rowTotal);
+            tr.appendChild(tdSum);
+            const tdRatio = document.createElement('td');
+            tdRatio.className = 'center-cell col-ratio manpower-readonly-cell';
+            tdRatio.textContent = formatManpowerRatio(rowTotal, yearGrandTotal);
+            tr.appendChild(tdRatio);
             $body.appendChild(tr);
           });
         });
@@ -4968,6 +5806,7 @@
         syncProjectManpowerPointerToMonth();
         renderManpowerTheadMonth();
         renderMonthTableBody();
+        ensureRegisterMonthScrollSync();
       } else if (manpowerSubView === 'season') {
         renderManpowerTheadSeason();
         renderSeasonTableBody();
@@ -4975,6 +5814,15 @@
         renderManpowerTheadYear();
         renderYearTableBody();
       }
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          syncManpowerTableStickyLayout();
+          if (manpowerSubView === 'month') {
+            syncRegisterMonthSplitTheadHeights();
+            syncManpowerTableStickyLayout();
+          }
+        });
+      });
     }
 
     // 编辑项目集名称（以阶段表为准，同步到人力表）
