@@ -3182,10 +3182,27 @@
       });
     }
 
+    /** 季/年只读表与月度共用列结构：优先用月度拖拽保存的 registerColWidths，缺省回退 defaultReadonlyColWidths */
+    function readonlyColWidthsMergedWithSaved() {
+      loadRegisterColWidths();
+      var def = defaultReadonlyColWidths();
+      var out = [];
+      for (var i = 0; i < def.length; i++) {
+        var w = registerColWidths[i];
+        var v = Number(w);
+        if (!isNaN(v) && v >= getRegisterColMin(i)) {
+          out.push(v);
+        } else {
+          out.push(def[i]);
+        }
+      }
+      return out;
+    }
+
     function syncReadonlyColgroup(colgroupId) {
       var cg = document.getElementById(colgroupId);
       if (!cg) return;
-      var widths = defaultReadonlyColWidths();
+      var widths = readonlyColWidthsMergedWithSaved();
       cg.innerHTML = '';
       widths.forEach(function (w) {
         var col = document.createElement('col');
@@ -3715,7 +3732,7 @@
       });
     }
 
-    /** 与 renderRiskTable 中控件顺序一致，供 syncRiskRowsFromDom 使用 */
+    /** 与 renderRiskTable 中 [data-risk-field] 一致，供 syncRiskRowsFromDom 使用 */
     const RISK_FIELD_ORDER = ['category', 'source', 'project', 'issue', 'solution', 'level', 'owner', 'regTime', 'closeTime', 'status'];
 
     let riskAnalysisCharts = [];
@@ -4335,10 +4352,12 @@
       trList.forEach(function (tr) {
         const tds = tr.querySelectorAll('td');
         if (tds.length < 10) return;
-        const fields = tr.querySelectorAll('input, select, textarea');
-        if (fields.length < RISK_FIELD_ORDER.length || !riskRows[i]) return;
-        RISK_FIELD_ORDER.forEach(function (key, j) {
-          riskRows[i][key] = fields[j].value;
+        if (!riskRows[i]) return;
+        RISK_FIELD_ORDER.forEach(function (key) {
+          const el = tr.querySelector('[data-risk-field="' + key + '"]');
+          if (el && 'value' in el) {
+            riskRows[i][key] = el.value;
+          }
         });
         i++;
       });
@@ -4803,6 +4822,7 @@
           const inp = document.createElement('input');
           inp.type = 'text';
           inp.className = 'risk-input';
+          inp.setAttribute('data-risk-field', field);
           inp.value = row[field] || '';
           inp.readOnly = !allowEdit;
           inp.addEventListener('change', function () {
@@ -4859,6 +4879,7 @@
           td.className = 'risk-cell' + (cls ? ' ' + cls : '');
           const sel = document.createElement('select');
           sel.className = 'risk-select';
+          sel.setAttribute('data-risk-field', field);
           const current = row[field] != null ? String(row[field]) : '';
           [['', '请选择']].concat(options).forEach(function (opt) {
             const o = document.createElement('option');
@@ -4885,6 +4906,7 @@
         tdIssue.className = 'risk-cell w-wide';
         const taIssue = document.createElement('textarea');
         taIssue.className = 'risk-input';
+        taIssue.setAttribute('data-risk-field', 'issue');
         taIssue.rows = 2;
         taIssue.value = row.issue || '';
         taIssue.readOnly = !allowEdit;
@@ -4898,6 +4920,7 @@
         tdSolution.className = 'risk-cell w-wide';
         const taSolution = document.createElement('textarea');
         taSolution.className = 'risk-input';
+        taSolution.setAttribute('data-risk-field', 'solution');
         taSolution.rows = 2;
         taSolution.value = row.solution || '';
         taSolution.readOnly = !allowEdit;
@@ -4916,6 +4939,7 @@
         const rin = document.createElement('input');
         rin.type = 'date';
         rin.className = 'risk-input';
+        rin.setAttribute('data-risk-field', 'regTime');
         rin.value = row.regTime || '';
         rin.disabled = !allowEdit;
         rin.addEventListener('change', function () {
@@ -4929,6 +4953,7 @@
         const din = document.createElement('input');
         din.type = 'date';
         din.className = 'risk-input';
+        din.setAttribute('data-risk-field', 'closeTime');
         din.value = row.closeTime || '';
         din.disabled = !allowEdit;
         din.addEventListener('change', function () {
@@ -6066,21 +6091,36 @@
         });
       })();
 
-      setTimeout(function () {
-        (async function () {
-          await loadRegistryData();
+      try {
+        await loadRegistryData();
+        loadAppSettings();
+        initManpowerTimeUi();
+        initPhaseTimeUi();
+        initRiskAnalysisUi();
+        renderTable();
+        renderRiskTable();
+        renderPhaseTable();
+        applyPermissionToAllUI();
+        initSettingsPanelOnce();
+        updateSettingsPanelRoleUi();
+      } catch (initErr) {
+        console.warn('[PM-tool] 初始化数据或渲染失败', initErr);
+        try {
+          alert('页面初始化出现异常，已尽力载入本地数据。详情见控制台。');
+        } catch (aErr) {}
+        try {
+          loadSavedData();
           loadAppSettings();
-          initManpowerTimeUi();
-          initPhaseTimeUi();
-          initRiskAnalysisUi();
           renderTable();
           renderRiskTable();
           renderPhaseTable();
           applyPermissionToAllUI();
           initSettingsPanelOnce();
           updateSettingsPanelRoleUi();
-        })();
-      }, 0);
+        } catch (fallbackErr) {
+          console.warn('[PM-tool] 降级初始化仍失败', fallbackErr);
+        }
+      }
     }
     pmBootstrap().catch(function (err) {
       console.warn('[PM-tool] pmBootstrap failed', err);
