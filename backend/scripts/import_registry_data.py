@@ -30,6 +30,9 @@
 
 从 import_excel_registry.py 生成的目录一次性导入（phase.json + manpower.json + risk.json）：
   python scripts/import_registry_data.py --from-registry-dir data/registry-import --force
+
+覆盖策略：若 registry 行已存在但「核心数组」为空（manpower 的 data、phase 的 phaseData、
+risk 的 riskRows 长度均为 0），导入时无需 --force 也会写入；已有非空登记时仍须 --force。
 """
 from __future__ import annotations
 
@@ -511,6 +514,22 @@ def _validate_payloads(payloads: dict[str, dict[str, Any]]) -> dict[str, dict[st
     return cleaned
 
 
+def _registry_core_array_empty(key: str, payload: Any) -> bool:
+    """与前端 isRegistryServerEmpty / 各 GET 的 EMPTY 语义对齐：核心列表无条目视为空占位，可不经 --force 导入覆盖。"""
+    if not isinstance(payload, dict):
+        return True
+    if key == KEY_MANPOWER:
+        d = payload.get("data")
+        return not isinstance(d, list) or len(d) == 0
+    if key == KEY_PHASE:
+        d = payload.get("phaseData")
+        return not isinstance(d, list) or len(d) == 0
+    if key == KEY_RISK:
+        d = payload.get("riskRows")
+        return not isinstance(d, list) or len(d) == 0
+    return True
+
+
 def _import_to_db(
     db: Session,
     payloads: dict[str, dict[str, Any]],
@@ -520,10 +539,16 @@ def _import_to_db(
     written: list[str] = []
     skipped: list[str] = []
     for key, payload in payloads.items():
-        exists = db.get(RegistryEntry, key) is not None
-        if exists and not force:
+        row = db.get(RegistryEntry, key)
+        exists = row is not None
+        has_real_data = exists and not _registry_core_array_empty(key, row.payload)
+        if exists and not force and has_real_data:
             skipped.append(key)
+            print(f"跳过 {key}：库中已有非空登记数据，须加 --force 才能覆盖。")
             continue
+        if exists and not force and not has_real_data:
+            tag = "Dry-run：将覆盖占位空记录" if dry_run else "覆盖占位空记录"
+            print(f"{tag}：{key}（registry 行存在但核心数组为空，无需 --force）")
         if not dry_run:
             put_json(db, key, payload)
         written.append(key)
@@ -549,7 +574,7 @@ def main() -> int:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Overwrite existing registry row(s) for the importing key(s)",
+        help="覆盖库中已有非空登记；占位空行（核心数组为空）不加 --force 也会写入",
     )
     parser.add_argument(
         "--dry-run",
@@ -602,7 +627,7 @@ def main() -> int:
 
     print(f"识别模块：{', '.join(sorted(validated.keys()))}")
     if skipped:
-        print(f"跳过（数据库已有且未指定 --force）：{', '.join(sorted(skipped))}")
+        print(f"未写入模块：{', '.join(sorted(skipped))}（见上文，需 --force 才能覆盖已有数据）")
     if args.dry_run:
         print(f"Dry-run 成功，可写入：{', '.join(sorted(written)) if written else '无'}")
     else:

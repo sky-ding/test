@@ -1215,6 +1215,17 @@
       background: #d6ebff;
     }
 
+    .manpower-month-source-hint {
+      margin: 0 0 10px;
+      padding: 8px 12px;
+      font-size: 13px;
+      line-height: 1.45;
+      color: #7a5c20;
+      background: #fff8e6;
+      border: 1px solid #e8d4a8;
+      border-radius: var(--radius-sm);
+    }
+
     .manpower-toolbar select,
     .manpower-toolbar .manpower-year-input {
       padding: 6px 10px;
@@ -2057,7 +2068,7 @@
     <div class="panel-actions">
       <button type="button" class="btn-add" id="btn-phase-edit-toggle" title="进入编辑模式后可修改并保存">编辑</button>
       <button type="button" class="btn-add phase-edit-only" onclick="addPhaseProjectSet()">+ 新项目集</button>
-      <button type="button" class="btn-save-panel phase-edit-only" onclick="savePhaseData()" title="将本页阶段状态保存到本机浏览器">保存</button>
+      <button type="button" class="btn-save-panel phase-edit-only" onclick="savePhaseData()" title="将本页阶段状态保存到服务器（需管理员）">保存</button>
     </div>
   </div>
   <div id="panel-manpower" class="tab-panel active" role="tabpanel">
@@ -2075,6 +2086,7 @@
       <label>月份 <select id="manpower-month-select" aria-label="选择月份"></select></label>
       <button type="button" class="manpower-analysis-btn" id="btn-manpower-month-analysis" title="按当前所选年月汇总并展示图表">项目月度人力分析</button>
     </div>
+    <p id="manpower-month-source-hint" class="manpower-month-source-hint" hidden></p>
     <div class="table-shell table-shell-manpower-month-split" id="register-month-split-shell">
       <div class="manpower-month-split-left" id="register-split-left-wrap">
         <table id="register-table-frozen">
@@ -2095,7 +2107,7 @@
       <button type="button" class="btn-add" id="btn-manpower-edit-toggle" title="进入编辑模式后可修改并保存">编辑</button>
       <button type="button" class="btn-add manpower-edit-only" onclick="addProjectSet()">+ 新项目集</button>
       <button type="button" class="btn-add manpower-edit-only" onclick="addDeptGroup()" title="增加新的一级部门分组（含首列二级部门），可在表头继续添加子列">+ 部门分组</button>
-      <button type="button" class="btn-save-panel manpower-edit-only" onclick="saveManpowerData()" title="仅保存本页人力登记到本机浏览器">保存</button>
+      <button type="button" class="btn-save-panel manpower-edit-only" onclick="saveManpowerData()" title="将本页人力登记保存到服务器（需管理员）">保存</button>
     </div>
   </div>
 
@@ -2161,7 +2173,7 @@
     <div class="panel-actions">
       <button type="button" class="btn-add" id="btn-risk-edit-toggle" title="进入编辑模式后可修改并保存">编辑</button>
       <button type="button" class="btn-add risk-edit-only" onclick="addRiskRow()">+ 新增风险</button>
-      <button type="button" class="btn-save-panel risk-edit-only" onclick="saveRiskData()" title="仅保存本页风险登记到本机浏览器">保存</button>
+      <button type="button" class="btn-save-panel risk-edit-only" onclick="saveRiskData()" title="将本页风险登记保存到服务器（需管理员）">保存</button>
     </div>
   </div>
   <div id="panel-settings" class="tab-panel" role="tabpanel" aria-label="设置">
@@ -2452,9 +2464,22 @@
     let manpowerSelQuarter = Math.floor((manpowerSelMonth - 1) / 3);
     const QUARTER_MONTH_LABELS = ['一季度', '二季度', '三季度', '四季度'];
     const QUARTER_MONTHS = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]];
+    /** 当前所选 yyyy-MM 在载入的 manpowerByMonth 中是否已有月份列（getMonthSlice 填充前检测） */
+    let manpowerNativeHasSelectedYm = true;
 
     function ymKey(y, m) {
       return String(y) + '-' + String(m).padStart(2, '0');
+    }
+
+    /** 将 "2026-5" 等与 ymKey 对齐，便于与导入数据匹配 */
+    function normalizeYmSlugKey(rawKey) {
+      var s = String(rawKey).trim();
+      var m = /^(\d{4})-(\d{1,2})$/.exec(s);
+      if (!m) return null;
+      var y = parseInt(m[1], 10);
+      var mo = parseInt(m[2], 10);
+      if (mo < 1 || mo > 12) return null;
+      return ymKey(y, mo);
     }
 
     let phaseSelYear = new Date().getFullYear();
@@ -2671,6 +2696,20 @@
       if (!p.manpowerByMonth || typeof p.manpowerByMonth !== 'object') p.manpowerByMonth = {};
     }
 
+    function normalizeManpowerByMonthKeysOnProject(p) {
+      ensureProjectHasManpowerByMonth(p);
+      var mb = p.manpowerByMonth;
+      Object.keys(mb).slice().forEach(function (k) {
+        var nk = normalizeYmSlugKey(k);
+        if (nk && nk !== k) {
+          if (!Array.isArray(mb[nk])) {
+            mb[nk] = mb[k];
+          }
+          delete mb[k];
+        }
+      });
+    }
+
     function getMonthSlice(p, y, m) {
       ensureProjectHasManpowerByMonth(p);
       const need = deptFlatCount();
@@ -2720,6 +2759,21 @@
     }
 
     function syncProjectManpowerPointerToMonth() {
+      const k = ymKey(manpowerSelYear, manpowerSelMonth);
+      var anyNative = false;
+      data.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (p) {
+            normalizeManpowerByMonthKeysOnProject(p);
+            ensureProjectHasManpowerByMonth(p);
+            var mb = p.manpowerByMonth;
+            if (Object.prototype.hasOwnProperty.call(mb, k) && Array.isArray(mb[k])) {
+              anyNative = true;
+            }
+          });
+        });
+      });
+      manpowerNativeHasSelectedYm = anyNative;
       data.forEach(function (set) {
         getProgramProjectSets(set).forEach(function (projectSet) {
           getSubProjects(projectSet).forEach(function (p) {
@@ -2727,6 +2781,112 @@
           });
         });
       });
+    }
+
+    function updateManpowerMonthSourceHint() {
+      var el = document.getElementById('manpower-month-source-hint');
+      if (!el) return;
+      if (manpowerSubView !== 'month') {
+        el.hidden = true;
+        return;
+      }
+      const k = ymKey(manpowerSelYear, manpowerSelMonth);
+      if (!manpowerNativeHasSelectedYm) {
+        el.textContent =
+          '提示：所选年月 ' + k + ' 在已载入的登记中尚未出现「月份列」（常见于源 Excel 只含部分月份、或尚未导入该月）。请切换到已有数据的月份，或补充 Excel 后重新导入并保存。';
+        el.hidden = false;
+      } else {
+        el.hidden = true;
+      }
+    }
+
+    /** 从尚未经 fixManpowerInData 填充的人力树收集 yyyy-MM 键（仅 JSON 原有键） */
+    function collectManpowerYmKeysFromTree(arr) {
+      var o = Object.create(null);
+      if (!Array.isArray(arr)) return [];
+      arr.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (ps) {
+          getSubProjects(ps).forEach(function (p) {
+            if (!p || !p.manpowerByMonth || typeof p.manpowerByMonth !== 'object') return;
+            Object.keys(p.manpowerByMonth).forEach(function (k) {
+              var nk = normalizeYmSlugKey(k);
+              if (nk) o[nk] = true;
+            });
+          });
+        });
+      });
+      return Object.keys(o);
+    }
+
+    function collectPhaseYmKeysFromTree(arr) {
+      var o = Object.create(null);
+      if (!Array.isArray(arr)) return [];
+      arr.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (ps) {
+          getSubProjects(ps).forEach(function (p) {
+            if (!p || !p.phaseByMonth || typeof p.phaseByMonth !== 'object') return;
+            Object.keys(p.phaseByMonth).forEach(function (k) {
+              var nk = normalizeYmSlugKey(k);
+              if (nk) o[nk] = true;
+            });
+          });
+        });
+      });
+      return Object.keys(o);
+    }
+
+    function ymManpowerScoreInTree(arr, ymk) {
+      var score = 0;
+      if (!Array.isArray(arr)) return 0;
+      arr.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (ps) {
+          getSubProjects(ps).forEach(function (p) {
+            if (!p || !p.manpowerByMonth) return;
+            var row = p.manpowerByMonth[ymk];
+            if (!Array.isArray(row)) return;
+            row.forEach(function (x) {
+              var n = Number(x);
+              if (!isNaN(n)) score += Math.abs(n);
+            });
+          });
+        });
+      });
+      return score;
+    }
+
+    /**
+     * 在 fixManpowerInData 之前调用：若当前所选 yyyy-MM 在导入的人力 JSON 中根本不存在，
+     * 则把人力/阶段年月切到「数据里有的月份」（优先人力列合计更大的月份），避免默认本机年份与数据年份不一致时整表为 0。
+     */
+    function inferManpowerAndPhaseYmFromPayload(manpowerTree, phaseTreeOpt) {
+      var mkeys = collectManpowerYmKeysFromTree(manpowerTree).sort();
+      if (mkeys.length === 0 && phaseTreeOpt && Array.isArray(phaseTreeOpt)) {
+        mkeys = collectPhaseYmKeysFromTree(phaseTreeOpt).sort();
+      }
+      if (mkeys.length === 0) return;
+      var curK = ymKey(manpowerSelYear, manpowerSelMonth);
+      if (mkeys.indexOf(curK) >= 0) return;
+      var best = mkeys[mkeys.length - 1];
+      var bestScore = ymManpowerScoreInTree(manpowerTree, best);
+      mkeys.forEach(function (k) {
+        var s = ymManpowerScoreInTree(manpowerTree, k);
+        if (s > bestScore) {
+          bestScore = s;
+          best = k;
+        } else if (s === bestScore && k > best) {
+          best = k;
+        }
+      });
+      var parsed = /^(\d{4})-(\d{2})$/.exec(best);
+      if (!parsed) return;
+      var y = parseInt(parsed[1], 10);
+      var mo = parseInt(parsed[2], 10);
+      if (y < 2000 || y > 2099 || mo < 1 || mo > 12) return;
+      manpowerSelYear = y;
+      manpowerSelMonth = mo;
+      manpowerSelQuarter = Math.floor((mo - 1) / 3);
+      phaseSelYear = y;
+      phaseSelMonth = mo;
     }
 
     let manpowerAnalysisCharts = [];
@@ -4459,6 +4619,7 @@
           projectSet.subProjects.forEach(function (p) {
             if (!p) return;
             ensureProjectHasManpowerByMonth(p);
+            normalizeManpowerByMonthKeysOnProject(p);
             var mb = p.manpowerByMonth;
             var keys = Object.keys(mb);
             if (keys.length === 0 && Array.isArray(p.manpower)) {
@@ -4528,10 +4689,21 @@
         const rawP = localStorage.getItem(STORAGE_KEY_PHASE);
         const rawL = localStorage.getItem(STORAGE_KEY_LEGACY);
 
+        var phaseEarly = null;
+        if (rawP) {
+          try {
+            const objPEarly = JSON.parse(rawP);
+            if (objPEarly && Array.isArray(objPEarly.phaseData)) {
+              phaseEarly = mapPhaseDataFromStorage(objPEarly.phaseData);
+            }
+          } catch (e0) {}
+        }
+
         if (!rawM && !rawR && rawL) {
           const leg = JSON.parse(rawL);
           if (leg && typeof leg === 'object') {
             if (Array.isArray(leg.data)) {
+              inferManpowerAndPhaseYmFromPayload(leg.data, phaseEarly);
               fixManpowerInData(leg.data);
               data = leg.data;
             }
@@ -4540,8 +4712,6 @@
             }
           }
           try {
-            localStorage.setItem(STORAGE_KEY_MANPOWER, JSON.stringify({ data: data, deptGroups: deptGroups, savedAt: new Date().toISOString() }));
-            localStorage.setItem(STORAGE_KEY_RISK, JSON.stringify({ riskRows: riskRows, savedAt: new Date().toISOString() }));
             localStorage.removeItem(STORAGE_KEY_LEGACY);
           } catch (e2) {}
           fixManpowerInData(data);
@@ -4557,6 +4727,7 @@
             if (Array.isArray(obj.deptGroups)) {
               deptGroups = normalizeDeptGroups(obj.deptGroups);
             }
+            inferManpowerAndPhaseYmFromPayload(obj.data, phaseEarly);
             fixManpowerInData(obj.data);
             data = obj.data;
           }
@@ -4567,12 +4738,9 @@
             riskRows = mapRiskRowsFromStorage(obj.riskRows);
           }
         }
-        if (rawP) {
-          const objP = JSON.parse(rawP);
-          if (objP && Array.isArray(objP.phaseData)) {
-            phaseData = mapPhaseDataFromStorage(objP.phaseData);
-            phaseFromStorage = true;
-          }
+        if (phaseEarly) {
+          phaseData = phaseEarly;
+          phaseFromStorage = true;
         }
       } catch (e) {
         console.warn('[PM-tool] 本地数据解析失败，已保留当前默认或已加载数据：', e);
@@ -4585,57 +4753,26 @@
       syncManpowerStructureFromPhase();
     }
 
-    function isRegistryServerEmpty(mObj, pObj, rObj) {
-      var md = (mObj && Array.isArray(mObj.data)) ? mObj.data.length : 0;
-      var rd = (rObj && Array.isArray(rObj.riskRows)) ? rObj.riskRows.length : 0;
-      var pd = (pObj && Array.isArray(pObj.phaseData)) ? pObj.phaseData.length : 0;
-      return md === 0 && rd === 0 && pd === 0;
-    }
-
-    function hasLocalRegistryData() {
-      try {
-        var rawM = localStorage.getItem(STORAGE_KEY_MANPOWER);
-        var rawR = localStorage.getItem(STORAGE_KEY_RISK);
-        var rawP = localStorage.getItem(STORAGE_KEY_PHASE);
-        if (rawM) {
-          var o = JSON.parse(rawM);
-          if (o && Array.isArray(o.data) && o.data.length > 0) return true;
-        }
-        if (rawR) {
-          var o2 = JSON.parse(rawR);
-          if (o2 && Array.isArray(o2.riskRows) && o2.riskRows.length > 0) return true;
-        }
-        if (rawP) {
-          var o3 = JSON.parse(rawP);
-          if (o3 && Array.isArray(o3.phaseData) && o3.phaseData.length > 0) return true;
-        }
-      } catch (e) {}
-      return false;
-    }
-
-    function mirrorRegistryToLocalStorage(mObj, pObj, rObj) {
-      try {
-        if (mObj) localStorage.setItem(STORAGE_KEY_MANPOWER, JSON.stringify(mObj));
-        if (pObj) localStorage.setItem(STORAGE_KEY_PHASE, JSON.stringify(pObj));
-        if (rObj) localStorage.setItem(STORAGE_KEY_RISK, JSON.stringify(rObj));
-      } catch (e) {}
-    }
-
     function applyRegistryFromObjects(mObj, pObj, rObj) {
       var phaseFromStorage = false;
+      var phaseMapped = null;
+      if (pObj && Array.isArray(pObj.phaseData)) {
+        phaseMapped = mapPhaseDataFromStorage(pObj.phaseData);
+        phaseFromStorage = true;
+      }
       if (mObj && Array.isArray(mObj.data)) {
         deptGroups = Array.isArray(mObj.deptGroups)
           ? normalizeDeptGroups(mObj.deptGroups)
           : defaultDeptGroups();
+        inferManpowerAndPhaseYmFromPayload(mObj.data, phaseMapped);
         fixManpowerInData(mObj.data);
         data = mObj.data;
       }
       if (rObj && Array.isArray(rObj.riskRows)) {
         riskRows = mapRiskRowsFromStorage(rObj.riskRows);
       }
-      if (pObj && Array.isArray(pObj.phaseData)) {
-        phaseData = mapPhaseDataFromStorage(pObj.phaseData);
-        phaseFromStorage = true;
+      if (phaseMapped) {
+        phaseData = phaseMapped;
       }
       fixManpowerInData(data);
       if (!phaseFromStorage) {
@@ -4647,7 +4784,7 @@
 
     async function loadRegistryData() {
       var me = window.__pmCurrentUser;
-      // 仅「认证不可用/离线」时用本机缓存；正常登录与 PM_AUTH_DISABLED 下的 dev 用户仍从服务器拉取
+      // 已登录用户仅以接口（数据库）为准，不回落本机登记缓存；离线/未知身份仍读本机
       if (!me || me.username === 'offline' || me.username === 'unknown') {
         loadSavedData();
         return;
@@ -4672,17 +4809,15 @@
         var mObj = await rm.json();
         var pObj = await rp.json();
         var rObj = await rr.json();
-        if (isRegistryServerEmpty(mObj, pObj, rObj) && hasLocalRegistryData()) {
-          loadSavedData();
-          showSaveToast('服务端暂无数据，已载入本机数据；请管理员点击保存以同步到服务器');
-          return;
-        }
         applyRegistryFromObjects(mObj, pObj, rObj);
-        mirrorRegistryToLocalStorage(mObj, pObj, rObj);
       } catch (e) {
-        console.warn('[PM-tool] 从服务器加载登记数据失败，改用本机缓存', e);
-        alert('无法从服务器加载登记数据，已使用本机缓存。');
-        loadSavedData();
+        console.warn('[PM-tool] 从服务器加载登记数据失败', e);
+        alert('无法从服务器加载登记数据，请检查网络或稍后重试。');
+        applyRegistryFromObjects(
+          { data: [], deptGroups: [] },
+          { phaseData: [] },
+          { riskRows: [] }
+        );
       }
     }
 
@@ -4702,8 +4837,7 @@
           alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
           return;
         }
-        var stored = await r.json();
-        mirrorRegistryToLocalStorage(stored, null, null);
+        await r.json();
         showSaveToast('人力登记已保存到服务器');
         setPanelEditMode('manpower', false);
       } catch (e) {
@@ -4728,8 +4862,7 @@
           alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
           return;
         }
-        var stored = await r.json();
-        mirrorRegistryToLocalStorage(null, null, stored);
+        await r.json();
         showSaveToast('风险登记已保存到服务器');
         setPanelEditMode('risk', false);
       } catch (e) {
@@ -4796,8 +4929,7 @@
           alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
           return;
         }
-        var stored = await r.json();
-        mirrorRegistryToLocalStorage(null, stored, null);
+        await r.json();
         showSaveToast('阶段状态已保存到服务器');
         setPanelEditMode('phase', false);
       } catch (e) {
@@ -6019,6 +6151,7 @@
         renderManpowerTheadMonth();
         renderMonthTableBody();
         ensureRegisterMonthScrollSync();
+        updateManpowerMonthSourceHint();
       } else if (manpowerSubView === 'season') {
         renderManpowerTheadSeason();
         renderSeasonTableBody();
@@ -6301,11 +6434,18 @@
       } catch (initErr) {
         console.warn('[PM-tool] 初始化数据或渲染失败', initErr);
         try {
-          alert('页面初始化出现异常，已尽力载入本地数据。详情见控制台。');
+          alert('页面初始化出现异常。详情见控制台。');
         } catch (aErr) {}
         try {
-          loadSavedData();
+          applyRegistryFromObjects(
+            { data: [], deptGroups: [] },
+            { phaseData: [] },
+            { riskRows: [] }
+          );
           loadAppSettings();
+          initManpowerTimeUi();
+          initPhaseTimeUi();
+          initRiskAnalysisUi();
           renderTable();
           renderRiskTable();
           renderPhaseTable();

@@ -34,9 +34,17 @@ python scripts/migrate_sqlite_to_mysql.py
 
 目标 MySQL 里若已有 `users`/`registry` 数据，脚本默认会拒绝覆盖；需使用 `--force`（**会清空** MySQL 侧这两张表后再导入）。
 
-6. **迁移后验证（建议每台实例或每次发版执行）**：`python scripts/check_db.py`；再用管理员账号调 `GET/PUT /api/v1/manpower`、`phase`、`risk`（见 `/docs`）。
+6. **迁移后验证（建议每台实例或每次发版执行）**：`python scripts/check_db.py`（会打印各 registry 键下 `len(data)` / `len(phaseData)` / `len(riskRows)`）；再用管理员账号调 `GET/PUT /api/v1/manpower`、`phase`、`risk`（见 `/docs`）。
 
 未配置 `PM_MYSQL_*` 时仍回落 **本地 SQLite** `backend/data/app.db`，便于单人本机开发。
+
+### 故障排查：已登录后页面人力/阶段/风险为空
+
+前端在**已登录**时仅以 `GET /api/v1/manpower`、`phase`、`risk` 的返回为准，**不会**因浏览器里曾有 `localStorage` 登记而改读本地；登记数据也**不会**再写入 `localStorage` 镜像。未登录/离线时若本机仍存有旧版三个键或 legacy 键，可能仍会读到历史残留（刷新页面或清理站点数据后可与库完全一致）。
+
+若界面全空：在**与线上一致的** `PM_MYSQL_*`（或本机 `backend/.env`）下执行 `python scripts/check_db.py`，确认 `registry` 三块是否已有数据。数据未写入当前库、或导入到了另一套库时，需按上文「迁移 / 导入 / `sync_registry_to_api_db.py`」处理。`import_registry_data.py` 在库中仅有占位空行时**不加 `--force`** 也会写入；对应键下已有**非空**登记时须加 **`--force`** 才会覆盖。
+
+**人力表全为 0 但无「暂无月份列」提示**：多为**年份与导入数据不一致**（例如数据为 `2026-01`～`2026-04`，浏览器默认选到当前日历年 `2025-xx`）。载入登记后，前端会**自动把人力与阶段所选年月对齐到数据中存在的 `yyyy-MM`**；若仍全 0，请核对 Excel 的 `--year` 与表内月份键是否一致。
 
 ## 启动
 
@@ -130,6 +138,8 @@ python scripts/import_excel_registry.py `
 
 终端里若出现 `Pydantic 校验通过` 和 `已写入: ...`，说明这一步没问题。
 
+**人力月度数字**：仅会生成 Excel 里存在的工作表 **「人力评估（X月）」** 所对应的 `yyyy-MM`；在页面上若选到**从未出现在源表中的月份**，表格会显示为 0（属正常），并非接口异常。
+
 ### 2. 把三份 JSON 写入数据库（在「backend」目录执行）
 
 ```powershell
@@ -138,7 +148,9 @@ cd d:\Study\test01\test\backend
 # 建议先 dry-run：只校验、不写库
 python scripts/import_registry_data.py --from-registry-dir data/registry-import --dry-run
 
-# 确认无误后再真正写入（会覆盖库里已有的三条 registry）
+# 确认无误后再真正写入（占位空行可不加强制；若三条 registry 已有非空数据则需 --force）
+python scripts/import_registry_data.py --from-registry-dir data/registry-import
+# 需要无条件覆盖已有非空登记时：
 python scripts/import_registry_data.py --from-registry-dir data/registry-import --force
 ```
 
@@ -146,9 +158,27 @@ python scripts/import_registry_data.py --from-registry-dir data/registry-import 
 
 - **`--from-registry-dir data/registry-import`**：从该相对路径读上面三份 JSON，一次导入三个模块。  
 - **`--dry-run`**：校验数据格式，**不写数据库**。  
-- **`--force`**：**一定要加**才会覆盖库里已有的 `manpower` / `phase` / `risk`；不加的话若已有数据会跳过。
+- **`--force`**：仅在需要覆盖**已有非空** `manpower` / `phase` / `risk` 登记时必加。若库里对应行存在但核心数组为空（占位），不加 `--force` 也会写入。
 
 导入完成后，用管理员登录前端或调 `GET /api/v1/phase` 等即可看到数据。
+
+### 2b. 两把 MySQL：把「导入所在库」的 registry 同步到 API 连接的库
+
+若数据已写入**另一套** MySQL（例如导入脚本连的是 `imported_db`），而本机/服务器上的 API 使用 `.env` 里的 **`PM_MYSQL_*`** 指向另一库，可用 **`scripts/sync_registry_to_api_db.py`** 仅复制 `registry` 表中 `manpower` / `phase` / `risk` 三行到当前 `.env` 目标库（与 `check_db.py`、uvicorn 使用的库一致）。
+
+在 `backend` 目录：
+
+```powershell
+# 先看计划（不写库）
+python scripts/sync_registry_to_api_db.py --source-host 导入库主机 --source-user ... --source-password ... --source-database 导入库名 --dry-run
+
+# 目标仅有占位空行时可不加 --force；目标已有非空登记时需 --force 才覆盖
+python scripts/sync_registry_to_api_db.py --source-host ... --source-user ... --source-password ... --source-database ... --force
+```
+
+也可在 **`backend/.env`** 中配置 **`PM_SOURCE_MYSQL_HOST`** / **`USER`** / **`DATABASE`** 等（见 [.env.example](.env.example) 注释），与 **`PM_MYSQL_*`** 并存；脚本会读取源库连接，目标始终为 **`PM_MYSQL_*`**。
+
+源库为 **SQLite** 时：`python scripts/sync_registry_to_api_db.py --source-sqlite data/app.db --force`
 
 ### 3. 在 **ipd-pmo.vip.vip.com** 网页上看到同一份数据（不经本机 MySQL）
 
@@ -204,7 +234,7 @@ python scripts/import_registry_data.py --file path/to/data.xlsx --dry-run --expo
 - 支持 JSON 和 Excel（`.xlsx`）。
 - JSON 支持两类顶层键：`manpower|phase|risk` 或 `PM-tool-manpower-v1|PM-tool-phase-v1|PM-tool-risk-v1`。
 - Excel 约定：工作表名包含“月度执行评估（X月）/人力评估（X月）/风险监控”。
-- 若库中已有对应键，默认跳过；加 `--force` 才覆盖。
+- 若库中已有对应键且**核心数组非空**（`data` / `phaseData` / `riskRows` 有条目），未加 `--force` 时会跳过；仅**占位空行**时，不加 `--force` 也会导入覆盖。
 
 ## MySQL 定期备份到本机
 

@@ -21,6 +21,23 @@ from sqlalchemy import func, select, text  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.db import engine  # noqa: E402
 from app.models import RegistryEntry, User  # noqa: E402
+from app.registry_store import KEY_MANPOWER, KEY_PHASE, KEY_RISK  # noqa: E402
+
+
+def _core_len_for_key(key: str, payload: object) -> int | None:
+    """与前端 isRegistryServerEmpty 及导入脚本占位判定一致的核心列表长度。"""
+    if not isinstance(payload, dict):
+        return None
+    if key == KEY_MANPOWER:
+        d = payload.get("data")
+        return len(d) if isinstance(d, list) else None
+    if key == KEY_PHASE:
+        d = payload.get("phaseData")
+        return len(d) if isinstance(d, list) else None
+    if key == KEY_RISK:
+        d = payload.get("riskRows")
+        return len(d) if isinstance(d, list) else None
+    return None
 
 
 def main() -> int:
@@ -39,9 +56,19 @@ def main() -> int:
         uc = s.scalar(select(func.count()).select_from(User)) or 0
         rc = s.scalar(select(func.count()).select_from(RegistryEntry)) or 0
         keys = list(s.scalars(select(RegistryEntry.key).order_by(RegistryEntry.key)))
+        registry_payloads: dict[str, dict] = {}
+        for row in s.scalars(select(RegistryEntry).order_by(RegistryEntry.key)):
+            registry_payloads[row.key] = dict(row.payload) if isinstance(row.payload, dict) else {}
     print("users rows:", uc)
     print("registry rows:", rc)
     print("registry keys:", keys if keys else "(empty)")
+    for k in (KEY_MANPOWER, KEY_PHASE, KEY_RISK):
+        if k in registry_payloads:
+            n = _core_len_for_key(k, registry_payloads[k])
+            field = "len(data)" if k == KEY_MANPOWER else "len(phaseData)" if k == KEY_PHASE else "len(riskRows)"
+            print(f"  {k}: {field}={n if n is not None else '(missing or bad type)'}")
+        else:
+            print(f"  {k}: (no row)")
     return 0
 
 
