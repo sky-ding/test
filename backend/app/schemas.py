@@ -1,5 +1,5 @@
 """
-与 frontend/index.html 中 localStorage / 业务对象字段名对齐。
+与 frontend/index.html 中登记 JSON 及业务对象字段名对齐。
 
 人力：data[].name / projects[].name / manpowerByMonth / manpower（可选，运行时列）
       deptGroups[].name / depts

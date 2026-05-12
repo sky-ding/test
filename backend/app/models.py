@@ -28,7 +28,7 @@ class User(Base):
 
 
 class RegistryEntry(Base):
-    """键值文档表：manpower / phase / risk 各一行，payload 与前端 localStorage 结构一致。"""
+    """键值文档表：manpower / phase / risk 各一行，payload 与登记 API JSON 结构一致。"""
 
     __tablename__ = "registry"
 

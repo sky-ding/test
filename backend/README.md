@@ -20,7 +20,7 @@ pip install -r requirements.txt
 1. 在 MySQL 中**预先创建**数据库（字符集建议 **utf8mb4**），并授予应用账号建表/读写权限。  
 2. 复制 **[.env.example](.env.example)** 为 `backend/.env`，填写 **`PM_MYSQL_HOST` / `PM_MYSQL_USER` / `PM_MYSQL_DATABASE`**（及密码、端口等）；**所有实例**使用**相同**的 `PM_MYSQL_*` 与 **`PM_SESSION_SECRET`**（否则 Cookie 会话在实例间无效）。  
 3. 启动应用会自动 `create_all` 建表；首次启动会 seed 内置用户（若库中尚无同名账号）。  
-4. 连接与表行数冒烟：
+4. 连接与登记数据冒烟：
 
 ```bash
 python scripts/check_db.py
@@ -34,17 +34,16 @@ python scripts/migrate_sqlite_to_mysql.py
 
 目标 MySQL 里若已有 `users`/`registry` 数据，脚本默认会拒绝覆盖；需使用 `--force`（**会清空** MySQL 侧这两张表后再导入）。
 
-6. **迁移后验证（建议每台实例或每次发版执行）**：`python scripts/check_db.py`（会打印各 registry 键下 `len(data)` / `len(phaseData)` / `len(riskRows)`）；再用管理员账号调 `GET/PUT /api/v1/manpower`、`phase`、`risk`（见 `/docs`）。
+6. **迁移后验证**：`python scripts/check_db.py`；再用管理员账号在 `/docs` 中对 `GET/PUT /api/v1/manpower`、`phase`、`risk` 做一次冒烟。
 
 未配置 `PM_MYSQL_*` 时仍回落 **本地 SQLite** `backend/data/app.db`，便于单人本机开发。
 
-### 故障排查：已登录后页面人力/阶段/风险为空
+### 故障排查：登记与页面
 
-前端在**已登录**时仅以 `GET /api/v1/manpower`、`phase`、`risk` 的返回为准，**不会**因浏览器里曾有 `localStorage` 登记而改读本地；登记数据也**不会**再写入 `localStorage` 镜像。未登录/离线时若本机仍存有旧版三个键或 legacy 键，可能仍会读到历史残留（刷新页面或清理站点数据后可与库完全一致）。
-
-若界面全空：在**与线上一致的** `PM_MYSQL_*`（或本机 `backend/.env`）下执行 `python scripts/check_db.py`，确认 `registry` 三块是否已有数据。数据未写入当前库、或导入到了另一套库时，需按上文「迁移 / 导入 / `sync_registry_to_api_db.py`」处理。`import_registry_data.py` 在库中仅有占位空行时**不加 `--force`** 也会写入；对应键下已有**非空**登记时须加 **`--force`** 才会覆盖。
-
-**人力表全为 0 但无「暂无月份列」提示**：多为**年份与导入数据不一致**（例如数据为 `2026-01`～`2026-04`，浏览器默认选到当前日历年 `2025-xx`）。载入登记后，前端会**自动把人力与阶段所选年月对齐到数据中存在的 `yyyy-MM`**；若仍全 0，请核对 Excel 的 `--year` 与表内月份键是否一致。
+- **人力 / 阶段 / 风险** 由**管理员在前端**编辑并保存，经 `PUT /api/v1/manpower|phase|risk` 写入 `registry` 表（固定三个 key：`manpower`、`phase`、`risk`）。本仓库**不再提供** Excel 或批量文件导入脚本。  
+- 多实例部署时，各实例的 **`PM_MYSQL_*` 与 `PM_SESSION_SECRET` 必须一致**，且指向同一库。  
+- 页面表格为空：在**与线上一致**的 `backend/.env` 下执行 `python scripts/check_db.py`，查看 `len(data)` / `len(phaseData)` / `len(riskRows)` 是否为 0；若 DBA 查库有数据而页面无，核对 API 进程实际使用的连接（`host` / `port` / `database`）是否与 DBA 会话一致。  
+- 人力表某年月全为 0：多为当前所选 **yyyy-MM** 在已保存的 `manpowerByMonth` 中不存在；前端会尽量对齐到数据中已有的月份。
 
 ## 启动
 
@@ -102,139 +101,6 @@ python scripts/migrate_sqlite_to_mysql.py
 ```
 
 若目标库已有数据（例如先启动过应用并 seed 了 Sky），需加 `--force` 清空 `users` 与 `registry` 后再导入。
-
-## 历史 Excel 一次导入数据库（手把手）
-
-整体做两件事：**先把 Excel 转成三份 JSON**，**再把 JSON 写进数据库**（`registry` 表里的 `manpower` / `phase` / `risk` 三行）。  
-数据库是 **MySQL 还是本机 SQLite**，只取决于 `backend/.env` 里有没有配齐 `PM_MYSQL_HOST` + `PM_MYSQL_USER` + `PM_MYSQL_DATABASE`：配齐了走 MySQL，没配齐走 `backend/data/app.db`。
-
-### 0. 一次性准备
-
-1. 安装依赖：在 `backend` 目录建好 venv、`pip install -r requirements.txt`（见上文「环境」）。  
-2. 把 `backend/.env.example` 复制为 **`backend/.env`**。  
-   - 要写入 **MySQL**：在 `.env` 里填好 `PM_MYSQL_*` 和 `PM_SESSION_SECRET`，并先在 MySQL 里建好空库。  
-   - 只在**本机试跑**：可以不配 MySQL，数据会进 **`backend/data/app.db`**。  
-3. Excel 文件路径改成你自己的，例如：`D:\Users\你的用户名\Desktop\项目管理状态月度评估2026.xlsx`。
-
-### 1. 用 Excel 生成三份 JSON（在「仓库根目录」执行）
-
-仓库根目录是指包含 `frontend`、`backend`、`scripts` 的那一层（例如 `d:\Study\test01\test`），**不要**先 `cd backend`。
-
-在 PowerShell 里（已激活 backend 的 venv，这样才有 `openpyxl` 等依赖）：
-
-```powershell
-cd d:\Study\test01\test
-python scripts/import_excel_registry.py `
-  --excel "D:\Users\sky.ding\Desktop\项目管理状态月度评估2026.xlsx" `
-  --year 2026 `
-  --out-dir backend/data/registry-import
-```
-
-成功后会多出目录 **`backend/data/registry-import/`**，里面有：
-
-- `phase.json`（阶段）
-- `manpower.json`（人力）
-- `risk.json`（风险）
-
-终端里若出现 `Pydantic 校验通过` 和 `已写入: ...`，说明这一步没问题。
-
-**人力月度数字**：仅会生成 Excel 里存在的工作表 **「人力评估（X月）」** 所对应的 `yyyy-MM`；在页面上若选到**从未出现在源表中的月份**，表格会显示为 0（属正常），并非接口异常。
-
-### 2. 把三份 JSON 写入数据库（在「backend」目录执行）
-
-```powershell
-cd d:\Study\test01\test\backend
-
-# 建议先 dry-run：只校验、不写库
-python scripts/import_registry_data.py --from-registry-dir data/registry-import --dry-run
-
-# 确认无误后再真正写入（占位空行可不加强制；若三条 registry 已有非空数据则需 --force）
-python scripts/import_registry_data.py --from-registry-dir data/registry-import
-# 需要无条件覆盖已有非空登记时：
-python scripts/import_registry_data.py --from-registry-dir data/registry-import --force
-```
-
-含义简要说明：
-
-- **`--from-registry-dir data/registry-import`**：从该相对路径读上面三份 JSON，一次导入三个模块。  
-- **`--dry-run`**：校验数据格式，**不写数据库**。  
-- **`--force`**：仅在需要覆盖**已有非空** `manpower` / `phase` / `risk` 登记时必加。若库里对应行存在但核心数组为空（占位），不加 `--force` 也会写入。
-
-导入完成后，用管理员登录前端或调 `GET /api/v1/phase` 等即可看到数据。
-
-### 2b. 两把 MySQL：把「导入所在库」的 registry 同步到 API 连接的库
-
-若数据已写入**另一套** MySQL（例如导入脚本连的是 `imported_db`），而本机/服务器上的 API 使用 `.env` 里的 **`PM_MYSQL_*`** 指向另一库，可用 **`scripts/sync_registry_to_api_db.py`** 仅复制 `registry` 表中 `manpower` / `phase` / `risk` 三行到当前 `.env` 目标库（与 `check_db.py`、uvicorn 使用的库一致）。
-
-在 `backend` 目录：
-
-```powershell
-# 先看计划（不写库）
-python scripts/sync_registry_to_api_db.py --source-host 导入库主机 --source-user ... --source-password ... --source-database 导入库名 --dry-run
-
-# 目标仅有占位空行时可不加 --force；目标已有非空登记时需 --force 才覆盖
-python scripts/sync_registry_to_api_db.py --source-host ... --source-user ... --source-password ... --source-database ... --force
-```
-
-也可在 **`backend/.env`** 中配置 **`PM_SOURCE_MYSQL_HOST`** / **`USER`** / **`DATABASE`** 等（见 [.env.example](.env.example) 注释），与 **`PM_MYSQL_*`** 并存；脚本会读取源库连接，目标始终为 **`PM_MYSQL_*`**。
-
-源库为 **SQLite** 时：`python scripts/sync_registry_to_api_db.py --source-sqlite data/app.db --force`
-
-### 3. 在 **ipd-pmo.vip.vip.com** 网页上看到同一份数据（不经本机 MySQL）
-
-线上站点读的是**部署环境自己的 MySQL**；你在本机 `.env` 里导入的数据不会自动出现在线上。需要把 JSON **通过 HTTP API 推上去**（需 **管理员** 账号；**会覆盖**线上当前 `manpower` / `phase` / `risk` 三块登记数据）。
-
-在 `backend` 目录、已激活 venv：
-
-```powershell
-# 1) 合并 registry-import 下三份 JSON 为 push 脚本所需的一个文件
-python scripts/merge_registry_dir_for_api_push.py --from-dir data/registry-import --out data/registry-bundle-for-api.json
-
-# 2) 登录并 PUT（密码填真实值，勿写「你的密码」四字；--base 与浏览器一致）
-python scripts/push_registry_to_api.py --base http://ipd-pmo.vip.vip.com --username sky.ding --password 真实密码 --file data/registry-bundle-for-api.json
-
-# 若 phase 返回 422 且提示 planMatch / extra_forbidden（线上后端较旧），再加：
-# python scripts/push_registry_to_api.py ... --legacy-phase
-
-# （可选）推送前先看线上当前有没有数据：应看到 phase 顶层条目数>0 等
-python scripts/verify_remote_registry.py --base http://ipd-pmo.vip.vip.com --username sky.ding --password 你的密码
-```
-
-说明：
-
-- 若公司只开放 **http**，把 `--base` 改成 `http://ipd-pmo.vip.vip.com`。  
-- 须在**能访问该域名**的网络（如公司 VPN）下执行。  
-- 成功时终端会打印 `登录: ok`、`manpower: ok`、`phase: ok`、`risk: ok`；再在浏览器强刷页面即可。  
-- 若网页仍为空，多半是**尚未成功执行 push** 或 **--base 与浏览器协议不一致**；请先跑 `verify_remote_registry.py`，若 `phase: 顶层条目数=0` 再执行 merge + push。
-
----
-
-## 导入已有业务数据（一次性）
-
-当你已有历史数据（例如从浏览器 localStorage 导出的 JSON）时，可手动导入到 `registry` 表。
-
-在 `backend` 目录执行：
-
-```bash
-# 先校验，不写库
-python scripts/import_registry_data.py --file path/to/data.json --dry-run
-
-# 导入全部识别到的模块（manpower / phase / risk）
-python scripts/import_registry_data.py --file path/to/data.json --force
-
-# 仅导入单模块
-python scripts/import_registry_data.py --file path/to/data.json --module manpower --force
-
-# Excel（.xlsx）先转换并校验（不写库）
-python scripts/import_registry_data.py --file path/to/data.xlsx --dry-run --export-json data/import-preview.json
-```
-
-说明：
-- 本脚本仅在你手动执行时生效，不会在服务启动时自动运行。
-- 支持 JSON 和 Excel（`.xlsx`）。
-- JSON 支持两类顶层键：`manpower|phase|risk` 或 `PM-tool-manpower-v1|PM-tool-phase-v1|PM-tool-risk-v1`。
-- Excel 约定：工作表名包含“月度执行评估（X月）/人力评估（X月）/风险监控”。
-- 若库中已有对应键且**核心数组非空**（`data` / `phaseData` / `riskRows` 有条目），未加 `--force` 时会跳过；仅**占位空行**时，不加 `--force` 也会导入覆盖。
 
 ## MySQL 定期备份到本机
 

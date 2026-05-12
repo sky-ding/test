@@ -227,7 +227,7 @@
       max-height: calc(100vh - 260px);
     }
 
-    /* 月度人力：Excel 式冻结——左三列独立表（仅纵向滚），右侧横向+纵向滚，不用 sticky 拼列 */
+    /* 月度人力：表格冻结——左三列独立表（仅纵向滚），右侧横向+纵向滚，不用 sticky 拼列 */
     .table-shell-manpower-month-split {
       display: flex;
       flex-direction: row;
@@ -2237,17 +2237,17 @@
             <tbody>
               <tr>
                 <td>项目阶段状态</td>
-                <td class="perm-col-muted"><span class="perm-tag admin">增删改查</span>项目集/项目（人力表项目名由此同步）、各阶段文本字段；按所选年月存储；可保存到本机</td>
+                <td class="perm-col-muted"><span class="perm-tag admin">增删改查</span>项目集/项目（人力表项目名由此同步）、各阶段文本字段；按所选年月存储；保存至服务器</td>
                 <td class="perm-col-muted"><span class="perm-tag viewer">仅查看</span>表格与字段内容，不可编辑、不可保存</td>
               </tr>
               <tr>
                 <td>部门项目人力登记</td>
-                <td class="perm-col-muted"><span class="perm-tag admin">增删改查</span>项目集/项目（与项目阶段状态同步）、一级部门分组、二级部门列、人力单元格；可保存到本机</td>
+                <td class="perm-col-muted"><span class="perm-tag admin">增删改查</span>项目集/项目（与项目阶段状态同步）、一级部门分组、二级部门列、人力单元格；保存至服务器</td>
                 <td class="perm-col-muted"><span class="perm-tag viewer">仅查看</span>全部表格数据，不可编辑、不可保存</td>
               </tr>
               <tr>
                 <td>项目风险登记</td>
-                <td class="perm-col-muted"><span class="perm-tag admin">增删改查</span>风险行与字段；可保存到本机</td>
+                <td class="perm-col-muted"><span class="perm-tag admin">增删改查</span>风险行与字段；保存至服务器</td>
                 <td class="perm-col-muted"><span class="perm-tag viewer">仅查看</span>列表与字段内容，不可改、不可删、不可保存</td>
               </tr>
               <tr>
@@ -2471,7 +2471,7 @@
       return String(y) + '-' + String(m).padStart(2, '0');
     }
 
-    /** 将 "2026-5" 等与 ymKey 对齐，便于与导入数据匹配 */
+    /** 将 "2026-5" 等与 ymKey 对齐，便于与已保存的人力月份键匹配 */
     function normalizeYmSlugKey(rawKey) {
       var s = String(rawKey).trim();
       var m = /^(\d{4})-(\d{1,2})$/.exec(s);
@@ -2793,7 +2793,7 @@
       const k = ymKey(manpowerSelYear, manpowerSelMonth);
       if (!manpowerNativeHasSelectedYm) {
         el.textContent =
-          '提示：所选年月 ' + k + ' 在已载入的登记中尚未出现「月份列」（常见于源 Excel 只含部分月份、或尚未导入该月）。请切换到已有数据的月份，或补充 Excel 后重新导入并保存。';
+          '提示：所选年月 ' + k + ' 在当前已保存的登记中尚未出现「月份列」。请切换到已有数据的月份，或在编辑模式下为该月录入人力后保存。';
         el.hidden = false;
       } else {
         el.hidden = true;
@@ -2855,8 +2855,8 @@
     }
 
     /**
-     * 在 fixManpowerInData 之前调用：若当前所选 yyyy-MM 在导入的人力 JSON 中根本不存在，
-     * 则把人力/阶段年月切到「数据里有的月份」（优先人力列合计更大的月份），避免默认本机年份与数据年份不一致时整表为 0。
+     * 在 fixManpowerInData 之前调用：若当前所选 yyyy-MM 在已保存的人力数据中不存在，
+     * 则把人力/阶段年月切到「数据里有的月份」（优先人力列合计更大的月份），避免默认年份与数据年份不一致时整表为 0。
      */
     function inferManpowerAndPhaseYmFromPayload(manpowerTree, phaseTreeOpt) {
       var mkeys = collectManpowerYmKeysFromTree(manpowerTree).sort();

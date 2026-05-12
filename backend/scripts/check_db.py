@@ -25,7 +25,7 @@ from app.registry_store import KEY_MANPOWER, KEY_PHASE, KEY_RISK  # noqa: E402
 
 
 def _core_len_for_key(key: str, payload: object) -> int | None:
-    """与前端 isRegistryServerEmpty 及导入脚本占位判定一致的核心列表长度。"""
+    """与 registry 空状态判定一致的核心列表长度（manpower/phase/risk）。"""
     if not isinstance(payload, dict):
         return None
     if key == KEY_MANPOWER:
