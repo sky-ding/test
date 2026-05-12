@@ -40,3 +40,6 @@ class RegistryEntry(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+
+from app import models_relational  # noqa: E402, F401 — register relational tables on Base.metadata

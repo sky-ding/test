@@ -9,7 +9,17 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import settings
 from app.db import SessionLocal, init_db
-from app.routers import auth, manpower, phase, risk, users
+from app.routers import (
+    auth,
+    manpower,
+    manpower_allocations,
+    phase,
+    phase_assessments,
+    programs,
+    project_risks,
+    risk,
+    users,
+)
 from app.seed import seed_users
 
 
@@ -48,6 +58,10 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
+app.include_router(programs.router, prefix="/api/v1")
+app.include_router(phase_assessments.router, prefix="/api/v1")
+app.include_router(manpower_allocations.router, prefix="/api/v1")
+app.include_router(project_risks.router, prefix="/api/v1")
 app.include_router(manpower.router, prefix="/api/v1")
 app.include_router(phase.router, prefix="/api/v1")
 app.include_router(risk.router, prefix="/api/v1")

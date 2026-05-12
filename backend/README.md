@@ -19,7 +19,7 @@ pip install -r requirements.txt
 
 1. 在 MySQL 中**预先创建**数据库（字符集建议 **utf8mb4**），并授予应用账号建表/读写权限。  
 2. 复制 **[.env.example](.env.example)** 为 `backend/.env`，填写 **`PM_MYSQL_HOST` / `PM_MYSQL_USER` / `PM_MYSQL_DATABASE`**（及密码、端口等）；**所有实例**使用**相同**的 `PM_MYSQL_*` 与 **`PM_SESSION_SECRET`**（否则 Cookie 会话在实例间无效）。  
-3. 启动应用会自动 `create_all` 建表；首次启动会 seed 内置用户（若库中尚无同名账号）。  
+3. 启动应用会自动 `create_all` 建表（含 `programs` / `sub_programs` / `sub_projects` / `phase_assessments` / `manpower_allocations` / `project_risks`）；MySQL 亦可由 DBA 执行仓库内 **[migrations/001_relational_schema.sql](migrations/001_relational_schema.sql)**。首次启动会 seed 内置用户（若库中尚无同名账号）。  
 4. 连接与登记数据冒烟：
 
 ```bash
@@ -34,16 +34,18 @@ python scripts/migrate_sqlite_to_mysql.py
 
 目标 MySQL 里若已有 `users`/`registry` 数据，脚本默认会拒绝覆盖；需使用 `--force`（**会清空** MySQL 侧这两张表后再导入）。
 
-6. **迁移后验证**：`python scripts/check_db.py`；再用管理员账号在 `/docs` 中对 `GET/PUT /api/v1/manpower`、`phase`、`risk` 做一次冒烟。
+6. **迁移后验证**：`python scripts/check_db.py`；再用管理员在 `/docs` 中对 `GET /api/v1/programs/tree`、`phase-assessments`、`manpower-allocations`、`project-risks` 做一次冒烟。
+
+7. **（可选）** 若需将旧 `registry` JSON 迁入新表，可扩展 **`scripts/registry_json_to_sql.py`**；默认 2027 冷启动无需运行。
 
 未配置 `PM_MYSQL_*` 时仍回落 **本地 SQLite** `backend/data/app.db`，便于单人本机开发。
 
 ### 故障排查：登记与页面
 
-- **人力 / 阶段 / 风险** 由**管理员在前端**编辑并保存，经 `PUT /api/v1/manpower|phase|risk` 写入 `registry` 表（固定三个 key：`manpower`、`phase`、`risk`）。本仓库**不再提供** Excel 或批量文件导入脚本。  
+- **人力 / 阶段 / 风险** 已改为关系型表 + 按年 API；整包 `PUT /api/v1/manpower|phase|risk` 已 **410 下线**。前端按 **数据年份** 请求 `GET /api/v1/programs/tree?year=`，并以 `sub_project_id` + `period`（yyyy-MM）读写业务表。  
 - 多实例部署时，各实例的 **`PM_MYSQL_*` 与 `PM_SESSION_SECRET` 必须一致**，且指向同一库。  
-- 页面表格为空：在**与线上一致**的 `backend/.env` 下执行 `python scripts/check_db.py`，查看 `len(data)` / `len(phaseData)` / `len(riskRows)` 是否为 0；若 DBA 查库有数据而页面无，核对 API 进程实际使用的连接（`host` / `port` / `database`）是否与 DBA 会话一致。  
-- 人力表某年月全为 0：多为当前所选 **yyyy-MM** 在已保存的 `manpowerByMonth` 中不存在；前端会尽量对齐到数据中已有的月份。
+- 页面表格为空：在**与线上一致**的 `backend/.env` 下执行 `python scripts/check_db.py`；若该年尚无项目树，请在「设置」中创建项目集或调用 `POST /api/v1/programs`。  
+- 人力表某年月全为 0：多为当前所选 **yyyy-MM** 在库中尚无 `manpower_allocations` 行；切换月份或保存后会写入。
 
 ## 启动
 
@@ -144,7 +146,7 @@ cd D:\Study\test01\test\backend
 
 ## API 摘要
 
-除另有说明外，`/api/v1/manpower|phase|risk` 的 **GET 需已登录**，**PUT 需管理员**。
+除另有说明外，新登记接口的 **GET 需已登录**，**写操作需管理员**。旧整包 JSON 接口 `GET/PUT /api/v1/manpower`、`/phase`、`/risk` 返回 **410 Gone**。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -156,11 +158,24 @@ cd D:\Study\test01\test\backend
 | POST | `/api/v1/users` | 创建用户（**管理员**） |
 | PATCH | `/api/v1/users/{id}` | 更新角色、启用状态、重置密码（**管理员**） |
 | DELETE | `/api/v1/users/{id}` | 删除用户（**管理员**，不可删除最后一名活跃管理员） |
-| GET | `/api/v1/manpower` | 读取人力登记 |
-| PUT | `/api/v1/manpower` | 保存人力登记 |
-| GET | `/api/v1/phase` | 读取阶段状态 |
-| PUT | `/api/v1/phase` | 保存阶段状态 |
-| GET | `/api/v1/risk` | 读取风险登记 |
-| PUT | `/api/v1/risk` | 保存风险登记 |
+| GET | `/api/v1/programs?year=` | 某年项目集列表 |
+| GET | `/api/v1/programs/tree?year=` | 某年嵌套项目树（programs → sub_programs → sub_projects） |
+| POST | `/api/v1/programs` | 创建项目集（body：`year`, `name`, `sort_order`） |
+| PATCH | `/api/v1/programs/{id}?year=` | 更新项目集 |
+| DELETE | `/api/v1/programs/{id}?year=` | 删除项目集（级联） |
+| POST | `/api/v1/programs/{program_id}/sub-programs?year=` | 创建子项目集 |
+| PATCH | `/api/v1/programs/sub-programs/{id}?year=` | 更新子项目集 |
+| DELETE | `/api/v1/programs/sub-programs/{id}?year=` | 删除子项目集 |
+| POST | `/api/v1/programs/sub-programs/{sub_program_id}/sub-projects?year=` | 创建子项目 |
+| PATCH | `/api/v1/programs/sub-projects/{id}?year=` | 更新子项目 |
+| DELETE | `/api/v1/programs/sub-projects/{id}?year=` | 删除子项目 |
+| GET | `/api/v1/phase-assessments?year=&period=` | 该年该月的阶段评估列表 |
+| PUT | `/api/v1/phase-assessments?year=` | Upsert 一条阶段评估（body 含 `sub_project_id`, `period`；兼容旧字段名 `goal`/`deliver`/…） |
+| GET | `/api/v1/manpower-allocations?year=&period=` | 该年该月人力行列表 |
+| PUT | `/api/v1/manpower-allocations?year=&sub_project_id=&period=` | 替换某子项目该月全部人力行（body：`{ rows: [{department, role, allocation}] }`） |
+| GET | `/api/v1/project-risks?year=` 或 `?sub_project_id=` | 风险列表 |
+| POST | `/api/v1/project-risks?year=` | 新建风险（body 兼容 `issue`/`owner`/`closeTime`） |
+| PATCH | `/api/v1/project-risks/{id}?year=` | 更新风险 |
+| DELETE | `/api/v1/project-risks/{id}?year=` | 删除风险 |
 
-数据：`users` 与 `registry` 表。未配置 MySQL 时为 `backend/data/app.db`（SQLite）；配置 `PM_MYSQL_*` 时使用 MySQL。CORS 来源可通过 `PM_CORS_ORIGINS`（逗号分隔）覆盖，参见 `app/config.py`。
+数据：`users`、`registry`（旧数据可保留）、以及上述规范化表。未配置 MySQL 时为 `backend/data/app.db`（SQLite）；配置 `PM_MYSQL_*` 时使用 MySQL。CORS 来源可通过 `PM_CORS_ORIGINS`（逗号分隔）覆盖，参见 `app/config.py`。

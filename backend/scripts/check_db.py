@@ -21,6 +21,14 @@ from sqlalchemy import func, select, text  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.db import engine  # noqa: E402
 from app.models import RegistryEntry, User  # noqa: E402
+from app.models_relational import (  # noqa: E402
+    ManpowerAllocation,
+    PhaseAssessment,
+    Program,
+    ProjectRisk,
+    SubProgram,
+    SubProject,
+)
 from app.registry_store import KEY_MANPOWER, KEY_PHASE, KEY_RISK  # noqa: E402
 
 
@@ -59,16 +67,29 @@ def main() -> int:
         registry_payloads: dict[str, dict] = {}
         for row in s.scalars(select(RegistryEntry).order_by(RegistryEntry.key)):
             registry_payloads[row.key] = dict(row.payload) if isinstance(row.payload, dict) else {}
-    print("users rows:", uc)
-    print("registry rows:", rc)
-    print("registry keys:", keys if keys else "(empty)")
-    for k in (KEY_MANPOWER, KEY_PHASE, KEY_RISK):
-        if k in registry_payloads:
-            n = _core_len_for_key(k, registry_payloads[k])
-            field = "len(data)" if k == KEY_MANPOWER else "len(phaseData)" if k == KEY_PHASE else "len(riskRows)"
-            print(f"  {k}: {field}={n if n is not None else '(missing or bad type)'}")
-        else:
-            print(f"  {k}: (no row)")
+        print("users rows:", uc)
+        print("registry rows:", rc)
+        for label, model in (
+            ("programs rows", Program),
+            ("sub_programs rows", SubProgram),
+            ("sub_projects rows", SubProject),
+            ("phase_assessments rows", PhaseAssessment),
+            ("manpower_allocations rows", ManpowerAllocation),
+            ("project_risks rows", ProjectRisk),
+        ):
+            try:
+                n = s.scalar(select(func.count()).select_from(model)) or 0
+            except Exception:
+                n = "(no table: start app once for create_all, or apply migrations/001_relational_schema.sql)"
+            print(f"{label}: {n}")
+        print("registry keys:", keys if keys else "(empty)")
+        for k in (KEY_MANPOWER, KEY_PHASE, KEY_RISK):
+            if k in registry_payloads:
+                n = _core_len_for_key(k, registry_payloads[k])
+                field = "len(data)" if k == KEY_MANPOWER else "len(phaseData)" if k == KEY_PHASE else "len(riskRows)"
+                print(f"  {k}: {field}={n if n is not None else '(missing or bad type)'}")
+            else:
+                print(f"  {k}: (no row)")
     return 0
 
 

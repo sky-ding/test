@@ -2262,8 +2262,19 @@
         </section>
         <section id="settings-module-general" class="settings-module" aria-labelledby="settings-general-heading">
           <h2 id="settings-general-heading">通用设置</h2>
-          <p class="settings-desc">其他全局配置将放在此模块（预留）。</p>
-          <p class="settings-placeholder">更多配置项敬请期待。</p>
+          <p class="settings-desc">登记数据已按<strong>年份</strong>隔离存储；切换年份会重新从服务器加载该年的项目树及当月人力/阶段切片（风险为全年列表）。</p>
+          <div class="settings-users-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+            <label>数据年份
+              <select id="pm-data-year" aria-label="登记数据年份"></select>
+            </label>
+            <button type="button" class="btn-add" id="pm-btn-apply-year">应用年份并重新加载</button>
+          </div>
+          <div id="pm-tree-admin" class="settings-users-wrap" style="display:none;">
+            <h3 style="margin:12px 0 8px;">项目树（管理员）</h3>
+            <p class="settings-desc" style="margin:0 0 8px;">当前年份下无项目时，可先创建项目集，再到各登记页维护子项目集与子项目（名称修改请用接口或后续版本表单）。</p>
+            <label>新建项目集名称 <input type="text" id="pm-new-program-name" placeholder="例如：产品线 A" style="min-width:200px;"></label>
+            <button type="button" class="btn-add" id="pm-btn-create-program">创建</button>
+          </div>
         </section>
       </div>
     </div>
@@ -3229,6 +3240,16 @@
         var v = parseInt(ym.value, 10);
         if (!isNaN(v) && v >= 2000 && v <= 2099) {
           manpowerSelYear = v;
+          if (pmUsesRelationalRegistry) {
+            pmDataYear = v;
+            loadRegistryData().then(function () {
+              renderTable();
+              renderPhaseTable();
+              renderRiskTable();
+              pmFillYearSelect();
+            });
+            return;
+          }
           renderTable();
         }
       });
@@ -3236,6 +3257,16 @@
         var v = parseInt(ys.value, 10);
         if (!isNaN(v) && v >= 2000 && v <= 2099) {
           manpowerSelYear = v;
+          if (pmUsesRelationalRegistry) {
+            pmDataYear = v;
+            loadRegistryData().then(function () {
+              renderTable();
+              renderPhaseTable();
+              renderRiskTable();
+              pmFillYearSelect();
+            });
+            return;
+          }
           renderTable();
         }
       });
@@ -3243,6 +3274,16 @@
         var v = parseInt(yy.value, 10);
         if (!isNaN(v) && v >= 2000 && v <= 2099) {
           manpowerSelYear = v;
+          if (pmUsesRelationalRegistry) {
+            pmDataYear = v;
+            loadRegistryData().then(function () {
+              renderTable();
+              renderPhaseTable();
+              renderRiskTable();
+              pmFillYearSelect();
+            });
+            return;
+          }
           renderTable();
         }
       });
@@ -3251,6 +3292,7 @@
         if (!isNaN(v) && v >= 1 && v <= 12) {
           manpowerSelMonth = v;
           renderTable();
+          fetchRelationalPeriodSlices();
         }
       });
       if (sq) sq.addEventListener('change', function () {
@@ -3949,6 +3991,187 @@
     }
     var PM_API_BASE = resolveApiBase();
 
+    /** 与后端 programs.year 一致；切换后重拉项目树与登记切片 */
+    var pmDataYear = new Date().getFullYear();
+    var pmLastLoadedRiskIds = new Set();
+    /** 已从 /api/v1/programs/tree 加载（已登录且非离线） */
+    var pmUsesRelationalRegistry = false;
+
+    function pmFillYearSelect() {
+      var sel = document.getElementById('pm-data-year');
+      if (!sel) return;
+      var y0 = new Date().getFullYear();
+      sel.innerHTML = '';
+      for (var dy = y0 - 2; dy <= y0 + 6; dy++) {
+        var o = document.createElement('option');
+        o.value = String(dy);
+        o.textContent = String(dy);
+        if (dy === pmDataYear) o.selected = true;
+        sel.appendChild(o);
+      }
+    }
+
+    function buildSkeletonFromProgramTree(treeJson) {
+      var programs = (treeJson && treeJson.programs) || [];
+      var phaseDataOut = [];
+      var dataOut = [];
+      programs.forEach(function (prog) {
+        var phSets = [];
+        var manSets = [];
+        (prog.sub_programs || []).forEach(function (spg) {
+          var phProjs = [];
+          var manProjs = [];
+          (spg.sub_projects || []).forEach(function (sj) {
+            var sid = sj.id;
+            phProjs.push({ name: sj.name || '子项目', phaseByMonth: {}, _subProjectId: sid });
+            manProjs.push({ name: sj.name || '子项目', manpowerByMonth: {}, _subProjectId: sid });
+          });
+          phSets.push({ name: spg.name || '子项目集', subProjects: phProjs });
+          manSets.push({ name: spg.name || '子项目集', subProjects: manProjs });
+        });
+        phaseDataOut.push({ name: prog.name || '项目集', projectSets: phSets });
+        dataOut.push({ name: prog.name || '项目集', projectSets: manSets });
+      });
+      return { phaseData: phaseDataOut, data: dataOut };
+    }
+
+    function subProjectNameMapFromTree() {
+      var map = {};
+      if (!Array.isArray(phaseData)) return map;
+      phaseData.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (ps) {
+          getSubProjects(ps).forEach(function (p) {
+            if (p._subProjectId) {
+              map[p._subProjectId] = (set.name || '') + ' / ' + (ps.name || '') + ' / ' + (p.name || '');
+            }
+          });
+        });
+      });
+      return map;
+    }
+
+    function firstSubProjectIdInTree() {
+      if (!Array.isArray(phaseData)) return null;
+      for (var si = 0; si < phaseData.length; si++) {
+        var sets = getProgramProjectSets(phaseData[si]);
+        for (var pi = 0; pi < sets.length; pi++) {
+          var projs = getSubProjects(sets[pi]);
+          for (var ji = 0; ji < projs.length; ji++) {
+            if (projs[ji]._subProjectId) return projs[ji]._subProjectId;
+          }
+        }
+      }
+      return null;
+    }
+
+    function findColIndexForDeptRole(department, role) {
+      for (var gi = 0; gi < deptGroups.length; gi++) {
+        var g = deptGroups[gi];
+        if (String(g.name || '').trim() !== String(department || '').trim()) continue;
+        var depts = g.depts || [];
+        for (var di = 0; di < depts.length; di++) {
+          if (String(depts[di]).trim() === String(role || '').trim()) {
+            return flatDeptIndex(gi, di);
+          }
+        }
+      }
+      return -1;
+    }
+
+    function mergeManpowerRowsIntoData(rows, periodKey) {
+      var groups = {};
+      (rows || []).forEach(function (r) {
+        var sid = r.sub_project_id;
+        if (!groups[sid]) groups[sid] = [];
+        groups[sid].push(r);
+      });
+      if (!Array.isArray(data)) return;
+      data.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (ps) {
+          getSubProjects(ps).forEach(function (p) {
+            var sid = p._subProjectId;
+            if (!sid) return;
+            var list = groups[sid];
+            if (!p.manpowerByMonth) p.manpowerByMonth = {};
+            var arr = newManpowerRow();
+            if (list && list.length) {
+              list.forEach(function (r) {
+                var ix = findColIndexForDeptRole(r.department, r.role);
+                if (ix >= 0) arr[ix] = Number(r.allocation) || 0;
+              });
+            }
+            p.manpowerByMonth[periodKey] = arr;
+          });
+        });
+      });
+      fixManpowerInData(data);
+    }
+
+    function mergePhaseRowsIntoPhaseData(rows, periodKey) {
+      var bySp = {};
+      (rows || []).forEach(function (r) {
+        bySp[r.sub_project_id] = r;
+      });
+      if (!Array.isArray(phaseData)) return;
+      phaseData.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (ps) {
+          getSubProjects(ps).forEach(function (p) {
+            var sid = p._subProjectId;
+            if (!sid || !bySp[sid]) return;
+            var row = bySp[sid];
+            ensurePhaseByMonth(p);
+            p.phaseByMonth[periodKey] = {
+              goal: row.delivery_target != null ? String(row.delivery_target) : '',
+              deliver: row.actual_delivery != null ? String(row.actual_delivery) : '',
+              planMatch: row.on_track != null ? String(row.on_track) : '',
+              highlight: row.execution_analysis != null ? String(row.execution_analysis) : '',
+              weakness: row.problem_analysis != null ? String(row.problem_analysis) : '',
+              nextNote: row.improvement_plan != null ? String(row.improvement_plan) : ''
+            };
+          });
+        });
+      });
+    }
+
+    function manpowerRowsFromProjectForPeriod(p, periodKey) {
+      var row = (p.manpowerByMonth && p.manpowerByMonth[periodKey]) ? p.manpowerByMonth[periodKey].slice() : newManpowerRow();
+      var rows = [];
+      deptGroups.forEach(function (g, gi) {
+        (g.depts || []).forEach(function (dname, di) {
+          var idx = flatDeptIndex(gi, di);
+          var val = row[idx] != null ? Number(row[idx]) : 0;
+          if (isNaN(val)) val = 0;
+          rows.push({ department: g.name, role: dname, allocation: val });
+        });
+      });
+      return rows;
+    }
+
+    async function fetchRelationalPeriodSlices() {
+      if (!pmUsesRelationalRegistry) return;
+      var me = window.__pmCurrentUser;
+      if (!me || me.username === 'offline' || me.username === 'unknown') return;
+      var y = pmDataYear;
+      try {
+        var pkey = ymKey(phaseSelYear, phaseSelMonth);
+        var pr = await pmFetch(
+          '/api/v1/phase-assessments?year=' + y + '&period=' + encodeURIComponent(pkey),
+          { method: 'GET' }
+        );
+        if (pr.ok) mergePhaseRowsIntoPhaseData(await pr.json(), pkey);
+        var mkey = ymKey(manpowerSelYear, manpowerSelMonth);
+        var mr = await pmFetch(
+          '/api/v1/manpower-allocations?year=' + y + '&period=' + encodeURIComponent(mkey),
+          { method: 'GET' }
+        );
+        if (mr.ok) mergeManpowerRowsIntoData(await mr.json(), mkey);
+        renderTable();
+        renderPhaseTable();
+      } catch (e) {
+        console.warn('[PM-tool] fetchRelationalPeriodSlices', e);
+      }
+    }
+
     function pmApiUrl(path) {
       var base = PM_API_BASE.replace(/\/$/, '');
       return base + (path.indexOf('/') === 0 ? path : '/' + path);
@@ -4416,6 +4639,10 @@
       }
       const adminWrap = document.getElementById('settings-users-admin');
       const viewerNote = document.getElementById('settings-users-viewer-note');
+      const treeAd = document.getElementById('pm-tree-admin');
+      if (treeAd) {
+        treeAd.style.display = window.pmIsAdmin && window.pmIsAdmin() ? '' : 'none';
+      }
       if (adminWrap && viewerNote) {
         if (window.pmIsAdmin && window.pmIsAdmin()) {
           adminWrap.style.display = '';
@@ -4598,6 +4825,67 @@
       });
       bindPmLogoutButtons();
       updateSettingsPanelRoleUi();
+      pmWireRegistrySettingsOnce();
+    }
+
+    function pmWireRegistrySettingsOnce() {
+      if (window._pmRegistrySettingsWired) return;
+      window._pmRegistrySettingsWired = true;
+      pmFillYearSelect();
+      var sel = document.getElementById('pm-data-year');
+      if (sel) {
+        sel.addEventListener('change', function () {
+          var v = parseInt(sel.value, 10);
+          if (!isNaN(v)) pmDataYear = v;
+        });
+      }
+      var btn = document.getElementById('pm-btn-apply-year');
+      if (btn) {
+        btn.addEventListener('click', async function () {
+          var s = document.getElementById('pm-data-year');
+          var v = parseInt((s && s.value) || String(pmDataYear), 10);
+          if (isNaN(v) || v < 2000 || v > 2099) return;
+          pmDataYear = v;
+          try {
+            await loadRegistryData();
+            renderTable();
+            renderPhaseTable();
+            renderRiskTable();
+            pmFillYearSelect();
+          } catch (e) {}
+        });
+      }
+      var cbtn = document.getElementById('pm-btn-create-program');
+      if (cbtn) {
+        cbtn.addEventListener('click', async function () {
+          if (!requireAdminOrAlert()) return;
+          var ne = document.getElementById('pm-new-program-name');
+          var nm = ne && ne.value ? String(ne.value).trim() : '';
+          if (!nm) {
+            alert('请输入项目集名称');
+            return;
+          }
+          try {
+            var r = await pmFetch('/api/v1/programs', {
+              method: 'POST',
+              body: JSON.stringify({ year: pmDataYear, name: nm, sort_order: 0 })
+            });
+            if (!r.ok) {
+              var err = await r.json().catch(function () { return {}; });
+              alert(err.detail || '创建失败');
+              return;
+            }
+            if (ne) ne.value = '';
+            await loadRegistryData();
+            renderTable();
+            renderPhaseTable();
+            renderRiskTable();
+            showSaveToast('已创建项目集');
+          } catch (e) {
+            alert('创建失败');
+          }
+        });
+      }
     }
 
     function escapeHtml(s) {
@@ -4784,35 +5072,80 @@
 
     async function loadRegistryData() {
       var me = window.__pmCurrentUser;
-      // 已登录用户仅以接口（数据库）为准，不回落本机登记缓存；离线/未知身份仍读本机
       if (!me || me.username === 'offline' || me.username === 'unknown') {
+        pmUsesRelationalRegistry = false;
         loadSavedData();
         return;
       }
       try {
-        var results = await Promise.all([
-          pmFetch('/api/v1/manpower', { method: 'GET' }),
-          pmFetch('/api/v1/phase', { method: 'GET' }),
-          pmFetch('/api/v1/risk', { method: 'GET' })
-        ]);
-        var rm = results[0];
-        var rp = results[1];
-        var rr = results[2];
-        if (rm.status === 401 || rp.status === 401 || rr.status === 401) {
+        var tr = await pmFetch('/api/v1/programs/tree?year=' + encodeURIComponent(String(pmDataYear)), {
+          method: 'GET'
+        });
+        if (tr.status === 401) {
           window.__pmAuthRedirecting = true;
           window.location.href = 'login.html';
           return;
         }
-        if (!rm.ok || !rp.ok || !rr.ok) {
-          throw new Error('HTTP ' + rm.status + ' / ' + rp.status + ' / ' + rr.status);
+        if (!tr.ok) {
+          throw new Error('program tree HTTP ' + tr.status);
         }
-        var mObj = await rm.json();
-        var pObj = await rp.json();
-        var rObj = await rr.json();
-        applyRegistryFromObjects(mObj, pObj, rObj);
+        var tree = await tr.json();
+        pmUsesRelationalRegistry = true;
+        var sk = buildSkeletonFromProgramTree(tree);
+        phaseData = sk.phaseData;
+        data = sk.data;
+        deptGroups = defaultDeptGroups();
+        manpowerSelYear = pmDataYear;
+        phaseSelYear = pmDataYear;
+        updateManpowerToolbarInputs();
+        var pyIn = document.getElementById('phase-year-input');
+        if (pyIn) pyIn.value = String(pmDataYear);
+        syncManpowerStructureFromPhase();
+        fixPhaseInData(phaseData);
+        fixManpowerInData(data);
+
+        var pkey = ymKey(phaseSelYear, phaseSelMonth);
+        var pr = await pmFetch(
+          '/api/v1/phase-assessments?year=' + pmDataYear + '&period=' + encodeURIComponent(pkey),
+          { method: 'GET' }
+        );
+        if (pr.ok) mergePhaseRowsIntoPhaseData(await pr.json(), pkey);
+
+        var mkey = ymKey(manpowerSelYear, manpowerSelMonth);
+        var mr = await pmFetch(
+          '/api/v1/manpower-allocations?year=' + pmDataYear + '&period=' + encodeURIComponent(mkey),
+          { method: 'GET' }
+        );
+        if (mr.ok) mergeManpowerRowsIntoData(await mr.json(), mkey);
+
+        var rr = await pmFetch('/api/v1/project-risks?year=' + pmDataYear, { method: 'GET' });
+        if (!rr.ok) {
+          throw new Error('project-risks HTTP ' + rr.status);
+        }
+        var riskApi = await rr.json();
+        pmLastLoadedRiskIds = new Set();
+        var nameMap = subProjectNameMapFromTree();
+        riskRows = (riskApi || []).map(function (r) {
+          pmLastLoadedRiskIds.add(r.id);
+          return {
+            category: r.risk_category != null ? String(r.risk_category) : '',
+            source: r.risk_source != null ? String(r.risk_source) : '',
+            project: nameMap[r.sub_project_id] || '',
+            regTime: '',
+            issue: r.description != null ? String(r.description) : '',
+            solution: r.solution != null ? String(r.solution) : '',
+            level: r.level != null ? String(r.level) : '',
+            owner: r.assignee != null ? String(r.assignee) : '',
+            status: r.status != null ? String(r.status) : '',
+            closeTime: r.resolution_date ? String(r.resolution_date) : '',
+            _riskId: r.id,
+            _subProjectId: r.sub_project_id
+          };
+        });
       } catch (e) {
         console.warn('[PM-tool] 从服务器加载登记数据失败', e);
-        alert('无法从服务器加载登记数据，请检查网络或稍后重试。');
+        alert('无法从服务器加载登记数据（关系型接口）。请检查网络或稍后重试。');
+        pmUsesRelationalRegistry = false;
         applyRegistryFromObjects(
           { data: [], deptGroups: [] },
           { phaseData: [] },
@@ -4823,21 +5156,48 @@
 
     async function saveManpowerData() {
       if (!requireAdminOrAlert()) return;
+      if (!pmUsesRelationalRegistry) {
+        alert('当前未使用服务器项目树，无法保存人力。请登录后重试。');
+        return;
+      }
       try {
-        var r = await pmFetch('/api/v1/manpower', {
-          method: 'PUT',
-          body: JSON.stringify({ data: data, deptGroups: deptGroups })
+        var y = pmDataYear;
+        var walk = [];
+        data.forEach(function (set) {
+          getProgramProjectSets(set).forEach(function (ps) {
+            getSubProjects(ps).forEach(function (p) {
+              if (p._subProjectId) walk.push(p);
+            });
+          });
         });
-        if (r.status === 401) {
-          window.location.href = 'login.html';
-          return;
+        for (var wi = 0; wi < walk.length; wi++) {
+          var p = walk[wi];
+          var mb = p.manpowerByMonth || {};
+          var keys = Object.keys(mb);
+          for (var ki = 0; ki < keys.length; ki++) {
+            var periodKey = normalizeYmSlugKey(keys[ki]) || keys[ki];
+            if (!periodKey || String(periodKey).slice(0, 4) !== String(y)) continue;
+            var rows = manpowerRowsFromProjectForPeriod(p, keys[ki]);
+            var r = await pmFetch(
+              '/api/v1/manpower-allocations?year=' +
+                y +
+                '&sub_project_id=' +
+                encodeURIComponent(String(p._subProjectId)) +
+                '&period=' +
+                encodeURIComponent(periodKey),
+              { method: 'PUT', body: JSON.stringify({ rows: rows }) }
+            );
+            if (r.status === 401) {
+              window.location.href = 'login.html';
+              return;
+            }
+            if (!r.ok) {
+              var err = await r.json().catch(function () { return {}; });
+              alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
+              return;
+            }
+          }
         }
-        if (!r.ok) {
-          var err = await r.json().catch(function () { return {}; });
-          alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
-          return;
-        }
-        await r.json();
         showSaveToast('人力登记已保存到服务器');
         setPanelEditMode('manpower', false);
       } catch (e) {
@@ -4848,21 +5208,77 @@
     async function saveRiskData() {
       if (!requireAdminOrAlert()) return;
       syncRiskRowsFromDom();
+      if (!pmUsesRelationalRegistry) {
+        alert('当前未使用服务器项目树，无法保存风险。请登录后重试。');
+        return;
+      }
       try {
-        var r = await pmFetch('/api/v1/risk', {
-          method: 'PUT',
-          body: JSON.stringify({ riskRows: riskRows })
+        var y = pmDataYear;
+        var curIds = new Set();
+        riskRows.forEach(function (r) {
+          if (r._riskId) curIds.add(r._riskId);
         });
-        if (r.status === 401) {
-          window.location.href = 'login.html';
-          return;
+        var delList = [];
+        pmLastLoadedRiskIds.forEach(function (id) {
+          if (!curIds.has(id)) delList.push(id);
+        });
+        for (var di = 0; di < delList.length; di++) {
+          var dr = await pmFetch('/api/v1/project-risks/' + delList[di] + '?year=' + y, { method: 'DELETE' });
+          if (dr.status === 401) {
+            window.location.href = 'login.html';
+            return;
+          }
         }
-        if (!r.ok) {
-          var err = await r.json().catch(function () { return {}; });
-          alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
-          return;
+        for (var i = 0; i < riskRows.length; i++) {
+          var row = riskRows[i];
+          var sid = row._subProjectId || firstSubProjectIdInTree();
+          if (!sid) {
+            alert('请先在「设置」中为该年创建项目树，或为每条风险指定所属子项目。');
+            return;
+          }
+          var patchBody = {
+            risk_category: row.category,
+            risk_source: row.source,
+            issue: row.issue,
+            solution: row.solution,
+            level: row.level,
+            owner: row.owner,
+            status: row.status,
+            closeTime: row.closeTime
+          };
+          if (row._riskId) {
+            var pr = await pmFetch('/api/v1/project-risks/' + row._riskId + '?year=' + y, {
+              method: 'PATCH',
+              body: JSON.stringify(patchBody)
+            });
+            if (pr.status === 401) {
+              window.location.href = 'login.html';
+              return;
+            }
+            if (!pr.ok) {
+              var err = await pr.json().catch(function () { return {}; });
+              alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + pr.status + '）');
+              return;
+            }
+          } else {
+            var postBody = Object.assign({}, patchBody, { sub_project_id: sid });
+            var cr = await pmFetch('/api/v1/project-risks?year=' + y, {
+              method: 'POST',
+              body: JSON.stringify(postBody)
+            });
+            if (cr.status === 401) {
+              window.location.href = 'login.html';
+              return;
+            }
+            if (!cr.ok) {
+              var err2 = await cr.json().catch(function () { return {}; });
+              alert((err2.detail != null ? err2.detail : '保存失败') + '（HTTP ' + cr.status + '）');
+              return;
+            }
+          }
         }
-        await r.json();
+        await loadRegistryData();
+        renderRiskTable();
         showSaveToast('风险登记已保存到服务器');
         setPanelEditMode('risk', false);
       } catch (e) {
@@ -4914,22 +5330,56 @@
 
     async function savePhaseData() {
       if (!requireAdminOrAlert()) return;
+      if (!pmUsesRelationalRegistry) {
+        alert('当前未使用服务器项目树，无法保存阶段。请登录后重试。');
+        return;
+      }
       syncPhaseFromDom();
       try {
-        var r = await pmFetch('/api/v1/phase', {
-          method: 'PUT',
-          body: JSON.stringify({ phaseData: phaseDataForStorage() })
+        var y = pmDataYear;
+        var flat = [];
+        phaseData.forEach(function (set) {
+          getProgramProjectSets(set).forEach(function (projectSet) {
+            getSubProjects(projectSet).forEach(function (p) {
+              flat.push(p);
+            });
+          });
         });
-        if (r.status === 401) {
-          window.location.href = 'login.html';
-          return;
+        for (var i = 0; i < flat.length; i++) {
+          var p = flat[i];
+          if (!p || !p._subProjectId) continue;
+          var pm = p.phaseByMonth || {};
+          var keys = Object.keys(pm);
+          for (var ki = 0; ki < keys.length; ki++) {
+            var rawK = keys[ki];
+            var periodKey = normalizeYmSlugKey(rawK) || rawK;
+            if (!periodKey || String(periodKey).slice(0, 4) !== String(y)) continue;
+            var slice = pm[rawK] || {};
+            var body = {
+              sub_project_id: p._subProjectId,
+              period: periodKey,
+              goal: slice.goal,
+              deliver: slice.deliver,
+              planMatch: slice.planMatch,
+              highlight: slice.highlight,
+              weakness: slice.weakness,
+              nextNote: slice.nextNote
+            };
+            var r = await pmFetch('/api/v1/phase-assessments?year=' + y, {
+              method: 'PUT',
+              body: JSON.stringify(body)
+            });
+            if (r.status === 401) {
+              window.location.href = 'login.html';
+              return;
+            }
+            if (!r.ok) {
+              var err = await r.json().catch(function () { return {}; });
+              alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
+              return;
+            }
+          }
         }
-        if (!r.ok) {
-          var err = await r.json().catch(function () { return {}; });
-          alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
-          return;
-        }
-        await r.json();
         showSaveToast('阶段状态已保存到服务器');
         setPanelEditMode('phase', false);
       } catch (e) {
@@ -4954,6 +5404,8 @@
 
     function addRiskRow() {
       if (!requireAdminOrAlert()) return;
+      var prev = riskRows.length ? riskRows[riskRows.length - 1] : null;
+      var sid = prev && prev._subProjectId ? prev._subProjectId : firstSubProjectIdInTree();
       riskRows.push({
         category: '',
         source: '',
@@ -4965,6 +5417,7 @@
         regTime: '',
         closeTime: '',
         status: '',
+        _subProjectId: sid || undefined
       });
       renderRiskTable();
     }
@@ -5515,6 +5968,16 @@
           var v = parseInt(ym.value, 10);
           if (!isNaN(v) && v >= 2000 && v <= 2099) {
             phaseSelYear = v;
+            if (pmUsesRelationalRegistry) {
+              pmDataYear = v;
+              loadRegistryData().then(function () {
+                renderPhaseTable();
+                renderTable();
+                renderRiskTable();
+                pmFillYearSelect();
+              });
+              return;
+            }
             renderPhaseTable();
           }
         });
@@ -5526,6 +5989,7 @@
           if (!isNaN(v) && v >= 1 && v <= 12) {
             phaseSelMonth = v;
             renderPhaseTable();
+            fetchRelationalPeriodSlices();
           }
         });
       }
@@ -6422,6 +6886,7 @@
       try {
         await loadRegistryData();
         loadAppSettings();
+        pmFillYearSelect();
         initManpowerTimeUi();
         initPhaseTimeUi();
         initRiskAnalysisUi();

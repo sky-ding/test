@@ -1,29 +1,24 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-
-from app.db import get_db
-from app.deps import AdminUser, CurrentUser
-from app.registry_store import KEY_PHASE, get_json, put_json
-from app.schemas import PhaseState
+from fastapi import APIRouter, Response, status
 
 router = APIRouter(prefix="/phase", tags=["phase"])
 
-EMPTY = {"phaseData": [], "savedAt": None}
+
+def _gone() -> Response:
+    return Response(
+        status_code=status.HTTP_410_GONE,
+        media_type="application/json",
+        content=(
+            '{"detail":"Removed: use GET/PUT /api/v1/phase-assessments '
+            'with year, period, and sub_project_id."}'
+        ),
+    )
 
 
-@router.get("", response_model=PhaseState)
-def get_phase(
-    _user: CurrentUser,
-    db: Session = Depends(get_db),
-) -> PhaseState:
-    return PhaseState.model_validate(get_json(db, KEY_PHASE, EMPTY))
+@router.get("")
+def get_phase_deprecated():
+    return _gone()
 
 
-@router.put("", response_model=PhaseState)
-def put_phase(
-    body: PhaseState,
-    _admin: AdminUser,
-    db: Session = Depends(get_db),
-) -> PhaseState:
-    stored = put_json(db, KEY_PHASE, body.model_dump(exclude_none=False))
-    return PhaseState.model_validate(stored)
+@router.put("")
+def put_phase_deprecated():
+    return _gone()
