@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+from app.agent_debug_log import agent_dbg
 from app.db import get_db
 from app.deps import AdminUser, CurrentUser
 from app.models_relational import ManpowerAllocation, SubProject
@@ -33,7 +34,16 @@ def list_manpower_allocations(
         .where(SubProject.year == y, ManpowerAllocation.period == p)
         .order_by(ManpowerAllocation.sub_project_id, ManpowerAllocation.department, ManpowerAllocation.role)
     )
-    return list(db.scalars(stmt).all())
+    rows = list(db.scalars(stmt).all())
+    # region agent log
+    agent_dbg(
+        "H1",
+        "manpower_allocations.py:list",
+        "list_manpower_allocations",
+        {"year": y, "period": p, "row_count": len(rows), "sub_project_ids": list({r.sub_project_id for r in rows})[:20]},
+    )
+    # endregion
+    return rows
 
 
 @router.put("", response_model=list[ManpowerAllocationOut])
@@ -69,4 +79,18 @@ def replace_manpower_for_period(
     db.commit()
     for row in out:
         db.refresh(row)
+    # region agent log
+    agent_dbg(
+        "H2",
+        "manpower_allocations.py:put",
+        "replace_manpower_for_period",
+        {
+            "year": y,
+            "period": p,
+            "sub_project_id": sub_project_id,
+            "rows_written": len(out),
+            "sum_alloc": float(sum(float(r.allocation) for r in out)) if out else 0.0,
+        },
+    )
+    # endregion
     return out

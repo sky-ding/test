@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.agent_debug_log import agent_dbg
 from app.db import get_db
 from app.deps import AdminUser, CurrentUser
 from app.models_relational import PhaseAssessment, SubProject
@@ -31,7 +32,16 @@ def list_phase_assessments(
         .where(SubProject.year == y, PhaseAssessment.period == p)
         .order_by(PhaseAssessment.sub_project_id)
     )
-    return list(db.scalars(stmt).all())
+    rows = list(db.scalars(stmt).all())
+    # region agent log
+    agent_dbg(
+        "H1",
+        "phase_assessments.py:list",
+        "list_phase_assessments",
+        {"year": y, "period": p, "row_count": len(rows), "sub_project_ids": [r.sub_project_id for r in rows[:20]]},
+    )
+    # endregion
+    return rows
 
 
 @router.put("", response_model=PhaseAssessmentOut)
@@ -62,4 +72,18 @@ def upsert_phase_assessment(
     row.improvement_plan = body.improvement_plan
     db.commit()
     db.refresh(row)
+    # region agent log
+    agent_dbg(
+        "H2",
+        "phase_assessments.py:put",
+        "upsert_phase_assessment",
+        {
+            "year": y,
+            "period": p,
+            "sub_project_id": body.sub_project_id,
+            "row_id": row.id,
+            "dt_len": len((body.delivery_target or "") or ""),
+        },
+    )
+    # endregion
     return row
