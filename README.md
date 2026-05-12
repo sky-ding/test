@@ -11,6 +11,10 @@
 | `backend/` | Python FastAPI 服务与持久化 |
 | `docs/` | PRD、技术设计、用户操作指南（**当前文档版本 v1.2**，与登录鉴权等实现一致） |
 
+## 协作与 Git
+
+多人维护时**不要直接向 `main` 推送**；从 `main` 拉取独立分支，经 **PR / MR** 与 Code Review 再合并。分支命名、`main` 分支保护（GitHub / GitLab / Gitee）配置清单与日常命令见 **[CONTRIBUTING.md](CONTRIBUTING.md)**。
+
 ## 重要提示
 
 - **不要用 `file://` 直接双击打开** `index.html`（无法携带登录 Cookie）。请用 **HTTP 静态服务** 访问前端，例如：  

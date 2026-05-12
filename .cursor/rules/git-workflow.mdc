@@ -1,0 +1,12 @@
+---
+description: Git — use feature branches; do not push directly to main
+alwaysApply: true
+---
+
+# Git workflow (this repo)
+
+- Assume **`main` is protected** and must stay deployable. Do **not** instruct or assume direct `git push` to `main` for routine work.
+- For new features or fixes, work on a **short-lived branch** branched from `main` (for example `feature/…` or `fix/…`), push that branch, and integrate via **PR/MR** after review.
+- If the user is on `main` with local-only changes, suggest creating a branch before committing, unless they explicitly need hotfix procedures agreed with the team.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow and branch-protection checklist for admins.
