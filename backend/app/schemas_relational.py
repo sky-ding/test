@@ -168,6 +168,55 @@ class ManpowerReplaceBody(BaseModel):
     rows: list[ManpowerAllocationRow]
 
 
+# --- 人力矩阵（v2，见 docs/项目管理登记系统数据库设计文档.md §15.2） ---
+
+
+class ManpowerMatrixColumnOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    sort_order: int = 0
+
+
+class ManpowerMatrixGroupOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    sort_order: int = 0
+    columns: list[ManpowerMatrixColumnOut] = Field(default_factory=list)
+
+
+class ManpowerMatrixCellOut(BaseModel):
+    sub_project_id: int
+    period: str
+    column_id: int
+    allocation: Decimal
+
+
+class ManpowerMatrixResponse(BaseModel):
+    year: int
+    period: str
+    dept_groups: list[ManpowerMatrixGroupOut]
+    cells: list[ManpowerMatrixCellOut]
+
+
+class ManpowerMatrixCellIn(BaseModel):
+    sub_project_id: int = Field(ge=1)
+    column_id: int = Field(ge=1)
+    allocation: Decimal = Field(default=Decimal("0.00"), ge=Decimal("0"), le=Decimal("9999.99"))
+
+    @field_validator("allocation")
+    @classmethod
+    def two_decimals(cls, v: Decimal) -> Decimal:
+        return v.quantize(Decimal("0.01"))
+
+
+class ManpowerMatrixPutBody(BaseModel):
+    cells: list[ManpowerMatrixCellIn]
+
+
 # --- 风险 ---
 
 

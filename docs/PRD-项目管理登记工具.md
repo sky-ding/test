@@ -1,7 +1,7 @@
 # 产品需求文档（PRD）
 
 **产品名称**：项目管理登记（Web 工具）  
-**文档版本**：1.3  
+**文档版本**：1.5  
 **对应代码库**：前端 [`frontend/index.html`](../frontend/index.html)（主应用）、[`frontend/login.html`](../frontend/login.html)（登录页）；后端 [`backend/`](../backend/)（FastAPI + SQLAlchemy；**生产/团队推荐 MySQL**，未配置时本地可用 SQLite `backend/data/app.db`）+ 会话鉴权  
 **文档说明**：本文档基于当前代码实现梳理，用于产品对齐、验收与迭代规划。
 
@@ -16,7 +16,8 @@
 **持久化（当前实现）**：
 
 - **浏览器端**：人力、阶段、风险、列宽等仍可通过 **`localStorage`** 保存在本机浏览器（与早期单机版行为一致）。  
-- **服务端**：**FastAPI** 提供 **会话 Cookie 鉴权**（`POST /api/v1/auth/login` 等），并对 **项目阶段状态、部门项目人力登记、项目风险登记** 提供 **REST 接口** 读写 **`registry`（与 `users` 同库）**：配置 **`PM_MYSQL_*`** 时使用 **MySQL**（多实例应指向同一库）；否则使用本地 **SQLite** `backend/data/app.db`。**GET** 需登录；**PUT** 仅 **管理员**。前端主流程在启动时请求当前用户；未登录跳转 `login.html`。
+- **服务端**：**FastAPI** 提供 **会话 Cookie 鉴权**（`POST /api/v1/auth/login` 等），并对 **项目阶段状态、部门项目人力登记、项目风险登记** 提供 **REST 接口** 读写 **`registry`（与 `users` 同库）**：配置 **`PM_MYSQL_*`** 时使用 **MySQL**（多实例应指向同一库）；否则使用本地 **SQLite** `backend/data/app.db`。**GET** 需登录；**PUT** 仅 **管理员**。前端主流程在启动时请求当前用户；未登录跳转 `login.html`。  
+- **服务端（关系型登记）**：使用 **`GET /api/v1/programs/tree`** 时，阶段 / 人力 / 风险写入规范化表。人力在库内已有人力矩阵表头（`manpower_department_groups` 等）时，前端通过 **`GET/PUT /api/v2/manpower-matrix`** 按 **`column_id`** 读写 **`manpower_cells`**；同一年若已启用矩阵，**`PUT /api/v1/manpower-allocations` 返回 410**（应改用 v2），**`GET /api/v1/manpower-allocations`** 仍可从矩阵 **合成** 旧行格式以便只读兼容。
 
 适合本机或内网「静态页 + API」部署、轻量台账，以及需要 **账号级权限** 的小团队用法。
 
@@ -239,6 +240,7 @@ flowchart TD
 | 1.2 | 2026-04-12 | 对齐 **登录与会话**、**服务端角色与人员账号**、**registry API 鉴权**；补充 `login.html`、退出与启动流程说明 |
 | 1.3 | 2026-05-12 | **团队生产推荐 MySQL**（`PM_MYSQL_*`）；与本地 SQLite 二选一说明；多实例共享 `PM_SESSION_SECRET` |
 | 1.4 | 2026-05-13 | 设置内移除「通用设置」子页；`PM-tool-app-settings-v1` 与已知限制表述与实现对齐 |
+| 1.5 | 2026-05-13 | **人力矩阵**：`GET/PUT /api/v2/manpower-matrix`；矩阵年 **`PUT /api/v1/manpower-allocations` 410**；**`GET /api/v1/manpower-allocations`** 可从矩阵合成旧行格式 |
 
 ---
 
