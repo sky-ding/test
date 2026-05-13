@@ -13,6 +13,7 @@ from app.routers import (
     auth,
     manpower,
     manpower_allocations,
+    manpower_matrix,
     phase,
     phase_assessments,
     programs,
@@ -61,6 +62,7 @@ app.include_router(users.router, prefix="/api/v1")
 app.include_router(programs.router, prefix="/api/v1")
 app.include_router(phase_assessments.router, prefix="/api/v1")
 app.include_router(manpower_allocations.router, prefix="/api/v1")
+app.include_router(manpower_matrix.router, prefix="/api/v2")
 app.include_router(project_risks.router, prefix="/api/v1")
 app.include_router(manpower.router, prefix="/api/v1")
 app.include_router(phase.router, prefix="/api/v1")

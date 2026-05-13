@@ -23,6 +23,9 @@ from app.db import engine  # noqa: E402
 from app.models import RegistryEntry, User  # noqa: E402
 from app.models_relational import (  # noqa: E402
     ManpowerAllocation,
+    ManpowerCell,
+    ManpowerColumn,
+    ManpowerDepartmentGroup,
     PhaseAssessment,
     Program,
     ProjectRisk,
@@ -74,6 +77,9 @@ def main() -> int:
             ("sub_programs rows", SubProgram),
             ("sub_projects rows", SubProject),
             ("phase_assessments rows", PhaseAssessment),
+            ("manpower_department_groups rows", ManpowerDepartmentGroup),
+            ("manpower_columns rows", ManpowerColumn),
+            ("manpower_cells rows", ManpowerCell),
             ("manpower_allocations rows", ManpowerAllocation),
             ("project_risks rows", ProjectRisk),
         ):

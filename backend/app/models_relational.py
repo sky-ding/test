@@ -88,6 +88,9 @@ class SubProject(Base):
     manpower_allocations: Mapped[list[ManpowerAllocation]] = relationship(
         back_populates="sub_project", cascade="all, delete-orphan"
     )
+    manpower_cells: Mapped[list[ManpowerCell]] = relationship(
+        back_populates="sub_project", cascade="all, delete-orphan"
+    )
     project_risks: Mapped[list[ProjectRisk]] = relationship(
         back_populates="sub_project", cascade="all, delete-orphan"
     )
@@ -134,6 +137,69 @@ class ManpowerAllocation(Base):
     updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
 
     sub_project: Mapped[SubProject] = relationship(back_populates="manpower_allocations")
+
+
+class ManpowerDepartmentGroup(Base):
+    """人力表头：一级部门分组（按年）。"""
+
+    __tablename__ = "manpower_department_groups"
+    __table_args__ = (UniqueConstraint("year", "name", name="uk_manpower_group_year_name"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
+
+    columns: Mapped[list[ManpowerColumn]] = relationship(
+        back_populates="group",
+        cascade="all, delete-orphan",
+    )
+
+
+class ManpowerColumn(Base):
+    """人力表头：二级列，隶属于一级分组。"""
+
+    __tablename__ = "manpower_columns"
+    __table_args__ = (UniqueConstraint("group_id", "name", name="uk_manpower_column_group_name"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    group_id: Mapped[int] = mapped_column(
+        ForeignKey("manpower_department_groups.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
+
+    group: Mapped[ManpowerDepartmentGroup] = relationship(back_populates="columns")
+    cells: Mapped[list[ManpowerCell]] = relationship(back_populates="column", cascade="all, delete-orphan")
+
+
+class ManpowerCell(Base):
+    """人力单元格：子项目 × 月 × 列 -> 投入值。"""
+
+    __tablename__ = "manpower_cells"
+    __table_args__ = (
+        UniqueConstraint("sub_project_id", "period", "column_id", name="uk_manpower_cell"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    sub_project_id: Mapped[int] = mapped_column(
+        ForeignKey("sub_projects.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    period: Mapped[str] = mapped_column(String(7), nullable=False, index=True)
+    column_id: Mapped[int] = mapped_column(
+        ForeignKey("manpower_columns.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    allocation: Mapped[Decimal] = mapped_column(Numeric(6, 2), nullable=False, default=Decimal("0.00"))
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
+
+    sub_project: Mapped[SubProject] = relationship(back_populates="manpower_cells")
+    column: Mapped[ManpowerColumn] = relationship(back_populates="cells")
 
 
 class ProjectRisk(Base):

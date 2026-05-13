@@ -2388,7 +2388,14 @@
         const depts = Array.isArray(group && group.depts)
           ? group.depts.map(function (d) { return String(d || '').trim() || '子部门'; }).filter(Boolean)
           : [];
-        if (depts.length) out.push({ name: name, depts: depts.slice() });
+        if (depts.length) {
+          var item = { name: name, depts: depts.slice() };
+          var rawIds = group && Array.isArray(group._columnIds) ? group._columnIds : null;
+          if (rawIds && rawIds.length === item.depts.length) {
+            item._columnIds = rawIds.slice();
+          }
+          out.push(item);
+        }
       });
       return out.length ? out : defaultDeptGroups();
     }
@@ -4107,6 +4114,112 @@
       fixManpowerInData(data);
     }
 
+    /** 将 v2 矩阵表头写入 deptGroups，并保留与 depts 对齐的 _columnIds（供保存与列对齐）。 */
+    function applyDeptGroupsFromMatrix(apiGroups) {
+      deptGroups = normalizeDeptGroups(
+        (apiGroups || []).map(function (g) {
+          var cols = g.columns || [];
+          return {
+            name: g.name != null ? String(g.name) : '',
+            depts: cols.map(function (c) {
+              return c.name != null ? String(c.name) : '';
+            }),
+            _columnIds: cols.map(function (c) {
+              return c.id;
+            })
+          };
+        })
+      );
+    }
+
+    /** 按 column_id 将 cells 写入当前 data 中各子项目 manpowerByMonth[periodKey]。 */
+    function mergeMatrixCellsIntoData(cells, periodKey) {
+      var colToFlat = {};
+      deptGroups.forEach(function (g, gi) {
+        var ids = g._columnIds || [];
+        (g.depts || []).forEach(function (_, di) {
+          var cid = ids[di];
+          if (cid == null) return;
+          colToFlat[cid] = flatDeptIndex(gi, di);
+        });
+      });
+      var bySid = {};
+      (cells || []).forEach(function (c) {
+        var sid = c.sub_project_id;
+        var ix = colToFlat[c.column_id];
+        if (ix == null || ix < 0) return;
+        if (!bySid[sid]) bySid[sid] = {};
+        bySid[sid][ix] = Number(c.allocation) || 0;
+      });
+      if (!Array.isArray(data)) return;
+      data.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (ps) {
+          getSubProjects(ps).forEach(function (p) {
+            var sid = p._subProjectId;
+            if (!sid) return;
+            if (!p.manpowerByMonth) p.manpowerByMonth = {};
+            var arr = newManpowerRow();
+            var ovr = bySid[sid];
+            if (ovr) {
+              Object.keys(ovr).forEach(function (k) {
+                arr[Number(k)] = ovr[k];
+              });
+            }
+            p.manpowerByMonth[periodKey] = arr;
+          });
+        });
+      });
+      fixManpowerInData(data);
+    }
+
+    /**
+     * 尝试 GET /api/v2/manpower-matrix；若该年已有矩阵表头则合并表头与 cells。
+     * @returns {Promise<boolean|null>} true=已用矩阵；false=回退 v1；null=401 需登录
+     */
+    async function tryMergeManpowerMatrixForYearPeriod(y, mkey) {
+      var r = await pmFetch(
+        '/api/v2/manpower-matrix?year=' + y + '&period=' + encodeURIComponent(mkey),
+        { method: 'GET' }
+      );
+      if (r.status === 401) return null;
+      if (!r.ok) return false;
+      var j = await r.json();
+      if (!j.dept_groups || !j.dept_groups.length) return false;
+      applyDeptGroupsFromMatrix(j.dept_groups);
+      mergeMatrixCellsIntoData(j.cells || [], mkey);
+      return true;
+    }
+
+    function pmManpowerUsesMatrixApi() {
+      return deptGroups.some(function (g) {
+        return (
+          Array.isArray(g._columnIds) &&
+          g._columnIds.length > 0 &&
+          g._columnIds.length === (g.depts || []).length
+        );
+      });
+    }
+
+    function cellsFromProjectPeriod(p, periodRawKey) {
+      var row =
+        p.manpowerByMonth && p.manpowerByMonth[periodRawKey]
+          ? p.manpowerByMonth[periodRawKey].slice()
+          : newManpowerRow();
+      var cells = [];
+      deptGroups.forEach(function (g, gi) {
+        var ids = g._columnIds || [];
+        (g.depts || []).forEach(function (_, di) {
+          var cid = ids[di];
+          if (cid == null) return;
+          var ix = flatDeptIndex(gi, di);
+          var val = row[ix] != null ? Number(row[ix]) : 0;
+          if (isNaN(val)) val = 0;
+          cells.push({ sub_project_id: p._subProjectId, column_id: cid, allocation: val });
+        });
+      });
+      return cells;
+    }
+
     function mergePhaseRowsIntoPhaseData(rows, periodKey) {
       var bySp = {};
       (rows || []).forEach(function (r) {
@@ -4160,11 +4273,19 @@
         );
         if (pr.ok) mergePhaseRowsIntoPhaseData(await pr.json(), pkey);
         var mkey = ymKey(manpowerSelYear, manpowerSelMonth);
-        var mr = await pmFetch(
-          '/api/v1/manpower-allocations?year=' + y + '&period=' + encodeURIComponent(mkey),
-          { method: 'GET' }
-        );
-        if (mr.ok) mergeManpowerRowsIntoData(await mr.json(), mkey);
+        var mxAuth = await tryMergeManpowerMatrixForYearPeriod(y, mkey);
+        if (mxAuth === null) {
+          window.__pmAuthRedirecting = true;
+          window.location.href = 'login.html';
+          return;
+        }
+        if (!mxAuth) {
+          var mr = await pmFetch(
+            '/api/v1/manpower-allocations?year=' + y + '&period=' + encodeURIComponent(mkey),
+            { method: 'GET' }
+          );
+          if (mr.ok) mergeManpowerRowsIntoData(await mr.json(), mkey);
+        }
         renderTable();
         renderPhaseTable();
       } catch (e) {
@@ -5038,14 +5159,21 @@
           mergePhaseRowsIntoPhaseData(prBody, pkey);
         }
 
-        var mr = await pmFetch(
-          '/api/v1/manpower-allocations?year=' + pmDataYear + '&period=' + encodeURIComponent(mkey),
-          { method: 'GET' }
-        );
-        var mrBody = [];
-        if (mr.ok) {
-          mrBody = await mr.json();
-          mergeManpowerRowsIntoData(mrBody, mkey);
+        var mxAuth = await tryMergeManpowerMatrixForYearPeriod(pmDataYear, mkey);
+        if (mxAuth === null) {
+          window.__pmAuthRedirecting = true;
+          window.location.href = 'login.html';
+          return;
+        }
+        if (!mxAuth) {
+          var mr = await pmFetch(
+            '/api/v1/manpower-allocations?year=' + pmDataYear + '&period=' + encodeURIComponent(mkey),
+            { method: 'GET' }
+          );
+          if (mr.ok) {
+            var mrBody = await mr.json();
+            mergeManpowerRowsIntoData(mrBody, mkey);
+          }
         }
 
         var rr = await pmFetch('/api/v1/project-risks?year=' + pmDataYear, { method: 'GET' });
@@ -5100,31 +5228,64 @@
             });
           });
         });
-        for (var wi = 0; wi < walk.length; wi++) {
-          var p = walk[wi];
-          var mb = p.manpowerByMonth || {};
-          var keys = Object.keys(mb);
-          for (var ki = 0; ki < keys.length; ki++) {
-            var periodKey = normalizeYmSlugKey(keys[ki]) || keys[ki];
-            if (!periodKey || String(periodKey).slice(0, 4) !== String(y)) continue;
-            var rows = manpowerRowsFromProjectForPeriod(p, keys[ki]);
-            var r = await pmFetch(
-              '/api/v1/manpower-allocations?year=' +
-                y +
-                '&sub_project_id=' +
-                encodeURIComponent(String(p._subProjectId)) +
-                '&period=' +
-                encodeURIComponent(periodKey),
-              { method: 'PUT', body: JSON.stringify({ rows: rows }) }
+        if (pmManpowerUsesMatrixApi()) {
+          var bucket = {};
+          for (var wi = 0; wi < walk.length; wi++) {
+            var p = walk[wi];
+            var mb = p.manpowerByMonth || {};
+            var keys = Object.keys(mb);
+            for (var ki = 0; ki < keys.length; ki++) {
+              var rawKey = keys[ki];
+              var periodKey = normalizeYmSlugKey(rawKey) || rawKey;
+              if (!periodKey || String(periodKey).slice(0, 4) !== String(y)) continue;
+              if (!bucket[periodKey]) bucket[periodKey] = [];
+              bucket[periodKey] = bucket[periodKey].concat(cellsFromProjectPeriod(p, rawKey));
+            }
+          }
+          var pPer = Object.keys(bucket);
+          for (var bj = 0; bj < pPer.length; bj++) {
+            var pk = pPer[bj];
+            var r2 = await pmFetch(
+              '/api/v2/manpower-matrix?year=' + y + '&period=' + encodeURIComponent(pk),
+              { method: 'PUT', body: JSON.stringify({ cells: bucket[pk] }) }
             );
-            if (r.status === 401) {
+            if (r2.status === 401) {
               window.location.href = 'login.html';
               return;
             }
-            if (!r.ok) {
-              var err = await r.json().catch(function () { return {}; });
-              alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
+            if (!r2.ok) {
+              var errM = await r2.json().catch(function () { return {}; });
+              alert((errM.detail != null ? errM.detail : '保存失败') + '（HTTP ' + r2.status + '）');
               return;
+            }
+          }
+        } else {
+          for (var wi = 0; wi < walk.length; wi++) {
+            var p = walk[wi];
+            var mb = p.manpowerByMonth || {};
+            var keys = Object.keys(mb);
+            for (var ki = 0; ki < keys.length; ki++) {
+              var periodKey = normalizeYmSlugKey(keys[ki]) || keys[ki];
+              if (!periodKey || String(periodKey).slice(0, 4) !== String(y)) continue;
+              var rows = manpowerRowsFromProjectForPeriod(p, keys[ki]);
+              var r = await pmFetch(
+                '/api/v1/manpower-allocations?year=' +
+                  y +
+                  '&sub_project_id=' +
+                  encodeURIComponent(String(p._subProjectId)) +
+                  '&period=' +
+                  encodeURIComponent(periodKey),
+                { method: 'PUT', body: JSON.stringify({ rows: rows }) }
+              );
+              if (r.status === 401) {
+                window.location.href = 'login.html';
+                return;
+              }
+              if (!r.ok) {
+                var err = await r.json().catch(function () { return {}; });
+                alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
+                return;
+              }
             }
           }
         }
