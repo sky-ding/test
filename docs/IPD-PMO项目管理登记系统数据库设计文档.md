@@ -732,9 +732,34 @@ ON DUPLICATE KEY UPDATE
 
 「部门项目人力登记」前端展示为项目行与部门列组成的复合表。
 
-| 项目集 | 子项目集 | 子项目 | 平台与架构-大模型 | 平台与架构-架构 | 运维中心-SRE |
-|---|---|---|---:|---:|---:|
-| 稳定性 | 容灾 | 大数据容灾 | 1.00 | 0.50 | 2.00 |
+其中，`平台与架构`、`运维中心` 是一级部门分组；`大模型`、`架构`、`SRE` 是二级部门列。前端应展示为两层复合表头，而不是将一级部门和二级部门合并到同一个格子中。
+
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2">项目集</th>
+      <th rowspan="2">子项目集</th>
+      <th rowspan="2">子项目</th>
+      <th colspan="2">平台与架构</th>
+      <th colspan="1">运维中心</th>
+    </tr>
+    <tr>
+      <th>大模型</th>
+      <th>架构</th>
+      <th>SRE</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>稳定性</td>
+      <td>容灾</td>
+      <td>大数据容灾</td>
+      <td align="right">1.00</td>
+      <td align="right">0.50</td>
+      <td align="right">2.00</td>
+    </tr>
+  </tbody>
+</table>
 
 #### 14.1.2 对应数据库
 
@@ -955,7 +980,266 @@ ON DUPLICATE KEY UPDATE
 
 ---
 
-## 15. 推荐建表 SQL 草稿
+## 15. 前端代码与接口改造说明
+
+基于本数据库设计，现有前端代码和后端接口需要进行配套调整，尤其是「部门项目人力登记」模块。项目阶段状态、项目风险登记、用户与权限管理模块如果当前已经按关系型表和 `sub_project_id` 关联，则改动相对较小。
+
+### 15.1 改造原因
+
+原有设计可能按如下结构读写人力数据：
+
+```text
+sub_project_id + period + department + role + allocation
+```
+
+新设计调整为：
+
+```text
+manpower_department_groups
++ manpower_columns
++ manpower_cells
+```
+
+因此，前端不能再只依赖 `department`、`role` 字符串匹配单元格，而应使用：
+
+```text
+sub_project_id + period + column_id
+```
+
+定位唯一人力单元格。
+
+### 15.2 后端接口调整建议
+
+#### 15.2.1 月度人力查询接口
+
+建议接口按年月返回完整矩阵数据，包括部门表头结构和单元格数据。
+
+示例：
+
+```text
+GET /api/v1/manpower-allocations?year=2026&period=2026-01
+```
+
+建议返回：
+
+```json
+{
+  "year": 2026,
+  "period": "2026-01",
+  "dept_groups": [
+    {
+      "id": 1,
+      "name": "平台与架构",
+      "sort_order": 1,
+      "columns": [
+        {
+          "id": 1001,
+          "name": "大模型",
+          "sort_order": 1
+        },
+        {
+          "id": 1002,
+          "name": "架构",
+          "sort_order": 2
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "运维中心",
+      "sort_order": 2,
+      "columns": [
+        {
+          "id": 2001,
+          "name": "SRE",
+          "sort_order": 1
+        }
+      ]
+    }
+  ],
+  "cells": [
+    {
+      "sub_project_id": 101,
+      "period": "2026-01",
+      "column_id": 1001,
+      "allocation": 1.00
+    },
+    {
+      "sub_project_id": 101,
+      "period": "2026-01",
+      "column_id": 1002,
+      "allocation": 0.50
+    }
+  ]
+}
+```
+
+说明：
+
+- `dept_groups` 用于渲染复合表头第一层；
+- `dept_groups[].columns` 用于渲染复合表头第二层；
+- `cells` 用于填充表格中的人力数值；
+- 前端通过 `sub_project_id + column_id` 将 `allocation` 放回对应单元格。
+
+#### 15.2.2 月度人力保存接口
+
+保存时建议提交当前月份的单元格数据。
+
+示例：
+
+```text
+PUT /api/v1/manpower-allocations?year=2026&period=2026-01
+```
+
+建议请求体：
+
+```json
+{
+  "cells": [
+    {
+      "sub_project_id": 101,
+      "column_id": 1001,
+      "allocation": 1.00
+    },
+    {
+      "sub_project_id": 101,
+      "column_id": 1002,
+      "allocation": 0.50
+    },
+    {
+      "sub_project_id": 101,
+      "column_id": 2001,
+      "allocation": 2.00
+    }
+  ]
+}
+```
+
+后端根据唯一约束：
+
+```text
+sub_project_id + period + column_id
+```
+
+执行插入或更新。
+
+#### 15.2.3 部门分组与部门列维护接口
+
+如果前端支持维护部门列，需要新增或调整接口，用于管理：
+
+- 新增一级部门分组；
+- 修改一级部门分组名称；
+- 调整一级部门分组顺序；
+- 新增二级部门列；
+- 修改二级部门列名称；
+- 调整二级部门列顺序；
+- 停用或删除部门列。
+
+建议接口示例：
+
+```text
+GET    /api/v1/manpower-department-groups?year=2026
+POST   /api/v1/manpower-department-groups
+PATCH  /api/v1/manpower-department-groups/{group_id}
+DELETE /api/v1/manpower-department-groups/{group_id}
+
+POST   /api/v1/manpower-department-groups/{group_id}/columns
+PATCH  /api/v1/manpower-columns/{column_id}
+DELETE /api/v1/manpower-columns/{column_id}
+```
+
+删除接口需谨慎评审。若部门列已有历史人力数据，建议优先采用逻辑删除或禁用，而不是物理删除。
+
+### 15.3 前端代码调整建议
+
+#### 15.3.1 表头渲染逻辑
+
+前端应根据接口返回的：
+
+```text
+dept_groups -> columns
+```
+
+渲染两层复合表头。
+
+示例：
+
+```text
+平台与架构
+  ├── 大模型
+  └── 架构
+
+运维中心
+  └── SRE
+```
+
+不建议继续使用写死的本地默认部门列作为唯一来源。默认列可以作为初始化模板，但最终展示应以数据库返回的列定义为准。
+
+#### 15.3.2 单元格数据回填逻辑
+
+前端加载数据后，应建立如下索引：
+
+```text
+cellMap[sub_project_id][column_id] = allocation
+```
+
+渲染每个单元格时，根据当前行的 `sub_project_id` 和当前列的 `column_id` 取值。
+
+#### 15.3.3 保存逻辑
+
+前端保存时，应提交：
+
+```text
+sub_project_id
+period
+column_id
+allocation
+```
+
+不建议继续只提交：
+
+```text
+department
+role
+allocation
+```
+
+`department` 和 `role` 可作为展示字段或兼容字段，但不应作为核心关联键。
+
+#### 15.3.4 部门列维护逻辑
+
+如果前端允许管理员新增、改名、删除部门列，相关操作应保存到数据库：
+
+- 一级部门分组保存到 `manpower_department_groups`；
+- 二级部门列保存到 `manpower_columns`；
+- 人力值保存到 `manpower_cells`。
+
+不能只保存在前端内存或浏览器本地存储中，否则刷新或换设备后无法还原。
+
+### 15.4 各模块改造影响范围
+
+| 模块 | 是否需要改动 | 说明 |
+|---|---|---|
+| 部门项目人力登记 | 需要重点改造 | 需要适配部门分组、部门列、单元格事实表 |
+| 项目阶段状态 | 改动较小 | 若已按 `sub_project_id + period` 保存，方向基本正确 |
+| 项目风险登记 | 改动较小 | 若已按 `sub_project_id` 关联风险，方向基本正确 |
+| 用户与权限管理 | 基本不受本次人力表设计影响 | 只需继续基于 `users.role` 控制编辑权限 |
+
+### 15.5 兼容与迁移建议
+
+为降低切换风险，建议实施时采用分阶段策略：
+
+1. 新增新表，不立即删除旧 `manpower_allocations`；
+2. 从旧表迁移部门分组、部门列和人力单元格数据；
+3. 后端接口优先读取新表；
+4. 前端改为按 `dept_groups + cells` 渲染；
+5. 验证历史月份和当前月份数据展示一致；
+6. 稳定后停止写入旧表；
+7. 旧表保留一段观察期后再由 DBA 评估是否下线。
+
+---
+
+## 16. 推荐建表 SQL 草稿
 
 以下 SQL 供 DBA 和研发评审，具体字段长度、索引命名可根据规范调整。
 
@@ -1050,11 +1334,11 @@ CREATE TABLE manpower_cells (
 
 ---
 
-## 16. 迁移建议
+## 17. 迁移建议
 
 如果当前数据库中已有 `manpower_allocations` 表，可按以下思路迁移。
 
-### 16.1 从旧表提取一级部门分组
+### 17.1 从旧表提取一级部门分组
 
 ```sql
 SELECT DISTINCT
@@ -1070,7 +1354,7 @@ JOIN sub_projects sp ON sp.id = ma.sub_project_id;
 manpower_department_groups
 ```
 
-### 16.2 从旧表提取二级部门列
+### 17.2 从旧表提取二级部门列
 
 ```sql
 SELECT DISTINCT
@@ -1087,7 +1371,7 @@ JOIN sub_projects sp ON sp.id = ma.sub_project_id;
 manpower_columns
 ```
 
-### 16.3 迁移旧人力值
+### 17.3 迁移旧人力值
 
 将旧数据：
 
@@ -1114,7 +1398,7 @@ allocation
 manpower_cells
 ```
 
-### 16.4 迁移后处理
+### 17.4 迁移后处理
 
 建议迁移完成后：
 
@@ -1125,7 +1409,7 @@ manpower_cells
 
 ---
 
-## 17. 设计收益
+## 18. 设计收益
 
 | 问题 | 解决方式 |
 |---|---|
@@ -1138,7 +1422,7 @@ manpower_cells
 
 ---
 
-## 18. 需要评审确认的问题
+## 19. 需要评审确认的问题
 
 建议技术评审时重点确认以下问题：
 
@@ -1164,7 +1448,7 @@ manpower_cells
 
 ---
 
-## 19. 最终推荐表清单
+## 20. 最终推荐表清单
 
 | 表名 | 用途 |
 |---|---|
@@ -1187,7 +1471,7 @@ manpower_cells
 
 ---
 
-## 20. 总结
+## 21. 总结
 
 部门项目人力登记不是普通列表，而是一个多维矩阵：
 
