@@ -722,40 +722,48 @@ ON DUPLICATE KEY UPDATE
 
 ## 14. 示例映射
 
-前端展示：
+本章节通过前端展示样例说明各模块如何映射到数据库表，便于研发、DBA、测试同学理解页面数据与关系型表之间的对应关系。
+
+---
+
+### 14.1 部门项目人力登记示例
+
+#### 14.1.1 前端展示
+
+「部门项目人力登记」前端展示为项目行与部门列组成的复合表。
 
 | 项目集 | 子项目集 | 子项目 | 平台与架构-大模型 | 平台与架构-架构 | 运维中心-SRE |
 |---|---|---|---:|---:|---:|
 | 稳定性 | 容灾 | 大数据容灾 | 1.00 | 0.50 | 2.00 |
 
-对应数据库：
+#### 14.1.2 对应数据库
 
-### `programs`
+##### `programs`
 
 | id | year | name |
 |---:|---:|---|
 | 1 | 2026 | 稳定性 |
 
-### `sub_programs`
+##### `sub_programs`
 
 | id | program_id | year | name |
 |---:|---:|---:|---|
 | 10 | 1 | 2026 | 容灾 |
 
-### `sub_projects`
+##### `sub_projects`
 
 | id | sub_program_id | year | name |
 |---:|---:|---:|---|
 | 101 | 10 | 2026 | 大数据容灾 |
 
-### `manpower_department_groups`
+##### `manpower_department_groups`
 
 | id | year | name |
 |---:|---:|---|
 | 1 | 2026 | 平台与架构 |
 | 2 | 2026 | 运维中心 |
 
-### `manpower_columns`
+##### `manpower_columns`
 
 | id | group_id | year | name |
 |---:|---:|---:|---|
@@ -763,13 +771,187 @@ ON DUPLICATE KEY UPDATE
 | 1002 | 1 | 2026 | 架构 |
 | 2001 | 2 | 2026 | SRE |
 
-### `manpower_cells`
+##### `manpower_cells`
 
 | sub_project_id | period | column_id | allocation |
 |---:|---|---:|---:|
 | 101 | 2026-01 | 1001 | 1.00 |
 | 101 | 2026-01 | 1002 | 0.50 |
 | 101 | 2026-01 | 2001 | 2.00 |
+
+#### 14.1.3 映射说明
+
+| 前端元素 | 数据库来源 |
+|---|---|
+| 项目集 | `programs.name` |
+| 子项目集 | `sub_programs.name` |
+| 子项目 | `sub_projects.name` |
+| 一级部门表头 | `manpower_department_groups.name` |
+| 二级部门列 | `manpower_columns.name` |
+| 人力数字 | `manpower_cells.allocation` |
+| 小计 | 不入库，由当前行 `allocation` 求和 |
+| 人力占比 | 不入库，由当前行小计 / 当月总人力计算 |
+
+---
+
+### 14.2 项目阶段状态示例
+
+#### 14.2.1 前端展示
+
+「项目阶段状态」前端展示为项目结构加一组月度阶段文本字段。
+
+| 项目集 | 子项目集 | 子项目 | 阶段交付目标 | 是否符合计划 | 实际交付评估 | 执行过程分析 | 问题分析 | 改进计划 |
+|---|---|---|---|---|---|---|---|---|
+| 稳定性 | 容灾 | 大数据容灾 | 完成容灾方案设计与演练 | 是 | 已完成方案评审与首轮演练 | 演练过程整体符合预期 | 部分监控告警口径需优化 | 下月补齐告警规则并复盘 |
+
+当前选择年月：
+
+```text
+2026-01
+```
+
+#### 14.2.2 对应数据库
+
+##### `programs`
+
+| id | year | name |
+|---:|---:|---|
+| 1 | 2026 | 稳定性 |
+
+##### `sub_programs`
+
+| id | program_id | year | name |
+|---:|---:|---:|---|
+| 10 | 1 | 2026 | 容灾 |
+
+##### `sub_projects`
+
+| id | sub_program_id | year | name |
+|---:|---:|---:|---|
+| 101 | 10 | 2026 | 大数据容灾 |
+
+##### `phase_assessments`
+
+| id | sub_project_id | period | delivery_target | on_track | actual_delivery | execution_analysis | problem_analysis | improvement_plan |
+|---:|---:|---|---|---|---|---|---|---|
+| 5001 | 101 | 2026-01 | 完成容灾方案设计与演练 | 是 | 已完成方案评审与首轮演练 | 演练过程整体符合预期 | 部分监控告警口径需优化 | 下月补齐告警规则并复盘 |
+
+#### 14.2.3 映射说明
+
+| 前端元素 | 数据库来源 |
+|---|---|
+| 项目集 | `programs.name` |
+| 子项目集 | `sub_programs.name` |
+| 子项目 | `sub_projects.name` |
+| 当前年月 | `phase_assessments.period` |
+| 阶段交付目标 | `phase_assessments.delivery_target` |
+| 是否符合计划 | `phase_assessments.on_track` |
+| 实际交付评估 | `phase_assessments.actual_delivery` |
+| 执行过程分析 | `phase_assessments.execution_analysis` |
+| 问题分析 | `phase_assessments.problem_analysis` |
+| 改进计划 | `phase_assessments.improvement_plan` |
+
+---
+
+### 14.3 项目风险登记示例
+
+#### 14.3.1 前端展示
+
+「项目风险登记」前端展示为风险列表，一条风险对应数据库一行。
+
+| 序号 | 风险类别 | 风险来源 | 项目 | 问题与影响说明 | 解决方案 | 风险等级 | 跟进人 | 计划解决日期 | 状态 |
+|---:|---|---|---|---|---|---|---|---|---|
+| 1 | 技术风险 | 依赖风险 | 稳定性 / 容灾 / 大数据容灾 | 容灾切换依赖外部组件，当前自动化能力不足，可能影响恢复时效 | 补齐自动化脚本并增加演练频次 | 高 | 张三 | 2026-02-15 | Open |
+
+#### 14.3.2 对应数据库
+
+##### `programs`
+
+| id | year | name |
+|---:|---:|---|
+| 1 | 2026 | 稳定性 |
+
+##### `sub_programs`
+
+| id | program_id | year | name |
+|---:|---:|---:|---|
+| 10 | 1 | 2026 | 容灾 |
+
+##### `sub_projects`
+
+| id | sub_program_id | year | name |
+|---:|---:|---:|---|
+| 101 | 10 | 2026 | 大数据容灾 |
+
+##### `project_risks`
+
+| id | sub_project_id | risk_category | risk_source | description | solution | level | assignee | resolution_date | status |
+|---:|---:|---|---|---|---|---|---|---|---|
+| 9001 | 101 | 技术风险 | 依赖风险 | 容灾切换依赖外部组件，当前自动化能力不足，可能影响恢复时效 | 补齐自动化脚本并增加演练频次 | 高 | 张三 | 2026-02-15 | Open |
+
+#### 14.3.3 映射说明
+
+| 前端元素 | 数据库来源 |
+|---|---|
+| 项目 | 由 `sub_project_id` 关联 `sub_projects`，再向上关联 `sub_programs`、`programs` 拼接展示 |
+| 风险类别 | `project_risks.risk_category` |
+| 风险来源 | `project_risks.risk_source` |
+| 问题与影响说明 | `project_risks.description` |
+| 解决方案 | `project_risks.solution` |
+| 风险等级 | `project_risks.level` |
+| 跟进人 | `project_risks.assignee` |
+| 计划解决日期 | `project_risks.resolution_date` |
+| 状态 | `project_risks.status` |
+
+---
+
+### 14.4 用户与权限管理示例
+
+#### 14.4.1 前端展示
+
+「设置 / 权限管理」前端展示当前登录用户、用户列表，以及不同角色的权限说明。
+
+当前登录用户示例：
+
+| 当前账号 | 角色 | 状态 |
+|---|---|---|
+| sky.ding | 管理员 | 正常 |
+
+用户列表示例：
+
+| 用户名 | 角色 | 状态 | 来源 | 操作 |
+|---|---|---|---|---|
+| sky.ding | 管理员 | 正常 | local | 调整角色 / 停用 |
+| viewer01 | 普通用户 | 正常 | local | 调整角色 / 停用 |
+
+权限说明示例：
+
+| 功能菜单 | 管理员 | 普通用户 |
+|---|---|---|
+| 项目阶段状态 | 可新增、编辑、删除、保存 | 仅查看 |
+| 部门项目人力登记 | 可维护部门列、编辑人力、保存 | 仅查看 |
+| 项目风险登记 | 可新增、编辑、删除、保存 | 仅查看 |
+| 设置 | 可管理用户与权限 | 仅查看权限说明 |
+
+#### 14.4.2 对应数据库
+
+##### `users`
+
+| id | username | role | is_active | auth_source | external_subject |
+|---:|---|---|---|---|---|
+| 1 | sky.ding | admin | 1 | local | NULL |
+| 2 | viewer01 | viewer | 1 | local | NULL |
+
+#### 14.4.3 映射说明
+
+| 前端元素 | 数据库来源 |
+|---|---|
+| 当前账号 | 登录态关联的 `users.username` |
+| 角色 | `users.role` |
+| 状态 | `users.is_active` |
+| 来源 | `users.auth_source` |
+| 是否可编辑业务数据 | 由 `users.role` 判断，`admin` 可编辑，`viewer` 只读 |
+| 是否可管理用户 | 由 `users.role` 判断，仅 `admin` 可管理 |
 
 ---
 
