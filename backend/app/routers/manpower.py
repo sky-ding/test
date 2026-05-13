@@ -9,7 +9,7 @@ def _gone() -> Response:
         media_type="application/json",
         content=(
             '{"detail":"Removed: use GET/PUT /api/v1/manpower-allocations '
-            'with year and period."}'
+            'with year, period, and sub_project_id."}'
         ),
     )
 

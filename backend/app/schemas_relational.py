@@ -142,26 +142,9 @@ class PhaseAssessmentUpsert(BaseModel):
 # --- 人力 ---
 
 
-class ManpowerColumnIn(BaseModel):
-    id: int | None = Field(default=None, ge=1)
-    name: str = Field(min_length=1, max_length=100)
-
-
-class ManpowerDepartmentGroupIn(BaseModel):
-    model_config = ConfigDict(populate_by_name=True)
-
-    id: int | None = Field(default=None, ge=1)
-    name: str = Field(min_length=1, max_length=100)
-    depts: list[str] = Field(default_factory=list)
-    columns: list[ManpowerColumnIn] | None = None
-    column_ids: list[int | None] | None = Field(default=None, alias="columnIds")
-
-
 class ManpowerAllocationRow(BaseModel):
-    sub_project_id: int | None = Field(default=None, ge=1)
-    column_id: int | None = Field(default=None, ge=1)
-    department: str | None = Field(default=None, max_length=100)
-    role: str | None = Field(default=None, max_length=100)
+    department: str = Field(min_length=1, max_length=50)
+    role: str = Field(min_length=1, max_length=50)
     allocation: Decimal = Field(default=Decimal("0.00"), ge=Decimal("0"), le=Decimal("999.99"))
 
     @field_validator("allocation")
@@ -170,42 +153,18 @@ class ManpowerAllocationRow(BaseModel):
         return v.quantize(Decimal("0.01"))
 
 
-class ManpowerColumnOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    name: str
-    sort_order: int = 0
-
-
-class ManpowerDepartmentGroupOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    name: str
-    sort_order: int = 0
-    columns: list[ManpowerColumnOut] = Field(default_factory=list)
-
-
 class ManpowerAllocationOut(BaseModel):
-    id: int | None = None
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
     sub_project_id: int
     period: str
-    column_id: int
     department: str
     role: str
     allocation: Decimal
 
 
-class ManpowerMatrixResponse(BaseModel):
-    year: int
-    period: str
-    dept_groups: list[ManpowerDepartmentGroupOut]
-    rows: list[ManpowerAllocationOut]
-
-
 class ManpowerReplaceBody(BaseModel):
-    dept_groups: list[ManpowerDepartmentGroupIn] | None = None
     rows: list[ManpowerAllocationRow]
 
 

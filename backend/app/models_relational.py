@@ -85,7 +85,7 @@ class SubProject(Base):
     phase_assessments: Mapped[list[PhaseAssessment]] = relationship(
         back_populates="sub_project", cascade="all, delete-orphan"
     )
-    manpower_cells: Mapped[list[ManpowerCell]] = relationship(
+    manpower_allocations: Mapped[list[ManpowerAllocation]] = relationship(
         back_populates="sub_project", cascade="all, delete-orphan"
     )
     project_risks: Mapped[list[ProjectRisk]] = relationship(
@@ -114,51 +114,12 @@ class PhaseAssessment(Base):
     sub_project: Mapped[SubProject] = relationship(back_populates="phase_assessments")
 
 
-class ManpowerDepartmentGroup(Base):
-    __tablename__ = "manpower_department_groups"
+class ManpowerAllocation(Base):
+    __tablename__ = "manpower_allocations"
     __table_args__ = (
-        UniqueConstraint("year", "name", name="uk_mp_group_year_name"),
-    )
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
-
-    department_columns: Mapped[list[ManpowerColumn]] = relationship(
-        back_populates="department_group",
-        cascade="all, delete-orphan",
-    )
-
-
-class ManpowerColumn(Base):
-    __tablename__ = "manpower_columns"
-    __table_args__ = (
-        UniqueConstraint("group_id", "name", name="uk_mp_column_group_name"),
-    )
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    group_id: Mapped[int] = mapped_column(
-        ForeignKey("manpower_department_groups.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
-
-    department_group: Mapped[ManpowerDepartmentGroup] = relationship(back_populates="department_columns")
-    cells: Mapped[list[ManpowerCell]] = relationship(back_populates="column", cascade="all, delete-orphan")
-
-
-class ManpowerCell(Base):
-    __tablename__ = "manpower_cells"
-    __table_args__ = (
-        UniqueConstraint("sub_project_id", "period", "column_id", name="uk_mp_cell_project_period_column"),
+        UniqueConstraint(
+            "sub_project_id", "period", "department", "role", name="uk_prj_period_dept_role"
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -166,15 +127,13 @@ class ManpowerCell(Base):
         ForeignKey("sub_projects.id", ondelete="CASCADE"), nullable=False, index=True
     )
     period: Mapped[str] = mapped_column(String(7), nullable=False, index=True)
-    column_id: Mapped[int] = mapped_column(
-        ForeignKey("manpower_columns.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+    department: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(50), nullable=False)
     allocation: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, default=Decimal("0.00"))
     created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
 
-    sub_project: Mapped[SubProject] = relationship(back_populates="manpower_cells")
-    column: Mapped[ManpowerColumn] = relationship(back_populates="cells")
+    sub_project: Mapped[SubProject] = relationship(back_populates="manpower_allocations")
 
 
 class ProjectRisk(Base):
