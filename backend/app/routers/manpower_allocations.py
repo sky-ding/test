@@ -108,9 +108,7 @@ def _matrix_response(db: Session, year: int, period: str) -> ManpowerMatrixRespo
 
 def _column_specs(group_in: ManpowerDepartmentGroupIn) -> list[tuple[int | None, str]]:
     if group_in.columns is not None:
-        specs = [(column.id, column.name.strip()) for column in group_in.columns if column.name.strip()]
-        _assert_unique_column_names(group_in.name, [name for _, name in specs])
-        return specs
+        return [(column.id, column.name.strip()) for column in group_in.columns if column.name.strip()]
     ids = group_in.column_ids or []
     specs: list[tuple[int | None, str]] = []
     for idx, name in enumerate(group_in.depts):
@@ -119,19 +117,7 @@ def _column_specs(group_in: ManpowerDepartmentGroupIn) -> list[tuple[int | None,
             continue
         column_id = ids[idx] if idx < len(ids) else None
         specs.append((column_id, clean_name))
-    _assert_unique_column_names(group_in.name, [name for _, name in specs])
     return specs
-
-
-def _assert_unique_column_names(group_name: str, column_names: list[str]) -> None:
-    seen: set[str] = set()
-    for name in column_names:
-        if name in seen:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"duplicate manpower column in {group_name}: {name}",
-            )
-        seen.add(name)
 
 
 def _sync_department_groups(
