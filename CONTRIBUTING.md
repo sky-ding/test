@@ -10,6 +10,27 @@
 
 > 仅靠自觉不够：请在托管平台（GitHub / GitLab / Gitee 等）为 `main` 打开**分支保护**，从机制上禁止直推（见下文「仓库管理员」）。
 
+## 本仓库约定：GitLab 为 Merge Request 与 `main` 的权威来源
+
+本项目的 **Merge Request 仅在 GitLab 创建**，合并目标为 **GitLab 上的 `main`**。GitHub 等其它远程上的 `main` 可能与 GitLab **不同步**；若以错误的 `main` 为基准，MR 会提示「落后」或产生合并冲突。
+
+**在 GitLab 上创建或更新 MR 之前**（向 `main` 合并前），请在**当前功能分支**执行（写死为以下两条，按顺序执行）：
+
+```bash
+git fetch gitlab
+git merge gitlab/main
+```
+
+若有冲突，在本地解决后 `git commit` 完成合并，再 `git push` 到远程的同名功能分支，GitLab MR 会自动更新。
+
+若本地尚未添加 GitLab 远程，请先配置（URL 以实际项目为准）：
+
+```bash
+git remote add gitlab https://gitlab.tools.vipshop.com/ipd_pmo/test.git
+```
+
+（已存在名为 `gitlab` 的 remote 则无需重复添加。）
+
 ## 分支命名（建议）
 
 | 前缀 | 用途 | 示例 |
@@ -22,11 +43,11 @@
 
 ## 日常开发流程（每人）
 
-1. 更新本地 `main`：
+1. 更新本地 `main`（**本仓库以 GitLab 上 `main` 为准**，请使用 `gitlab` 远程）：
    ```bash
-   git fetch origin
+   git fetch gitlab
    git checkout main
-   git pull origin main
+   git merge gitlab/main
    ```
 2. 从 `main` 新建分支：
    ```bash
@@ -41,17 +62,19 @@
    ```bash
    git push -u origin fix/your-topic
    ```
-5. 在网页上创建 **PR / MR**：base 选 `main`，填写标题与说明（改了什么、如何验证），指定 reviewer。
+5. 在 **GitLab** 上创建 **Merge Request**：目标分支（base）选 **`main`**，填写标题与说明（改了什么、如何验证），指定 reviewer。  
+   **创建 MR 前**须已执行上文 **「本仓库约定：GitLab 为 Merge Request 与 `main` 的权威来源」** 中的 `git fetch gitlab` 与 `git merge gitlab/main`。
 6. Review 通过并合并后，本地同步并可选删除分支：
    ```bash
    git checkout main
-   git pull origin main
+   git fetch gitlab
+   git merge gitlab/main
    git branch -d fix/your-topic
    ```
 
 ### 冲突处理
 
-若 PR 提示与 `main` 冲突：在本地把最新 `main` 合并进你的分支（或 rebase，团队统一一种方式），解决冲突后再 push 到同一远程分支，PR 会自动更新。
+若 MR 提示与 `main` 冲突：在本地把 **GitLab** 上最新的 `main` 合并进你的分支（本仓库请先 `git fetch gitlab && git merge gitlab/main`），解决冲突后再 push 到同一远程分支，MR 会自动更新。若仅合并了其它远程（如仅 GitHub）的 `main`，仍可能与 GitLab MR 不一致。
 
 **禁止**对共享分支使用 `git push --force` 覆盖他人历史；对 `main` 的 force push 应在平台上**永久关闭**。
 

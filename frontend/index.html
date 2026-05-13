@@ -5018,7 +5018,7 @@
         deptGroups = defaultDeptGroups();
         manpowerSelYear = pmDataYear;
         phaseSelYear = pmDataYear;
-        var _prefsApplied = pmApplyStoredPeriodPrefsForYear(pmDataYear);
+        pmApplyStoredPeriodPrefsForYear(pmDataYear);
         updateManpowerToolbarInputs();
         var pyIn = document.getElementById('phase-year-input');
         if (pyIn) pyIn.value = String(pmDataYear);
@@ -5028,9 +5028,6 @@
 
         var pkey = ymKey(phaseSelYear, phaseSelMonth);
         var mkey = ymKey(manpowerSelYear, manpowerSelMonth);
-        // #region agent log
-        fetch('http://127.0.0.1:7291/ingest/295d1ffa-da6a-4b57-8e0e-3727cb16ac74',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'5fe07f'},body:JSON.stringify({sessionId:'5fe07f',runId:'post-fix',hypothesisId:'H1',location:'index.html:loadRegistryData',message:'load period keys before GET',data:{pmDataYear:pmDataYear,phaseSelMonth:phaseSelMonth,manpowerSelMonth:manpowerSelMonth,pkey:pkey,mkey:mkey,prefsApplied:_prefsApplied},timestamp:Date.now()})}).catch(function(){});
-        // #endregion
         var pr = await pmFetch(
           '/api/v1/phase-assessments?year=' + pmDataYear + '&period=' + encodeURIComponent(pkey),
           { method: 'GET' }
@@ -5040,9 +5037,6 @@
           prBody = await pr.json();
           mergePhaseRowsIntoPhaseData(prBody, pkey);
         }
-        // #region agent log
-        fetch('http://127.0.0.1:7291/ingest/295d1ffa-da6a-4b57-8e0e-3727cb16ac74',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'5fe07f'},body:JSON.stringify({sessionId:'5fe07f',runId:'post-fix',hypothesisId:'H1',location:'index.html:loadRegistryData',message:'phase GET result',data:{pkey:pkey,prOk:pr.ok,prStatus:pr.status,rowCount:(prBody||[]).length},timestamp:Date.now()})}).catch(function(){});
-        // #endregion
 
         var mr = await pmFetch(
           '/api/v1/manpower-allocations?year=' + pmDataYear + '&period=' + encodeURIComponent(mkey),
@@ -5053,9 +5047,6 @@
           mrBody = await mr.json();
           mergeManpowerRowsIntoData(mrBody, mkey);
         }
-        // #region agent log
-        fetch('http://127.0.0.1:7291/ingest/295d1ffa-da6a-4b57-8e0e-3727cb16ac74',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'5fe07f'},body:JSON.stringify({sessionId:'5fe07f',runId:'post-fix',hypothesisId:'H1',location:'index.html:loadRegistryData',message:'manpower GET result',data:{mkey:mkey,mrOk:mr.ok,mrStatus:mr.status,rowCount:(mrBody||[]).length},timestamp:Date.now()})}).catch(function(){});
-        // #endregion
 
         var rr = await pmFetch('/api/v1/project-risks?year=' + pmDataYear, { method: 'GET' });
         if (!rr.ok) {
@@ -5083,9 +5074,6 @@
         });
       } catch (e) {
         console.warn('[PM-tool] 从服务器加载登记数据失败', e);
-        // #region agent log
-        fetch('http://127.0.0.1:7291/ingest/295d1ffa-da6a-4b57-8e0e-3727cb16ac74',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'5fe07f'},body:JSON.stringify({sessionId:'5fe07f',runId:'post-fix',hypothesisId:'H3',location:'index.html:loadRegistryData',message:'loadRegistryData catch',data:{err:String(e&&e.message||e)},timestamp:Date.now()})}).catch(function(){});
-        // #endregion
         alert('无法从服务器加载登记数据（关系型接口）。请检查网络或稍后重试。');
         pmUsesRelationalRegistry = false;
         applyRegistryFromObjects(
@@ -5104,7 +5092,6 @@
       }
       try {
         var y = pmDataYear;
-        var dbgMpPeriods = {};
         var walk = [];
         data.forEach(function (set) {
           getProgramProjectSets(set).forEach(function (ps) {
@@ -5139,13 +5126,9 @@
               alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
               return;
             }
-            dbgMpPeriods[periodKey] = 1;
           }
         }
-        // #region agent log
         pmSavePeriodPrefsForYear(y, phaseSelMonth, manpowerSelMonth);
-        fetch('http://127.0.0.1:7291/ingest/295d1ffa-da6a-4b57-8e0e-3727cb16ac74',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'5fe07f'},body:JSON.stringify({sessionId:'5fe07f',runId:'post-fix',hypothesisId:'H2',location:'index.html:saveManpowerData',message:'manpower PUT ok periods',data:{y:y,periods:Object.keys(dbgMpPeriods),manpowerUiMonth:manpowerSelMonth},timestamp:Date.now()})}).catch(function(){});
-        // #endregion
         showSaveToast('人力登记已保存到服务器');
         setPanelEditMode('manpower', false);
       } catch (e) {
@@ -5285,7 +5268,6 @@
       syncPhaseFromDom();
       try {
         var y = pmDataYear;
-        var dbgPhasePeriods = {};
         var flat = [];
         phaseData.forEach(function (set) {
           getProgramProjectSets(set).forEach(function (projectSet) {
@@ -5327,13 +5309,9 @@
               alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
               return;
             }
-            dbgPhasePeriods[periodKey] = 1;
           }
         }
-        // #region agent log
         pmSavePeriodPrefsForYear(y, phaseSelMonth, manpowerSelMonth);
-        fetch('http://127.0.0.1:7291/ingest/295d1ffa-da6a-4b57-8e0e-3727cb16ac74',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'5fe07f'},body:JSON.stringify({sessionId:'5fe07f',runId:'post-fix',hypothesisId:'H2',location:'index.html:savePhaseData',message:'phase PUT ok periods',data:{y:y,periods:Object.keys(dbgPhasePeriods),phaseUiMonth:phaseSelMonth},timestamp:Date.now()})}).catch(function(){});
-        // #endregion
         showSaveToast('阶段状态已保存到服务器');
         setPanelEditMode('phase', false);
       } catch (e) {
