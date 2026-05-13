@@ -55,20 +55,45 @@ CREATE TABLE IF NOT EXISTS `phase_assessments` (
     CONSTRAINT `fk_pa_project` FOREIGN KEY (`sub_project_id`) REFERENCES `sub_projects`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='项目阶段状态（月度）';
 
-CREATE TABLE IF NOT EXISTS `manpower_allocations` (
+CREATE TABLE IF NOT EXISTS `manpower_department_groups` (
+    `id`         INT AUTO_INCREMENT PRIMARY KEY,
+    `year`       SMALLINT      NOT NULL COMMENT '所属年份',
+    `name`       VARCHAR(100)  NOT NULL COMMENT '一级部门分组/复合表头第一层',
+    `sort_order` INT           DEFAULT 0,
+    `created_at` TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_mp_group_year_name` (`year`, `name`),
+    KEY `idx_year` (`year`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='人力登记部门分组（列头第一层）';
+
+CREATE TABLE IF NOT EXISTS `manpower_columns` (
+    `id`         INT AUTO_INCREMENT PRIMARY KEY,
+    `group_id`   INT           NOT NULL COMMENT '所属部门分组',
+    `year`       SMALLINT      NOT NULL COMMENT '所属年份（冗余，便于查询）',
+    `name`       VARCHAR(100)  NOT NULL COMMENT '二级部门/人力列名（复合表头第二层）',
+    `sort_order` INT           DEFAULT 0,
+    `created_at` TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_mp_column_group_name` (`group_id`, `name`),
+    KEY `idx_group` (`group_id`),
+    KEY `idx_year` (`year`),
+    CONSTRAINT `fk_mp_column_group` FOREIGN KEY (`group_id`) REFERENCES `manpower_department_groups`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='人力登记部门列定义（列头第二层）';
+
+CREATE TABLE IF NOT EXISTS `manpower_cells` (
     `id`             INT AUTO_INCREMENT PRIMARY KEY,
-    `sub_project_id` INT           NOT NULL COMMENT '子项目 ID',
+    `sub_project_id` INT           NOT NULL COMMENT '子项目 ID（复合表左侧行）',
     `period`         VARCHAR(7)    NOT NULL COMMENT 'YYYY-MM',
-    `department`     VARCHAR(50)   NOT NULL COMMENT '部门',
-    `role`           VARCHAR(50)   NOT NULL COMMENT '角色',
+    `column_id`      INT           NOT NULL COMMENT '部门列 ID（复合表上方列）',
     `allocation`     DECIMAL(5,2)  NOT NULL DEFAULT 0.00 COMMENT '投入人力',
-    `created_at`     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY `uk_prj_period_dept_role` (`sub_project_id`, `period`, `department`, `role`),
+    `created_at`     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`     TIMESTAMP     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_mp_cell_project_period_column` (`sub_project_id`, `period`, `column_id`),
     KEY `idx_period` (`period`),
-    KEY `idx_dept` (`department`),
-    CONSTRAINT `fk_ma_project` FOREIGN KEY (`sub_project_id`) REFERENCES `sub_projects`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='部门项目人力（行存）';
+    KEY `idx_column` (`column_id`),
+    CONSTRAINT `fk_mp_cell_project` FOREIGN KEY (`sub_project_id`) REFERENCES `sub_projects`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_mp_cell_column` FOREIGN KEY (`column_id`) REFERENCES `manpower_columns`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='人力登记月度单元格事实表';
 
 CREATE TABLE IF NOT EXISTS `project_risks` (
     `id`              INT AUTO_INCREMENT PRIMARY KEY,

@@ -2446,10 +2446,31 @@
       const out = [];
       g.forEach(function (group) {
         const name = String((group && group.name) || '').trim() || '部门分组';
-        const depts = Array.isArray(group && group.depts)
-          ? group.depts.map(function (d) { return String(d || '').trim() || '子部门'; }).filter(Boolean)
-          : [];
-        if (depts.length) out.push({ name: name, depts: depts.slice() });
+        let depts = [];
+        let columnIds = [];
+        if (Array.isArray(group && group.columns)) {
+          group.columns.forEach(function (col) {
+            const colName = String((col && col.name) || '').trim() || '子部门';
+            if (!colName) return;
+            depts.push(colName);
+            columnIds.push(col && col.id ? Number(col.id) : null);
+          });
+        } else if (Array.isArray(group && group.depts)) {
+          depts = group.depts.map(function (d) { return String(d || '').trim() || '子部门'; }).filter(Boolean);
+          const ids = Array.isArray(group && group.columnIds) ? group.columnIds : [];
+          columnIds = depts.map(function (_, i) {
+            var id = ids[i] != null ? Number(ids[i]) : null;
+            return id && !isNaN(id) ? id : null;
+          });
+        }
+        if (depts.length) {
+          out.push({
+            id: group && group.id ? Number(group.id) : null,
+            name: name,
+            depts: depts.slice(),
+            columnIds: columnIds.slice()
+          });
+        }
       });
       return out.length ? out : defaultDeptGroups();
     }
@@ -2462,6 +2483,34 @@
       let n = 0;
       for (let i = 0; i < gi; i++) n += deptGroups[i].depts.length;
       return n + di;
+    }
+
+    function deptColumnIdAtFlatIndex(flatIdx) {
+      let n = 0;
+      for (let gi = 0; gi < deptGroups.length; gi++) {
+        const g = deptGroups[gi] || {};
+        const cols = g.depts || [];
+        for (let di = 0; di < cols.length; di++) {
+          if (n === flatIdx) {
+            const ids = Array.isArray(g.columnIds) ? g.columnIds : [];
+            const id = ids[di] != null ? Number(ids[di]) : null;
+            return id && !isNaN(id) ? id : null;
+          }
+          n++;
+        }
+      }
+      return null;
+    }
+
+    function deptGroupsForApi() {
+      return deptGroups.map(function (g) {
+        return {
+          id: g && g.id ? g.id : null,
+          name: g && g.name != null ? String(g.name) : '',
+          depts: Array.isArray(g && g.depts) ? g.depts.slice() : [],
+          columnIds: Array.isArray(g && g.columnIds) ? g.columnIds.slice() : []
+        };
+      });
     }
 
     function newManpowerRow() {
@@ -2636,7 +2685,11 @@
                 if (!p) return { name: '新子项目', manpowerByMonth: {} };
                 var mb = (p.manpowerByMonth && typeof p.manpowerByMonth === 'object')
                   ? JSON.parse(JSON.stringify(p.manpowerByMonth)) : {};
-                return { name: p.name != null ? String(p.name) : '新子项目', manpowerByMonth: mb };
+                return {
+                  name: p.name != null ? String(p.name) : '新子项目',
+                  manpowerByMonth: mb,
+                  _subProjectId: p._subProjectId
+                };
               })
             };
           })
@@ -2664,7 +2717,8 @@
                 ? JSON.parse(JSON.stringify(oldP.manpowerByMonth)) : {};
               mergedProjs.push({
                 name: phP && phP.name != null ? String(phP.name) : '新子项目',
-                manpowerByMonth: mb
+                manpowerByMonth: mb,
+                _subProjectId: phP && phP._subProjectId ? phP._subProjectId : (oldP && oldP._subProjectId)
               });
             }
           } else {
@@ -2672,7 +2726,8 @@
               return {
                 nm: op && op.name != null ? String(op.name) : '',
                 manpowerByMonth: (op && op.manpowerByMonth && typeof op.manpowerByMonth === 'object')
-                  ? JSON.parse(JSON.stringify(op.manpowerByMonth)) : {}
+                  ? JSON.parse(JSON.stringify(op.manpowerByMonth)) : {},
+                _subProjectId: op && op._subProjectId
               };
             });
             phProjs.forEach(function (phP) {
@@ -2684,8 +2739,12 @@
                   break;
                 }
               }
-              var taken = idx >= 0 ? pool.splice(idx, 1)[0] : { nm: wantName, manpowerByMonth: {} };
-              mergedProjs.push({ name: wantName, manpowerByMonth: taken.manpowerByMonth });
+              var taken = idx >= 0 ? pool.splice(idx, 1)[0] : { nm: wantName, manpowerByMonth: {}, _subProjectId: null };
+              mergedProjs.push({
+                name: wantName,
+                manpowerByMonth: taken.manpowerByMonth,
+                _subProjectId: phP && phP._subProjectId ? phP._subProjectId : taken._subProjectId
+              });
             });
           }
           mergedProjectSets.push({
@@ -4078,7 +4137,28 @@
       return -1;
     }
 
-    function mergeManpowerRowsIntoData(rows, periodKey) {
+    function findColIndexForColumnId(columnId) {
+      var want = Number(columnId);
+      if (!want || isNaN(want)) return -1;
+      var idx = 0;
+      for (var gi = 0; gi < deptGroups.length; gi++) {
+        var g = deptGroups[gi] || {};
+        var depts = g.depts || [];
+        var ids = Array.isArray(g.columnIds) ? g.columnIds : [];
+        for (var di = 0; di < depts.length; di++) {
+          var got = ids[di] != null ? Number(ids[di]) : null;
+          if (got === want) return idx;
+          idx++;
+        }
+      }
+      return -1;
+    }
+
+    function mergeManpowerRowsIntoData(payload, periodKey) {
+      var rows = Array.isArray(payload) ? payload : ((payload && Array.isArray(payload.rows)) ? payload.rows : []);
+      if (payload && !Array.isArray(payload) && Array.isArray(payload.dept_groups)) {
+        deptGroups = normalizeDeptGroups(payload.dept_groups);
+      }
       var groups = {};
       (rows || []).forEach(function (r) {
         var sid = r.sub_project_id;
@@ -4096,7 +4176,8 @@
             var arr = newManpowerRow();
             if (list && list.length) {
               list.forEach(function (r) {
-                var ix = findColIndexForDeptRole(r.department, r.role);
+                var ix = findColIndexForColumnId(r.column_id);
+                if (ix < 0) ix = findColIndexForDeptRole(r.department, r.role);
                 if (ix >= 0) arr[ix] = Number(r.allocation) || 0;
               });
             }
@@ -4141,7 +4222,13 @@
           var idx = flatDeptIndex(gi, di);
           var val = row[idx] != null ? Number(row[idx]) : 0;
           if (isNaN(val)) val = 0;
-          rows.push({ department: g.name, role: dname, allocation: val });
+          rows.push({
+            sub_project_id: p._subProjectId || null,
+            column_id: deptColumnIdAtFlatIndex(idx),
+            department: g.name,
+            role: dname,
+            allocation: val
+          });
         });
       });
       return rows;
@@ -5162,42 +5249,45 @@
       }
       try {
         var y = pmDataYear;
-        var walk = [];
+        var byPeriod = {};
         data.forEach(function (set) {
           getProgramProjectSets(set).forEach(function (ps) {
             getSubProjects(ps).forEach(function (p) {
-              if (p._subProjectId) walk.push(p);
+              if (!p._subProjectId) return;
+              var mb = p.manpowerByMonth || {};
+              Object.keys(mb).forEach(function (rawKey) {
+                var periodKey = normalizeYmSlugKey(rawKey) || rawKey;
+                if (!periodKey || String(periodKey).slice(0, 4) !== String(y)) return;
+                if (!byPeriod[periodKey]) byPeriod[periodKey] = [];
+                byPeriod[periodKey] = byPeriod[periodKey].concat(manpowerRowsFromProjectForPeriod(p, rawKey));
+              });
             });
           });
         });
-        for (var wi = 0; wi < walk.length; wi++) {
-          var p = walk[wi];
-          var mb = p.manpowerByMonth || {};
-          var keys = Object.keys(mb);
-          for (var ki = 0; ki < keys.length; ki++) {
-            var periodKey = normalizeYmSlugKey(keys[ki]) || keys[ki];
-            if (!periodKey || String(periodKey).slice(0, 4) !== String(y)) continue;
-            var rows = manpowerRowsFromProjectForPeriod(p, keys[ki]);
-            var r = await pmFetch(
-              '/api/v1/manpower-allocations?year=' +
-                y +
-                '&sub_project_id=' +
-                encodeURIComponent(String(p._subProjectId)) +
-                '&period=' +
-                encodeURIComponent(periodKey),
-              { method: 'PUT', body: JSON.stringify({ rows: rows }) }
-            );
-            if (r.status === 401) {
-              window.location.href = 'login.html';
-              return;
+        var periodKeys = Object.keys(byPeriod).sort();
+        for (var ki = 0; ki < periodKeys.length; ki++) {
+          var periodKey = periodKeys[ki];
+          var r = await pmFetch(
+            '/api/v1/manpower-allocations?year=' +
+              y +
+              '&period=' +
+              encodeURIComponent(periodKey),
+            {
+              method: 'PUT',
+              body: JSON.stringify({ dept_groups: deptGroupsForApi(), rows: byPeriod[periodKey] })
             }
-            if (!r.ok) {
-              var err = await r.json().catch(function () { return {}; });
-              alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
-              return;
-            }
+          );
+          if (r.status === 401) {
+            window.location.href = 'login.html';
+            return;
+          }
+          if (!r.ok) {
+            var err = await r.json().catch(function () { return {}; });
+            alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
+            return;
           }
         }
+        await fetchRelationalPeriodSlices();
         showSaveToast('人力登记已保存到服务器');
         setPanelEditMode('manpower', false);
       } catch (e) {
@@ -6296,7 +6386,7 @@
       const firstCol = (subPrompt != null && String(subPrompt).trim())
         ? String(subPrompt).trim()
         : '子部门1';
-      deptGroups.push({ name: String(name).trim(), depts: [firstCol] });
+      deptGroups.push({ id: null, name: String(name).trim(), depts: [firstCol], columnIds: [null] });
       data.forEach(function (set) {
         getProgramProjectSets(set).forEach(function (projectSet) {
           getSubProjects(projectSet).forEach(function (p) {
@@ -6324,6 +6414,8 @@
       const name = prompt('新子部门列名称：');
       if (!name || !String(name).trim()) return;
       g.depts.push(String(name).trim());
+      if (!Array.isArray(g.columnIds)) g.columnIds = [];
+      g.columnIds.push(null);
       const insertAt = flatDeptIndex(gi, g.depts.length - 1);
       data.forEach(function (set) {
         getProgramProjectSets(set).forEach(function (projectSet) {
@@ -6360,6 +6452,7 @@
       if (!confirm('确定删除列「' + label + '」？对应人力数据列将一并删除。')) return;
       const idx = flatDeptIndex(gi, di);
       g.depts.splice(di, 1);
+      if (Array.isArray(g.columnIds)) g.columnIds.splice(di, 1);
       data.forEach(function (set) {
         getProgramProjectSets(set).forEach(function (projectSet) {
           getSubProjects(projectSet).forEach(function (p) {
