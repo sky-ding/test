@@ -43,7 +43,6 @@
     .manpower-subtab:focus-visible,
     .risk-analysis-sort-btn:focus-visible,
     .risk-th-sort-btn:focus-visible,
-    .settings-nav-btn:focus-visible,
     .text-action:focus-visible,
     .icon-btn:focus-visible,
     .btn-add:focus-visible,
@@ -1661,46 +1660,6 @@
       align-items: flex-start;
     }
 
-    .settings-nav {
-      flex: 0 0 200px;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 6px;
-      padding: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
-
-    .settings-nav-btn {
-      display: block;
-      width: 100%;
-      text-align: left;
-      padding: 10px 14px;
-      border: none;
-      border-radius: var(--radius-sm);
-      background: transparent;
-      color: var(--text-muted);
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background 0.2s, color 0.2s;
-    }
-
-    .settings-nav-btn:hover {
-      background: var(--header-bg-sub);
-      color: var(--text);
-    }
-
-    .settings-nav-btn.active {
-      background: var(--accent-soft);
-      color: var(--accent);
-      font-weight: 600;
-    }
-
     .settings-main {
       flex: 1 1 0;
       min-width: 0;
@@ -2178,10 +2137,6 @@
   </div>
   <div id="panel-settings" class="tab-panel" role="tabpanel" aria-label="设置">
     <div class="settings-layout">
-      <nav class="settings-nav" aria-label="设置模块">
-        <button type="button" class="settings-nav-btn active" data-settings-module="perm">权限管理</button>
-        <button type="button" class="settings-nav-btn" data-settings-module="general">通用设置</button>
-      </nav>
       <div class="settings-main">
         <section id="settings-module-perm" class="settings-module active" aria-labelledby="settings-perm-heading">
           <h2 id="settings-perm-heading">权限管理</h2>
@@ -2258,22 +2213,6 @@
             </tbody>
           </table>
             </div>
-          </div>
-        </section>
-        <section id="settings-module-general" class="settings-module" aria-labelledby="settings-general-heading">
-          <h2 id="settings-general-heading">通用设置</h2>
-          <p class="settings-desc">登记数据已按<strong>年份</strong>隔离存储；切换年份会重新从服务器加载该年的项目树及当月人力/阶段切片（风险为全年列表）。</p>
-          <div class="settings-users-toolbar" style="margin-bottom:12px;flex-wrap:wrap;gap:10px;">
-            <label>数据年份
-              <select id="pm-data-year" aria-label="登记数据年份"></select>
-            </label>
-            <button type="button" class="btn-add" id="pm-btn-apply-year">应用年份并重新加载</button>
-          </div>
-          <div id="pm-tree-admin" class="settings-users-wrap" style="display:none;">
-            <h3 style="margin:12px 0 8px;">项目树（管理员）</h3>
-            <p class="settings-desc" style="margin:0 0 8px;">当前年份下无项目时，可先创建项目集，再到各登记页维护子项目集与子项目（名称修改请用接口或后续版本表单）。</p>
-            <label>新建项目集名称 <input type="text" id="pm-new-program-name" placeholder="例如：产品线 A" style="min-width:200px;"></label>
-            <button type="button" class="btn-add" id="pm-btn-create-program">创建</button>
           </div>
         </section>
       </div>
@@ -2543,6 +2482,44 @@
       weakness: '问题分析',
       nextNote: '改进计划'
     };
+
+    /** 按 pmDataYear 记住阶段/人力面板所选月份；刷新后 loadRegistryData 仍用正确 period 拉取 API */
+    var PM_PERIOD_PREFS_KEY = 'pmPeriodPrefsV1';
+    function pmLoadPeriodPrefsObj() {
+      try {
+        var raw = sessionStorage.getItem(PM_PERIOD_PREFS_KEY);
+        if (!raw) return {};
+        var o = JSON.parse(raw);
+        return o && typeof o === 'object' ? o : {};
+      } catch (e) {
+        return {};
+      }
+    }
+    function pmSavePeriodPrefsForYear(y, phaseMo, manpowerMo) {
+      try {
+        var o = pmLoadPeriodPrefsObj();
+        o[String(y)] = { p: phaseMo, m: manpowerMo };
+        sessionStorage.setItem(PM_PERIOD_PREFS_KEY, JSON.stringify(o));
+      } catch (e) {}
+    }
+    function pmApplyStoredPeriodPrefsForYear(y) {
+      var o = pmLoadPeriodPrefsObj();
+      var e = o[String(y)];
+      if (!e || typeof e !== 'object') return false;
+      var p = parseInt(e.p, 10);
+      var m = parseInt(e.m, 10);
+      var ok = false;
+      if (!isNaN(p) && p >= 1 && p <= 12) {
+        phaseSelMonth = p;
+        ok = true;
+      }
+      if (!isNaN(m) && m >= 1 && m <= 12) {
+        manpowerSelMonth = m;
+        ok = true;
+      }
+      manpowerSelQuarter = Math.floor((manpowerSelMonth - 1) / 3);
+      return ok;
+    }
 
     function getProgramProjectSets(set) {
       return (set && Array.isArray(set.projectSets)) ? set.projectSets : [];
@@ -3285,7 +3262,6 @@
               renderTable();
               renderPhaseTable();
               renderRiskTable();
-              pmFillYearSelect();
             });
             return;
           }
@@ -3302,7 +3278,6 @@
               renderTable();
               renderPhaseTable();
               renderRiskTable();
-              pmFillYearSelect();
             });
             return;
           }
@@ -3319,7 +3294,6 @@
               renderTable();
               renderPhaseTable();
               renderRiskTable();
-              pmFillYearSelect();
             });
             return;
           }
@@ -4037,20 +4011,6 @@
     /** 已从 /api/v1/programs/tree 加载（已登录且非离线） */
     var pmUsesRelationalRegistry = false;
 
-    function pmFillYearSelect() {
-      var sel = document.getElementById('pm-data-year');
-      if (!sel) return;
-      var y0 = new Date().getFullYear();
-      sel.innerHTML = '';
-      for (var dy = y0 - 2; dy <= y0 + 6; dy++) {
-        var o = document.createElement('option');
-        o.value = String(dy);
-        o.textContent = String(dy);
-        if (dy === pmDataYear) o.selected = true;
-        sel.appendChild(o);
-      }
-    }
-
     function buildSkeletonFromProgramTree(treeJson) {
       var programs = (treeJson && treeJson.programs) || [];
       var phaseDataOut = [];
@@ -4679,10 +4639,6 @@
       }
       const adminWrap = document.getElementById('settings-users-admin');
       const viewerNote = document.getElementById('settings-users-viewer-note');
-      const treeAd = document.getElementById('pm-tree-admin');
-      if (treeAd) {
-        treeAd.style.display = window.pmIsAdmin && window.pmIsAdmin() ? '' : 'none';
-      }
       if (adminWrap && viewerNote) {
         if (window.pmIsAdmin && window.pmIsAdmin()) {
           adminWrap.style.display = '';
@@ -4847,85 +4803,10 @@
     }
 
     function initSettingsPanelOnce() {
-      const nav = document.querySelector('.settings-nav');
-      if (!nav || nav._pmWired) return;
-      nav._pmWired = true;
-      nav.querySelectorAll('.settings-nav-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          const mod = btn.getAttribute('data-settings-module');
-          if (!mod) return;
-          nav.querySelectorAll('.settings-nav-btn').forEach(function (b) {
-            b.classList.toggle('active', b === btn);
-          });
-          document.querySelectorAll('.settings-module').forEach(function (sec) {
-            sec.classList.toggle('active', sec.id === 'settings-module-' + mod);
-          });
-          scrollMainToTop();
-        });
-      });
+      if (window._pmSettingsPanelWired) return;
+      window._pmSettingsPanelWired = true;
       bindPmLogoutButtons();
       updateSettingsPanelRoleUi();
-      pmWireRegistrySettingsOnce();
-    }
-
-    function pmWireRegistrySettingsOnce() {
-      if (window._pmRegistrySettingsWired) return;
-      window._pmRegistrySettingsWired = true;
-      pmFillYearSelect();
-      var sel = document.getElementById('pm-data-year');
-      if (sel) {
-        sel.addEventListener('change', function () {
-          var v = parseInt(sel.value, 10);
-          if (!isNaN(v)) pmDataYear = v;
-        });
-      }
-      var btn = document.getElementById('pm-btn-apply-year');
-      if (btn) {
-        btn.addEventListener('click', async function () {
-          var s = document.getElementById('pm-data-year');
-          var v = parseInt((s && s.value) || String(pmDataYear), 10);
-          if (isNaN(v) || v < 2000 || v > 2099) return;
-          pmDataYear = v;
-          try {
-            await loadRegistryData();
-            renderTable();
-            renderPhaseTable();
-            renderRiskTable();
-            pmFillYearSelect();
-          } catch (e) {}
-        });
-      }
-      var cbtn = document.getElementById('pm-btn-create-program');
-      if (cbtn) {
-        cbtn.addEventListener('click', async function () {
-          if (!requireAdminOrAlert()) return;
-          var ne = document.getElementById('pm-new-program-name');
-          var nm = ne && ne.value ? String(ne.value).trim() : '';
-          if (!nm) {
-            alert('请输入项目集名称');
-            return;
-          }
-          try {
-            var r = await pmFetch('/api/v1/programs', {
-              method: 'POST',
-              body: JSON.stringify({ year: pmDataYear, name: nm, sort_order: 0 })
-            });
-            if (!r.ok) {
-              var err = await r.json().catch(function () { return {}; });
-              alert(err.detail || '创建失败');
-              return;
-            }
-            if (ne) ne.value = '';
-            await loadRegistryData();
-            renderTable();
-            renderPhaseTable();
-            renderRiskTable();
-            showSaveToast('已创建项目集');
-          } catch (e) {
-            alert('创建失败');
-          }
-        });
-      }
     }
 
     function escapeHtml(s) {
@@ -6047,7 +5928,6 @@
                 renderPhaseTable();
                 renderTable();
                 renderRiskTable();
-                pmFillYearSelect();
               });
               return;
             }
@@ -6960,7 +6840,6 @@
       try {
         await loadRegistryData();
         loadAppSettings();
-        pmFillYearSelect();
         initManpowerTimeUi();
         initPhaseTimeUi();
         initRiskAnalysisUi();
