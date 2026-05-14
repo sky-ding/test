@@ -2660,7 +2660,11 @@
                 if (!p) return { name: '新子项目', manpowerByMonth: {} };
                 var mb = (p.manpowerByMonth && typeof p.manpowerByMonth === 'object')
                   ? JSON.parse(JSON.stringify(p.manpowerByMonth)) : {};
-                return { name: p.name != null ? String(p.name) : '新子项目', manpowerByMonth: mb };
+                return {
+                  name: p.name != null ? String(p.name) : '新子项目',
+                  manpowerByMonth: mb,
+                  _subProjectId: p._subProjectId
+                };
               })
             };
           })
@@ -2688,7 +2692,8 @@
                 ? JSON.parse(JSON.stringify(oldP.manpowerByMonth)) : {};
               mergedProjs.push({
                 name: phP && phP.name != null ? String(phP.name) : '新子项目',
-                manpowerByMonth: mb
+                manpowerByMonth: mb,
+                _subProjectId: phP && phP._subProjectId ? phP._subProjectId : oldP && oldP._subProjectId
               });
             }
           } else {
@@ -2696,7 +2701,8 @@
               return {
                 nm: op && op.name != null ? String(op.name) : '',
                 manpowerByMonth: (op && op.manpowerByMonth && typeof op.manpowerByMonth === 'object')
-                  ? JSON.parse(JSON.stringify(op.manpowerByMonth)) : {}
+                  ? JSON.parse(JSON.stringify(op.manpowerByMonth)) : {},
+                _subProjectId: op && op._subProjectId
               };
             });
             phProjs.forEach(function (phP) {
@@ -2708,18 +2714,24 @@
                   break;
                 }
               }
-              var taken = idx >= 0 ? pool.splice(idx, 1)[0] : { nm: wantName, manpowerByMonth: {} };
-              mergedProjs.push({ name: wantName, manpowerByMonth: taken.manpowerByMonth });
+              var taken = idx >= 0 ? pool.splice(idx, 1)[0] : { nm: wantName, manpowerByMonth: {}, _subProjectId: null };
+              mergedProjs.push({
+                name: wantName,
+                manpowerByMonth: taken.manpowerByMonth,
+                _subProjectId: phP && phP._subProjectId ? phP._subProjectId : taken._subProjectId
+              });
             });
           }
           mergedProjectSets.push({
             name: phProjectSet && phProjectSet.name != null ? String(phProjectSet.name) : '子项目集',
-            subProjects: mergedProjs
+            subProjects: mergedProjs,
+            _subProgramId: phProjectSet && phProjectSet._subProgramId
           });
         });
         next.push({
           name: phSet.name != null ? String(phSet.name) : '项目集',
-          projectSets: mergedProjectSets
+          projectSets: mergedProjectSets,
+          _programId: phSet._programId
         });
       });
       data = next;
@@ -4034,11 +4046,11 @@
             phProjs.push({ name: sj.name || '子项目', phaseByMonth: {}, _subProjectId: sid });
             manProjs.push({ name: sj.name || '子项目', manpowerByMonth: {}, _subProjectId: sid });
           });
-          phSets.push({ name: spg.name || '子项目集', subProjects: phProjs });
-          manSets.push({ name: spg.name || '子项目集', subProjects: manProjs });
+          phSets.push({ name: spg.name || '子项目集', subProjects: phProjs, _subProgramId: spg.id });
+          manSets.push({ name: spg.name || '子项目集', subProjects: manProjs, _subProgramId: spg.id });
         });
-        phaseDataOut.push({ name: prog.name || '项目集', projectSets: phSets });
-        dataOut.push({ name: prog.name || '项目集', projectSets: manSets });
+        phaseDataOut.push({ name: prog.name || '项目集', projectSets: phSets, _programId: prog.id });
+        dataOut.push({ name: prog.name || '项目集', projectSets: manSets, _programId: prog.id });
       });
       return { phaseData: phaseDataOut, data: dataOut };
     }
@@ -4070,6 +4082,146 @@
         }
       }
       return null;
+    }
+
+    function firstSubProjectMetaInTree() {
+      if (!Array.isArray(phaseData)) return null;
+      for (var si = 0; si < phaseData.length; si++) {
+        var set = phaseData[si];
+        var sets = getProgramProjectSets(set);
+        for (var pi = 0; pi < sets.length; pi++) {
+          var ps = sets[pi];
+          var projs = getSubProjects(ps);
+          for (var ji = 0; ji < projs.length; ji++) {
+            var p = projs[ji];
+            if (p && p._subProjectId) {
+              return {
+                id: p._subProjectId,
+                label: (set.name || '') + ' / ' + (ps.name || '') + ' / ' + (p.name || '')
+              };
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    function encodeYearQuery() {
+      return 'year=' + encodeURIComponent(String(pmDataYear));
+    }
+
+    async function pmJsonRequest(path, options) {
+      var r = await pmFetch(path, options || {});
+      if (r.status === 401) {
+        window.location.href = 'login.html';
+        throw new Error('unauthorized');
+      }
+      if (!r.ok) {
+        var err = await r.json().catch(function () { return {}; });
+        var detail = err.detail != null ? err.detail : '保存失败';
+        alert(detail + '（HTTP ' + r.status + '）');
+        throw new Error('HTTP ' + r.status);
+      }
+      if (r.status === 204) return null;
+      return await r.json();
+    }
+
+    function findProgramNodeById(tree, programId) {
+      var programs = (tree && tree.programs) || [];
+      for (var i = 0; i < programs.length; i++) {
+        if (programs[i].id === programId) return programs[i];
+      }
+      return null;
+    }
+
+    function findLastSubProgramNode(programNode) {
+      var arr = (programNode && programNode.sub_programs) || [];
+      return arr.length ? arr[arr.length - 1] : null;
+    }
+
+    async function reloadRegistryAfterProjectTreeChange() {
+      await loadRegistryData();
+      renderPhaseTable();
+      renderTable();
+      renderRiskTable();
+    }
+
+    async function createRelationalProgramWithDefaultLeaf(programName, sortOrder) {
+      var program = await pmJsonRequest('/api/v1/programs', {
+        method: 'POST',
+        body: JSON.stringify({ year: pmDataYear, name: programName, sort_order: sortOrder || 0 })
+      });
+      var tree = await pmJsonRequest(
+        '/api/v1/programs/' + encodeURIComponent(String(program.id)) + '/sub-programs?' + encodeYearQuery(),
+        { method: 'POST', body: JSON.stringify({ name: '默认子项目集', sort_order: 0 }) }
+      );
+      var progNode = findProgramNodeById(tree, program.id);
+      var subProgram = findLastSubProgramNode(progNode);
+      if (!subProgram || !subProgram.id) throw new Error('sub_program not created');
+      await pmJsonRequest(
+        '/api/v1/programs/sub-programs/' + encodeURIComponent(String(subProgram.id)) + '/sub-projects?' + encodeYearQuery(),
+        { method: 'POST', body: JSON.stringify({ name: '新子项目', sort_order: 0 }) }
+      );
+    }
+
+    async function createRelationalSubProgramWithDefaultLeaf(programId, subProgramName, sortOrder) {
+      var tree = await pmJsonRequest(
+        '/api/v1/programs/' + encodeURIComponent(String(programId)) + '/sub-programs?' + encodeYearQuery(),
+        { method: 'POST', body: JSON.stringify({ name: subProgramName, sort_order: sortOrder || 0 }) }
+      );
+      var progNode = findProgramNodeById(tree, programId);
+      var subProgram = findLastSubProgramNode(progNode);
+      if (!subProgram || !subProgram.id) throw new Error('sub_program not created');
+      await pmJsonRequest(
+        '/api/v1/programs/sub-programs/' + encodeURIComponent(String(subProgram.id)) + '/sub-projects?' + encodeYearQuery(),
+        { method: 'POST', body: JSON.stringify({ name: '新子项目', sort_order: 0 }) }
+      );
+    }
+
+    async function createRelationalSubProject(subProgramId, projectName, sortOrder) {
+      await pmJsonRequest(
+        '/api/v1/programs/sub-programs/' + encodeURIComponent(String(subProgramId)) + '/sub-projects?' + encodeYearQuery(),
+        { method: 'POST', body: JSON.stringify({ name: projectName, sort_order: sortOrder || 0 }) }
+      );
+    }
+
+    async function patchRelationalProgram(programId, name) {
+      await pmJsonRequest('/api/v1/programs/' + encodeURIComponent(String(programId)) + '?' + encodeYearQuery(), {
+        method: 'PATCH',
+        body: JSON.stringify({ name: name })
+      });
+    }
+
+    async function patchRelationalSubProgram(subProgramId, name) {
+      await pmJsonRequest('/api/v1/programs/sub-programs/' + encodeURIComponent(String(subProgramId)) + '?' + encodeYearQuery(), {
+        method: 'PATCH',
+        body: JSON.stringify({ name: name })
+      });
+    }
+
+    async function patchRelationalSubProject(subProjectId, name) {
+      await pmJsonRequest('/api/v1/programs/sub-projects/' + encodeURIComponent(String(subProjectId)) + '?' + encodeYearQuery(), {
+        method: 'PATCH',
+        body: JSON.stringify({ name: name })
+      });
+    }
+
+    async function deleteRelationalProgram(programId) {
+      await pmJsonRequest('/api/v1/programs/' + encodeURIComponent(String(programId)) + '?' + encodeYearQuery(), {
+        method: 'DELETE'
+      });
+    }
+
+    async function deleteRelationalSubProgram(subProgramId) {
+      await pmJsonRequest('/api/v1/programs/sub-programs/' + encodeURIComponent(String(subProgramId)) + '?' + encodeYearQuery(), {
+        method: 'DELETE'
+      });
+    }
+
+    async function deleteRelationalSubProject(subProjectId) {
+      await pmJsonRequest('/api/v1/programs/sub-projects/' + encodeURIComponent(String(subProjectId)) + '?' + encodeYearQuery(), {
+        method: 'DELETE'
+      });
     }
 
     /** 将 v1 矩阵表头写入 deptGroups，并保留与 depts 对齐的 _columnIds（供保存与列对齐）。 */
@@ -5229,11 +5381,14 @@
         }
         for (var i = 0; i < riskRows.length; i++) {
           var row = riskRows[i];
-          var sid = row._subProjectId || firstSubProjectIdInTree();
+          var meta = row._subProjectId ? null : firstSubProjectMetaInTree();
+          var sid = row._subProjectId || (meta && meta.id);
           if (!sid) {
-            alert('请先在「设置」中为该年创建项目树，或为每条风险指定所属子项目。');
+            alert('请先在项目阶段状态或部门项目人力登记页创建项目树，保存成功后再登记风险。');
             return;
           }
+          row._subProjectId = sid;
+          if (meta && !row.project) row.project = meta.label;
           var patchBody = {
             risk_category: row.category,
             risk_source: row.source,
@@ -5404,11 +5559,13 @@
     function addRiskRow() {
       if (!requireAdminOrAlert()) return;
       var prev = riskRows.length ? riskRows[riskRows.length - 1] : null;
-      var sid = prev && prev._subProjectId ? prev._subProjectId : firstSubProjectIdInTree();
+      var meta = prev && prev._subProjectId ? null : firstSubProjectMetaInTree();
+      var sid = prev && prev._subProjectId ? prev._subProjectId : meta && meta.id;
+      var nameMap = subProjectNameMapFromTree();
       riskRows.push({
         category: '',
         source: '',
-        project: '',
+        project: sid ? (nameMap[sid] || (meta ? meta.label : '')) : '',
         issue: '',
         solution: '',
         level: '',
@@ -5873,10 +6030,28 @@
       });
     }
 
-    function addPhaseProjectSet(setIdx) {
+    async function addPhaseProjectSet(setIdx) {
       if (!requireAdminOrAlert()) return;
       var name = prompt(setIdx == null ? '输入新项目集的名称：' : '输入新子项目集的名称：');
       if (name && String(name).trim()) {
+        if (pmUsesRelationalRegistry) {
+          try {
+            if (setIdx == null) {
+              await createRelationalProgramWithDefaultLeaf(String(name).trim(), phaseData.length);
+            } else {
+              var parent = phaseData[setIdx];
+              if (!parent || !parent._programId) {
+                alert('项目集尚未同步到服务器，请刷新后重试。');
+                return;
+              }
+              await createRelationalSubProgramWithDefaultLeaf(parent._programId, String(name).trim(), getProgramProjectSets(parent).length);
+            }
+            await reloadRegistryAfterProjectTreeChange();
+          } catch (e) {
+            console.warn('[PM-tool] addPhaseProjectSet failed', e);
+          }
+          return;
+        }
         var newProj = { name: '新子项目', phaseByMonth: {} };
         getPhaseMonthSlice(newProj, phaseSelYear, phaseSelMonth);
         if (setIdx == null) {
@@ -5896,10 +6071,24 @@
       }
     }
 
-    function addPhaseProject(setIdx, projectSetIdx) {
+    async function addPhaseProject(setIdx, projectSetIdx) {
       if (!requireAdminOrAlert()) return;
       var name = prompt('输入新子项目名称：');
       if (name && String(name).trim()) {
+        if (pmUsesRelationalRegistry) {
+          try {
+            var relProjectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+            if (!relProjectSet || !relProjectSet._subProgramId) {
+              alert('子项目集尚未同步到服务器，请刷新后重试。');
+              return;
+            }
+            await createRelationalSubProject(relProjectSet._subProgramId, String(name).trim(), getSubProjects(relProjectSet).length);
+            await reloadRegistryAfterProjectTreeChange();
+          } catch (e) {
+            console.warn('[PM-tool] addPhaseProject failed', e);
+          }
+          return;
+        }
         var newProj = { name: String(name).trim(), phaseByMonth: {} };
         getPhaseMonthSlice(newProj, phaseSelYear, phaseSelMonth);
         var projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
@@ -5912,37 +6101,76 @@
       }
     }
 
-    function editPhaseSetName(setIdx) {
+    async function editPhaseSetName(setIdx) {
       if (!requireAdminOrAlert()) return;
       var set = phaseData[setIdx];
       if (!set) return;
       var name = prompt('输入新的项目集名称：', set.name);
       if (name != null && String(name).trim()) {
+        if (pmUsesRelationalRegistry) {
+          if (!set._programId) {
+            alert('项目集尚未同步到服务器，请刷新后重试。');
+            return;
+          }
+          try {
+            await patchRelationalProgram(set._programId, String(name).trim());
+            await reloadRegistryAfterProjectTreeChange();
+          } catch (e) {
+            console.warn('[PM-tool] editPhaseSetName failed', e);
+          }
+          return;
+        }
         set.name = String(name).trim();
         renderPhaseTable();
         renderTable();
       }
     }
 
-    function editPhaseProjectSetName(setIdx, projectSetIdx) {
+    async function editPhaseProjectSetName(setIdx, projectSetIdx) {
       if (!requireAdminOrAlert()) return;
       var projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
       if (!projectSet) return;
       var name = prompt('输入新的子项目集名称：', projectSet.name);
       if (name != null && String(name).trim()) {
+        if (pmUsesRelationalRegistry) {
+          if (!projectSet._subProgramId) {
+            alert('子项目集尚未同步到服务器，请刷新后重试。');
+            return;
+          }
+          try {
+            await patchRelationalSubProgram(projectSet._subProgramId, String(name).trim());
+            await reloadRegistryAfterProjectTreeChange();
+          } catch (e) {
+            console.warn('[PM-tool] editPhaseProjectSetName failed', e);
+          }
+          return;
+        }
         projectSet.name = String(name).trim();
         renderPhaseTable();
         renderTable();
       }
     }
 
-    function editPhaseProjectName(setIdx, projectSetIdx, projIdx) {
+    async function editPhaseProjectName(setIdx, projectSetIdx, projIdx) {
       if (!requireAdminOrAlert()) return;
       var projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
       var proj = projectSet && getSubProjects(projectSet)[projIdx];
       if (!proj) return;
       var name = prompt('输入新的子项目名称：', proj.name);
       if (name != null && String(name).trim()) {
+        if (pmUsesRelationalRegistry) {
+          if (!proj._subProjectId) {
+            alert('子项目尚未同步到服务器，请刷新后重试。');
+            return;
+          }
+          try {
+            await patchRelationalSubProject(proj._subProjectId, String(name).trim());
+            await reloadRegistryAfterProjectTreeChange();
+          } catch (e) {
+            console.warn('[PM-tool] editPhaseProjectName failed', e);
+          }
+          return;
+        }
         proj.name = String(name).trim();
         renderPhaseTable();
         renderTable();
@@ -6679,33 +6907,59 @@
     }
 
     // 编辑项目集名称（以阶段表为准，同步到人力表）
-    function editSetName(setIdx) {
+    async function editSetName(setIdx) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
       const set = phaseData[setIdx];
       if (!set) return;
       const name = prompt('输入新的项目集名称：', set.name);
       if (name && name.trim()) {
+        if (pmUsesRelationalRegistry) {
+          if (!set._programId) {
+            alert('项目集尚未同步到服务器，请刷新后重试。');
+            return;
+          }
+          try {
+            await patchRelationalProgram(set._programId, name.trim());
+            await reloadRegistryAfterProjectTreeChange();
+          } catch (e) {
+            console.warn('[PM-tool] editSetName failed', e);
+          }
+          return;
+        }
         set.name = name.trim();
         renderPhaseTable();
         renderTable();
       }
     }
     // 编辑项目名称（以阶段表为准，同步到人力表）
-    function editProjectSetName(setIdx, projectSetIdx) {
+    async function editProjectSetName(setIdx, projectSetIdx) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
       const projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
       if (!projectSet) return;
       const name = prompt('输入新的子项目集名称：', projectSet.name);
       if (name && name.trim()) {
+        if (pmUsesRelationalRegistry) {
+          if (!projectSet._subProgramId) {
+            alert('子项目集尚未同步到服务器，请刷新后重试。');
+            return;
+          }
+          try {
+            await patchRelationalSubProgram(projectSet._subProgramId, name.trim());
+            await reloadRegistryAfterProjectTreeChange();
+          } catch (e) {
+            console.warn('[PM-tool] editProjectSetName failed', e);
+          }
+          return;
+        }
         projectSet.name = name.trim();
         renderPhaseTable();
         renderTable();
       }
     }
     // 编辑子项目名称（以阶段表为准，同步到人力表）
-    function editProjectName(setIdx, projectSetIdx, projIdx) {
+    async function editProjectName(setIdx, projectSetIdx, projIdx) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
       const projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
@@ -6713,17 +6967,48 @@
       if (!proj) return;
       const name = prompt('输入新的子项目名称：', proj.name);
       if (name && name.trim()) {
+        if (pmUsesRelationalRegistry) {
+          if (!proj._subProjectId) {
+            alert('子项目尚未同步到服务器，请刷新后重试。');
+            return;
+          }
+          try {
+            await patchRelationalSubProject(proj._subProjectId, name.trim());
+            await reloadRegistryAfterProjectTreeChange();
+          } catch (e) {
+            console.warn('[PM-tool] editProjectName failed', e);
+          }
+          return;
+        }
         proj.name = name.trim();
         renderPhaseTable();
         renderTable();
       }
     }
     // 新增项目集（写入阶段表并同步人力）
-    function addProjectSet(setIdx) {
+    async function addProjectSet(setIdx) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
       const name = prompt(setIdx == null ? '输入新项目集的名称：' : '输入新子项目集的名称：');
       if (name && name.trim()) {
+        if (pmUsesRelationalRegistry) {
+          try {
+            if (setIdx == null) {
+              await createRelationalProgramWithDefaultLeaf(name.trim(), phaseData.length);
+            } else {
+              const parent = phaseData[setIdx];
+              if (!parent || !parent._programId) {
+                alert('项目集尚未同步到服务器，请刷新后重试。');
+                return;
+              }
+              await createRelationalSubProgramWithDefaultLeaf(parent._programId, name.trim(), getProgramProjectSets(parent).length);
+            }
+            await reloadRegistryAfterProjectTreeChange();
+          } catch (e) {
+            console.warn('[PM-tool] addProjectSet failed', e);
+          }
+          return;
+        }
         const newProj = { name: '新子项目', phaseByMonth: {} };
         getPhaseMonthSlice(newProj, phaseSelYear, phaseSelMonth);
         if (setIdx == null) {
@@ -6743,11 +7028,25 @@
       }
     }
     // 新增项目（写入阶段表并同步人力）
-    function addProject(setIdx, projectSetIdx) {
+    async function addProject(setIdx, projectSetIdx) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
       const name = prompt('输入新子项目名称：');
       if (name && name.trim()) {
+        if (pmUsesRelationalRegistry) {
+          try {
+            const relProjectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
+            if (!relProjectSet || !relProjectSet._subProgramId) {
+              alert('子项目集尚未同步到服务器，请刷新后重试。');
+              return;
+            }
+            await createRelationalSubProject(relProjectSet._subProgramId, name.trim(), getSubProjects(relProjectSet).length);
+            await reloadRegistryAfterProjectTreeChange();
+          } catch (e) {
+            console.warn('[PM-tool] addProject failed', e);
+          }
+          return;
+        }
         const newProj = { name: name.trim(), phaseByMonth: {} };
         getPhaseMonthSlice(newProj, phaseSelYear, phaseSelMonth);
         const projectSet = phaseData[setIdx] && getProgramProjectSets(phaseData[setIdx])[projectSetIdx];
@@ -6815,37 +7114,79 @@
       }
       modalFocusReturn = null;
     }
-    function confirmDelete() {
+    async function confirmDelete() {
       if (!delCtx) return;
       if (!requireAdminOrAlert()) {
         closeModal();
         return;
       }
-      const kind = delCtx.type;
+      const ctx = delCtx;
+      const kind = ctx.type;
       if ((kind === 'set' || kind === 'projectSet' || kind === 'project') && !requireManpowerMonthViewForStructure()) {
         closeModal();
         return;
       }
+      if (pmUsesRelationalRegistry && (kind === 'set' || kind === 'projectSet' || kind === 'project')) {
+        try {
+          const set = phaseData[ctx.setIdx];
+          const projectSets = getProgramProjectSets(set);
+          if (kind === 'set') {
+            if (!set || !set._programId) throw new Error('program id missing');
+            await deleteRelationalProgram(set._programId);
+          } else if (kind === 'projectSet') {
+            const projectSet = projectSets[ctx.projectSetIdx];
+            if (!projectSet) throw new Error('sub_program missing');
+            if (projectSets.length <= 1) {
+              if (!set || !set._programId) throw new Error('program id missing');
+              await deleteRelationalProgram(set._programId);
+            } else {
+              if (!projectSet._subProgramId) throw new Error('sub_program id missing');
+              await deleteRelationalSubProgram(projectSet._subProgramId);
+            }
+          } else if (kind === 'project') {
+            const projectSet = projectSets[ctx.projectSetIdx];
+            const projs = getSubProjects(projectSet);
+            const proj = projs[ctx.projIdx];
+            if (!proj) throw new Error('sub_project missing');
+            if (projs.length <= 1 && projectSets.length <= 1) {
+              if (!set || !set._programId) throw new Error('program id missing');
+              await deleteRelationalProgram(set._programId);
+            } else if (projs.length <= 1) {
+              if (!projectSet || !projectSet._subProgramId) throw new Error('sub_program id missing');
+              await deleteRelationalSubProgram(projectSet._subProgramId);
+            } else {
+              if (!proj._subProjectId) throw new Error('sub_project id missing');
+              await deleteRelationalSubProject(proj._subProjectId);
+            }
+          }
+          closeModal();
+          await reloadRegistryAfterProjectTreeChange();
+        } catch (e) {
+          console.warn('[PM-tool] confirmDelete relational project tree failed', e);
+          alert('项目树删除失败，请刷新后重试。');
+        }
+        return;
+      }
       if (kind === 'set') {
-        phaseData.splice(delCtx.setIdx, 1);
+        phaseData.splice(ctx.setIdx, 1);
       }
       else if (kind === 'projectSet') {
-        phaseData[delCtx.setIdx].projectSets.splice(delCtx.projectSetIdx, 1);
-        if (phaseData[delCtx.setIdx].projectSets.length === 0) {
-          phaseData.splice(delCtx.setIdx, 1);
+        phaseData[ctx.setIdx].projectSets.splice(ctx.projectSetIdx, 1);
+        if (phaseData[ctx.setIdx].projectSets.length === 0) {
+          phaseData.splice(ctx.setIdx, 1);
         }
       }
       else if (kind === 'project') {
-        phaseData[delCtx.setIdx].projectSets[delCtx.projectSetIdx].subProjects.splice(delCtx.projIdx, 1);
-        if (phaseData[delCtx.setIdx].projectSets[delCtx.projectSetIdx].subProjects.length === 0) {
-          phaseData[delCtx.setIdx].projectSets.splice(delCtx.projectSetIdx, 1);
+        phaseData[ctx.setIdx].projectSets[ctx.projectSetIdx].subProjects.splice(ctx.projIdx, 1);
+        if (phaseData[ctx.setIdx].projectSets[ctx.projectSetIdx].subProjects.length === 0) {
+          phaseData[ctx.setIdx].projectSets.splice(ctx.projectSetIdx, 1);
         }
-        if (phaseData[delCtx.setIdx].projectSets.length === 0) {
-          phaseData.splice(delCtx.setIdx, 1);
+        if (phaseData[ctx.setIdx].projectSets.length === 0) {
+          phaseData.splice(ctx.setIdx, 1);
         }
       }
       else if (kind === 'risk') {
-        riskRows.splice(delCtx.riskIdx, 1);
+        riskRows.splice(ctx.riskIdx, 1);
       }
       closeModal();
       if (kind === 'risk') renderRiskTable();
