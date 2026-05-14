@@ -4844,8 +4844,8 @@
         var editing = adm && !!panelEditMode[cfg.panel];
         if (toggleBtn) {
           toggleBtn.style.display = adm ? '' : 'none';
-          toggleBtn.textContent = editing ? '完成编辑' : '编辑';
-          toggleBtn.title = editing ? '退出编辑模式，回到简洁查看态' : '进入编辑模式后显示增删改与保存按钮';
+          toggleBtn.textContent = editing ? '退出编辑' : '编辑';
+          toggleBtn.title = editing ? '退出编辑模式，不保存当前修改；如需保存请点击保存' : '进入编辑模式后显示增删改与保存按钮';
         }
         document.querySelectorAll(cfg.editSelector).forEach(function (btn) {
           btn.style.display = editing ? '' : 'none';
