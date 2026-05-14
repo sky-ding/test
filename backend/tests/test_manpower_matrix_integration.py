@@ -57,15 +57,20 @@ def client(monkeypatch: pytest.MonkeyPatch):
     app.dependency_overrides.clear()
 
 
-def _create_sub_project(client) -> int:
-    y = 2035
-    r = client.post("/api/v1/programs", json={"year": y, "name": "ProgMatrixTest"})
+def _create_project_tree(
+    client,
+    y: int = 2035,
+    program_name: str = "ProgMatrixTest",
+    sub_program_name: str = "SetA",
+    sub_project_name: str = "Leaf1",
+) -> dict[str, int]:
+    r = client.post("/api/v1/programs", json={"year": y, "name": program_name})
     assert r.status_code == 201, r.text
     program_id = r.json()["id"]
 
     r2 = client.post(
         f"/api/v1/programs/{program_id}/sub-programs?year={y}",
-        json={"name": "SetA"},
+        json={"name": sub_program_name},
     )
     assert r2.status_code == 201, r2.text
     tree = r2.json()
@@ -73,11 +78,20 @@ def _create_sub_project(client) -> int:
 
     r3 = client.post(
         f"/api/v1/programs/sub-programs/{sub_program_id}/sub-projects?year={y}",
-        json={"name": "Leaf1"},
+        json={"name": sub_project_name},
     )
     assert r3.status_code == 201, r3.text
     tree3 = r3.json()
-    return tree3["programs"][0]["sub_programs"][0]["sub_projects"][0]["id"]
+    sub_project_id = tree3["programs"][0]["sub_programs"][0]["sub_projects"][0]["id"]
+    return {
+        "program_id": program_id,
+        "sub_program_id": sub_program_id,
+        "sub_project_id": sub_project_id,
+    }
+
+
+def _create_sub_project(client) -> int:
+    return _create_project_tree(client)["sub_project_id"]
 
 
 def test_relational_project_phase_risk_user_and_manpower_matrix_flow(client) -> None:
@@ -164,3 +178,137 @@ def test_relational_project_phase_risk_user_and_manpower_matrix_flow(client) -> 
     users = client.get("/api/v1/users")
     assert users.status_code == 200, users.text
     assert len(users.json()) >= 1
+
+
+def test_project_tree_crud_persists_and_business_routes_use_created_sub_project(client) -> None:
+    y = 2036
+    ids = _create_project_tree(
+        client,
+        y=y,
+        program_name="稳定性项目集",
+        sub_program_name="容灾子项目集",
+        sub_project_name="商城容灾子项目",
+    )
+
+    tree = client.get(f"/api/v1/programs/tree?year={y}")
+    assert tree.status_code == 200, tree.text
+    body = tree.json()
+    assert body["programs"][0]["name"] == "稳定性项目集"
+    assert body["programs"][0]["sub_programs"][0]["name"] == "容灾子项目集"
+    assert body["programs"][0]["sub_programs"][0]["sub_projects"][0]["name"] == "商城容灾子项目"
+
+    patched_program = client.patch(
+        f"/api/v1/programs/{ids['program_id']}?year={y}",
+        json={"name": "稳定性项目集-更新"},
+    )
+    assert patched_program.status_code == 200, patched_program.text
+    patched_sub_program = client.patch(
+        f"/api/v1/programs/sub-programs/{ids['sub_program_id']}?year={y}",
+        json={"name": "容灾子项目集-更新"},
+    )
+    assert patched_sub_program.status_code == 200, patched_sub_program.text
+    patched_sub_project = client.patch(
+        f"/api/v1/programs/sub-projects/{ids['sub_project_id']}?year={y}",
+        json={"name": "商城容灾子项目-更新"},
+    )
+    assert patched_sub_project.status_code == 200, patched_sub_project.text
+
+    tree_after_patch = client.get(f"/api/v1/programs/tree?year={y}")
+    assert tree_after_patch.status_code == 200, tree_after_patch.text
+    patched_tree = tree_after_patch.json()["programs"][0]
+    assert patched_tree["name"] == "稳定性项目集-更新"
+    assert patched_tree["sub_programs"][0]["name"] == "容灾子项目集-更新"
+    assert patched_tree["sub_programs"][0]["sub_projects"][0]["name"] == "商城容灾子项目-更新"
+
+    group = client.post(
+        "/api/v1/manpower-department-groups",
+        json={"year": y, "name": "研发交付", "first_column_name": "后端"},
+    )
+    assert group.status_code == 201, group.text
+    column_id = group.json()["columns"][0]["id"]
+    manpower = client.put(
+        f"/api/v1/manpower-allocations?year={y}&period={y}-05",
+        json={
+            "cells": [
+                {
+                    "sub_project_id": ids["sub_project_id"],
+                    "column_id": column_id,
+                    "allocation": "3.50",
+                }
+            ]
+        },
+    )
+    assert manpower.status_code == 200, manpower.text
+    assert manpower.json()["cells"][0]["sub_project_id"] == ids["sub_project_id"]
+
+    phase = client.put(
+        f"/api/v1/phase-assessments?year={y}",
+        json={
+            "sub_project_id": ids["sub_project_id"],
+            "period": f"{y}-05",
+            "goal": "完成容灾演练",
+            "deliver": "已完成",
+        },
+    )
+    assert phase.status_code == 200, phase.text
+    assert phase.json()["delivery_target"] == "完成容灾演练"
+
+    risk = client.post(
+        f"/api/v1/project-risks?year={y}",
+        json={
+            "sub_project_id": ids["sub_project_id"],
+            "risk_category": "进度",
+            "risk_source": "资源",
+            "issue": "资源窗口冲突",
+            "owner": "负责人乙",
+            "status": "open",
+        },
+    )
+    assert risk.status_code == 201, risk.text
+    assert risk.json()["sub_project_id"] == ids["sub_project_id"]
+
+    deleted = client.delete(f"/api/v1/programs/{ids['program_id']}?year={y}")
+    assert deleted.status_code == 204, deleted.text
+    assert client.get(f"/api/v1/programs/tree?year={y}").json()["programs"] == []
+
+
+def test_business_routes_reject_missing_or_wrong_year_sub_project(client) -> None:
+    y = 2037
+    ids = _create_project_tree(client, y=y, program_name="YearGuard")
+    wrong_year = y + 1
+
+    missing_phase = client.put(
+        f"/api/v1/phase-assessments?year={y}",
+        json={"sub_project_id": 999999, "period": f"{y}-01", "goal": "x"},
+    )
+    assert missing_phase.status_code == 404
+
+    wrong_year_phase = client.put(
+        f"/api/v1/phase-assessments?year={wrong_year}",
+        json={"sub_project_id": ids["sub_project_id"], "period": f"{wrong_year}-01", "goal": "x"},
+    )
+    assert wrong_year_phase.status_code == 400
+
+    group = client.post(
+        "/api/v1/manpower-department-groups",
+        json={"year": y, "name": "测试组", "first_column_name": "测试列"},
+    )
+    assert group.status_code == 201, group.text
+    column_id = group.json()["columns"][0]["id"]
+    missing_manpower = client.put(
+        f"/api/v1/manpower-allocations?year={y}&period={y}-01",
+        json={"cells": [{"sub_project_id": 999999, "column_id": column_id, "allocation": "1"}]},
+    )
+    assert missing_manpower.status_code == 404
+
+    missing_risk = client.post(
+        f"/api/v1/project-risks?year={y}",
+        json={
+            "sub_project_id": 999999,
+            "risk_category": "进度",
+            "risk_source": "资源",
+            "issue": "缺少子项目",
+            "owner": "负责人丙",
+        },
+    )
+    assert missing_risk.status_code == 404
