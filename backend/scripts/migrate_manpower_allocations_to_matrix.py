@@ -23,17 +23,29 @@ BACKEND_ROOT = Path(__file__).resolve().parent.parent
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-from sqlalchemy import func, select
+from sqlalchemy import MetaData, Table, func, inspect, select
 from sqlalchemy.orm import Session
 
-from app.db import SessionLocal  # noqa: E402
+from app.db import SessionLocal, engine  # noqa: E402
 from app.models_relational import (  # noqa: E402
-    ManpowerAllocation,
     ManpowerCell,
     ManpowerColumn,
     ManpowerDepartmentGroup,
     SubProject,
 )
+
+_legacy_table: Table | None = None
+
+
+def _legacy_allocations_table() -> Table | None:
+    global _legacy_table
+    if _legacy_table is not None:
+        return _legacy_table
+    if "manpower_allocations" not in inspect(engine).get_table_names():
+        return None
+    metadata = MetaData()
+    _legacy_table = Table("manpower_allocations", metadata, autoload_with=engine)
+    return _legacy_table
 
 
 def _next_group_sort(session: Session, year: int) -> int:
@@ -82,23 +94,37 @@ def _ensure_column(session: Session, year: int, group: ManpowerDepartmentGroup, 
 
 def migrate(session: Session) -> tuple[int, int, int]:
     """Returns (new_groups, new_columns, cells_written)."""
+    ma = _legacy_allocations_table()
+    if ma is None:
+        print("legacy manpower_allocations table not found; nothing to migrate")
+        return 0, 0, 0
+
     new_groups = new_columns = 0
     cells_written = 0
 
     stmt = (
-        select(ManpowerAllocation, SubProject.year)
-        .join(SubProject, ManpowerAllocation.sub_project_id == SubProject.id)
-        .order_by(ManpowerAllocation.id)
+        select(
+            ma.c.id,
+            ma.c.sub_project_id,
+            ma.c.period,
+            ma.c.department,
+            ma.c.role,
+            ma.c.allocation,
+            SubProject.year,
+        )
+        .join(SubProject, ma.c.sub_project_id == SubProject.id)
+        .order_by(ma.c.id)
     )
     rows = session.execute(stmt).all()
 
     seen_groups: set[tuple[int, str]] = set()
     seen_cols: set[tuple[int, str, str]] = set()
 
-    for ma, year in rows:
+    for row in rows:
+        year = row.year
         year = int(year)
-        dept = (ma.department or "").strip()
-        role = (ma.role or "").strip()
+        dept = (row.department or "").strip()
+        role = (row.role or "").strip()
         if not dept or not role:
             continue
 
@@ -142,21 +168,21 @@ def migrate(session: Session) -> tuple[int, int, int]:
 
         cell = session.scalar(
             select(ManpowerCell).where(
-                ManpowerCell.sub_project_id == ma.sub_project_id,
-                ManpowerCell.period == ma.period,
+                ManpowerCell.sub_project_id == row.sub_project_id,
+                ManpowerCell.period == row.period,
                 ManpowerCell.column_id == col.id,
             )
         )
         if cell is None:
             cell = ManpowerCell(
-                sub_project_id=ma.sub_project_id,
-                period=ma.period,
+                sub_project_id=row.sub_project_id,
+                period=row.period,
                 column_id=col.id,
-                allocation=ma.allocation,
+                allocation=row.allocation,
             )
             session.add(cell)
         else:
-            cell.allocation = ma.allocation
+            cell.allocation = row.allocation
         cells_written += 1
 
     session.commit()
@@ -164,10 +190,12 @@ def migrate(session: Session) -> tuple[int, int, int]:
 
 
 def verify(session: Session) -> bool:
-    legacy = session.execute(
-        select(ManpowerAllocation.period, func.sum(ManpowerAllocation.allocation)).group_by(ManpowerAllocation.period)
-    ).all()
-    leg_map = {str(p): float(s or 0) for p, s in legacy}
+    ma = _legacy_allocations_table()
+    if ma is None:
+        leg_map: dict[str, float] = {}
+    else:
+        legacy = session.execute(select(ma.c.period, func.sum(ma.c.allocation)).group_by(ma.c.period)).all()
+        leg_map = {str(p): float(s or 0) for p, s in legacy}
 
     cell_sum = session.execute(
         select(ManpowerCell.period, func.sum(ManpowerCell.allocation)).group_by(ManpowerCell.period)

@@ -2390,6 +2390,7 @@
           : [];
         if (depts.length) {
           var item = { name: name, depts: depts.slice() };
+          if (group && group._groupId != null) item._groupId = group._groupId;
           var rawIds = group && Array.isArray(group._columnIds) ? group._columnIds : null;
           if (rawIds && rawIds.length === item.depts.length) {
             item._columnIds = rawIds.slice();
@@ -4071,65 +4072,23 @@
       return null;
     }
 
-    function findColIndexForDeptRole(department, role) {
-      for (var gi = 0; gi < deptGroups.length; gi++) {
-        var g = deptGroups[gi];
-        if (String(g.name || '').trim() !== String(department || '').trim()) continue;
-        var depts = g.depts || [];
-        for (var di = 0; di < depts.length; di++) {
-          if (String(depts[di]).trim() === String(role || '').trim()) {
-            return flatDeptIndex(gi, di);
-          }
-        }
-      }
-      return -1;
-    }
-
-    function mergeManpowerRowsIntoData(rows, periodKey) {
-      var groups = {};
-      (rows || []).forEach(function (r) {
-        var sid = r.sub_project_id;
-        if (!groups[sid]) groups[sid] = [];
-        groups[sid].push(r);
-      });
-      if (!Array.isArray(data)) return;
-      data.forEach(function (set) {
-        getProgramProjectSets(set).forEach(function (ps) {
-          getSubProjects(ps).forEach(function (p) {
-            var sid = p._subProjectId;
-            if (!sid) return;
-            var list = groups[sid];
-            if (!p.manpowerByMonth) p.manpowerByMonth = {};
-            var arr = newManpowerRow();
-            if (list && list.length) {
-              list.forEach(function (r) {
-                var ix = findColIndexForDeptRole(r.department, r.role);
-                if (ix >= 0) arr[ix] = Number(r.allocation) || 0;
-              });
-            }
-            p.manpowerByMonth[periodKey] = arr;
-          });
-        });
-      });
-      fixManpowerInData(data);
-    }
-
-    /** 将 v2 矩阵表头写入 deptGroups，并保留与 depts 对齐的 _columnIds（供保存与列对齐）。 */
+    /** 将 v1 矩阵表头写入 deptGroups，并保留与 depts 对齐的 _columnIds（供保存与列对齐）。 */
     function applyDeptGroupsFromMatrix(apiGroups) {
-      deptGroups = normalizeDeptGroups(
-        (apiGroups || []).map(function (g) {
-          var cols = g.columns || [];
-          return {
-            name: g.name != null ? String(g.name) : '',
-            depts: cols.map(function (c) {
-              return c.name != null ? String(c.name) : '';
-            }),
-            _columnIds: cols.map(function (c) {
-              return c.id;
-            })
-          };
-        })
-      );
+      deptGroups = (apiGroups || []).map(function (g) {
+        var cols = g.columns || [];
+        return {
+          _groupId: g.id,
+          name: g.name != null ? String(g.name) : '',
+          depts: cols.map(function (c) {
+            return c.name != null ? String(c.name) : '';
+          }),
+          _columnIds: cols.map(function (c) {
+            return c.id;
+          })
+        };
+      }).filter(function (g) {
+        return g.name && g.depts.length;
+      });
     }
 
     /** 按 column_id 将 cells 写入当前 data 中各子项目 manpowerByMonth[periodKey]。 */
@@ -4173,18 +4132,17 @@
     }
 
     /**
-     * 尝试 GET /api/v2/manpower-matrix；若该年已有矩阵表头则合并表头与 cells。
-     * @returns {Promise<boolean|null>} true=已用矩阵；false=回退 v1；null=401 需登录
+     * GET /api/v1/manpower-allocations：正式矩阵契约（dept_groups + cells）。
+     * @returns {Promise<boolean|null>} true=已加载矩阵；false=接口失败；null=401 需登录
      */
     async function tryMergeManpowerMatrixForYearPeriod(y, mkey) {
       var r = await pmFetch(
-        '/api/v2/manpower-matrix?year=' + y + '&period=' + encodeURIComponent(mkey),
+        '/api/v1/manpower-allocations?year=' + y + '&period=' + encodeURIComponent(mkey),
         { method: 'GET' }
       );
       if (r.status === 401) return null;
       if (!r.ok) return false;
       var j = await r.json();
-      if (!j.dept_groups || !j.dept_groups.length) return false;
       applyDeptGroupsFromMatrix(j.dept_groups);
       mergeMatrixCellsIntoData(j.cells || [], mkey);
       return true;
@@ -4246,20 +4204,6 @@
       });
     }
 
-    function manpowerRowsFromProjectForPeriod(p, periodKey) {
-      var row = (p.manpowerByMonth && p.manpowerByMonth[periodKey]) ? p.manpowerByMonth[periodKey].slice() : newManpowerRow();
-      var rows = [];
-      deptGroups.forEach(function (g, gi) {
-        (g.depts || []).forEach(function (dname, di) {
-          var idx = flatDeptIndex(gi, di);
-          var val = row[idx] != null ? Number(row[idx]) : 0;
-          if (isNaN(val)) val = 0;
-          rows.push({ department: g.name, role: dname, allocation: val });
-        });
-      });
-      return rows;
-    }
-
     async function fetchRelationalPeriodSlices() {
       if (!pmUsesRelationalRegistry) return;
       var me = window.__pmCurrentUser;
@@ -4280,11 +4224,7 @@
           return;
         }
         if (!mxAuth) {
-          var mr = await pmFetch(
-            '/api/v1/manpower-allocations?year=' + y + '&period=' + encodeURIComponent(mkey),
-            { method: 'GET' }
-          );
-          if (mr.ok) mergeManpowerRowsIntoData(await mr.json(), mkey);
+          throw new Error('manpower matrix HTTP failed');
         }
         renderTable();
         renderPhaseTable();
@@ -5166,14 +5106,7 @@
           return;
         }
         if (!mxAuth) {
-          var mr = await pmFetch(
-            '/api/v1/manpower-allocations?year=' + pmDataYear + '&period=' + encodeURIComponent(mkey),
-            { method: 'GET' }
-          );
-          if (mr.ok) {
-            var mrBody = await mr.json();
-            mergeManpowerRowsIntoData(mrBody, mkey);
-          }
+          throw new Error('manpower matrix HTTP failed');
         }
 
         var rr = await pmFetch('/api/v1/project-risks?year=' + pmDataYear, { method: 'GET' });
@@ -5228,65 +5161,38 @@
             });
           });
         });
-        if (pmManpowerUsesMatrixApi()) {
-          var bucket = {};
-          for (var wi = 0; wi < walk.length; wi++) {
-            var p = walk[wi];
-            var mb = p.manpowerByMonth || {};
-            var keys = Object.keys(mb);
-            for (var ki = 0; ki < keys.length; ki++) {
-              var rawKey = keys[ki];
-              var periodKey = normalizeYmSlugKey(rawKey) || rawKey;
-              if (!periodKey || String(periodKey).slice(0, 4) !== String(y)) continue;
-              if (!bucket[periodKey]) bucket[periodKey] = [];
-              bucket[periodKey] = bucket[periodKey].concat(cellsFromProjectPeriod(p, rawKey));
-            }
+        if (!pmManpowerUsesMatrixApi()) {
+          alert('请先维护人力部门表头后再保存。');
+          return;
+        }
+        var bucket = {};
+        for (var wi = 0; wi < walk.length; wi++) {
+          var p = walk[wi];
+          var mb = p.manpowerByMonth || {};
+          var keys = Object.keys(mb);
+          for (var ki = 0; ki < keys.length; ki++) {
+            var rawKey = keys[ki];
+            var periodKey = normalizeYmSlugKey(rawKey) || rawKey;
+            if (!periodKey || String(periodKey).slice(0, 4) !== String(y)) continue;
+            if (!bucket[periodKey]) bucket[periodKey] = [];
+            bucket[periodKey] = bucket[periodKey].concat(cellsFromProjectPeriod(p, rawKey));
           }
-          var pPer = Object.keys(bucket);
-          for (var bj = 0; bj < pPer.length; bj++) {
-            var pk = pPer[bj];
-            var r2 = await pmFetch(
-              '/api/v2/manpower-matrix?year=' + y + '&period=' + encodeURIComponent(pk),
-              { method: 'PUT', body: JSON.stringify({ cells: bucket[pk] }) }
-            );
-            if (r2.status === 401) {
-              window.location.href = 'login.html';
-              return;
-            }
-            if (!r2.ok) {
-              var errM = await r2.json().catch(function () { return {}; });
-              alert((errM.detail != null ? errM.detail : '保存失败') + '（HTTP ' + r2.status + '）');
-              return;
-            }
+        }
+        var pPer = Object.keys(bucket);
+        for (var bj = 0; bj < pPer.length; bj++) {
+          var pk = pPer[bj];
+          var r2 = await pmFetch(
+            '/api/v1/manpower-allocations?year=' + y + '&period=' + encodeURIComponent(pk),
+            { method: 'PUT', body: JSON.stringify({ cells: bucket[pk] }) }
+          );
+          if (r2.status === 401) {
+            window.location.href = 'login.html';
+            return;
           }
-        } else {
-          for (var wi = 0; wi < walk.length; wi++) {
-            var p = walk[wi];
-            var mb = p.manpowerByMonth || {};
-            var keys = Object.keys(mb);
-            for (var ki = 0; ki < keys.length; ki++) {
-              var periodKey = normalizeYmSlugKey(keys[ki]) || keys[ki];
-              if (!periodKey || String(periodKey).slice(0, 4) !== String(y)) continue;
-              var rows = manpowerRowsFromProjectForPeriod(p, keys[ki]);
-              var r = await pmFetch(
-                '/api/v1/manpower-allocations?year=' +
-                  y +
-                  '&sub_project_id=' +
-                  encodeURIComponent(String(p._subProjectId)) +
-                  '&period=' +
-                  encodeURIComponent(periodKey),
-                { method: 'PUT', body: JSON.stringify({ rows: rows }) }
-              );
-              if (r.status === 401) {
-                window.location.href = 'login.html';
-                return;
-              }
-              if (!r.ok) {
-                var err = await r.json().catch(function () { return {}; });
-                alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + r.status + '）');
-                return;
-              }
-            }
+          if (!r2.ok) {
+            var errM = await r2.json().catch(function () { return {}; });
+            alert((errM.detail != null ? errM.detail : '保存失败') + '（HTTP ' + r2.status + '）');
+            return;
           }
         }
         pmSavePeriodPrefsForYear(y, phaseSelMonth, manpowerSelMonth);
@@ -6178,6 +6084,13 @@
           addBtn.title = '在本分组下增加一列';
           addBtn.onclick = function () { addDeptToGroup(gi); };
           act.appendChild(addBtn);
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'icon-btn danger';
+          delBtn.textContent = '×';
+          delBtn.title = '删除本部门分组';
+          delBtn.onclick = function () { deleteDeptGroup(gi); };
+          act.appendChild(delBtn);
           wrap.appendChild(act);
         }
         th.appendChild(wrap);
@@ -6356,31 +6269,64 @@
       thead.appendChild(tr2);
     }
 
-    function editDeptGroupName(gi) {
+    function matrixHeaderError(err, fallback) {
+      alert((err && err.detail != null ? err.detail : fallback) || '人力表头维护失败');
+    }
+
+    async function reloadManpowerHeaderAndCurrentMonth() {
+      var mkey = ymKey(manpowerSelYear, manpowerSelMonth);
+      var ok = await tryMergeManpowerMatrixForYearPeriod(pmDataYear, mkey);
+      if (ok === null) {
+        window.location.href = 'login.html';
+        return false;
+      }
+      if (!ok) {
+        alert('刷新人力矩阵表头失败，请稍后重试。');
+        return false;
+      }
+      renderTable();
+      return true;
+    }
+
+    async function editDeptGroupName(gi) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
       const g = deptGroups[gi];
-      if (!g) return;
+      if (!g || g._groupId == null) return;
       const name = prompt('部门分组名称：', g.name);
       if (name != null && String(name).trim()) {
-        g.name = String(name).trim();
-        renderTable();
+        var r = await pmFetch(
+          '/api/v1/manpower-department-groups/' + encodeURIComponent(String(g._groupId)) + '?year=' + pmDataYear,
+          { method: 'PATCH', body: JSON.stringify({ name: String(name).trim() }) }
+        );
+        if (!r.ok) {
+          matrixHeaderError(await r.json().catch(function () { return {}; }), '分组改名失败');
+          return;
+        }
+        await reloadManpowerHeaderAndCurrentMonth();
       }
     }
 
-    function editDeptColumnName(gi, di) {
+    async function editDeptColumnName(gi, di) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
       const g = deptGroups[gi];
-      if (!g || !g.depts[di]) return;
+      if (!g || !g.depts[di] || !g._columnIds || g._columnIds[di] == null) return;
       const name = prompt('列名称：', g.depts[di]);
       if (name != null && String(name).trim()) {
-        g.depts[di] = String(name).trim();
-        renderTable();
+        var r = await pmFetch(
+          '/api/v1/manpower-columns/' + encodeURIComponent(String(g._columnIds[di])) + '?year=' + pmDataYear,
+          { method: 'PATCH', body: JSON.stringify({ name: String(name).trim() }) }
+        );
+        if (!r.ok) {
+          matrixHeaderError(await r.json().catch(function () { return {}; }), '列改名失败');
+          return;
+        }
+        await reloadManpowerHeaderAndCurrentMonth();
       }
     }
 
-    function addDeptGroup() {
+    async function addDeptGroup() {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
       const name = prompt('新的一级部门（分组）名称：');
@@ -6389,86 +6335,83 @@
       const firstCol = (subPrompt != null && String(subPrompt).trim())
         ? String(subPrompt).trim()
         : '子部门1';
-      deptGroups.push({ name: String(name).trim(), depts: [firstCol] });
-      data.forEach(function (set) {
-        getProgramProjectSets(set).forEach(function (projectSet) {
-          getSubProjects(projectSet).forEach(function (p) {
-            ensureProjectHasManpowerByMonth(p);
-            if (Object.keys(p.manpowerByMonth).length === 0) {
-              getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
-            }
-            Object.keys(p.manpowerByMonth).forEach(function (k) {
-              p.manpowerByMonth[k].push(0);
-            });
-            if (!Array.isArray(p.manpower)) p.manpower = [];
-            p.manpower.push(0);
-          });
-        });
+      var r = await pmFetch('/api/v1/manpower-department-groups', {
+        method: 'POST',
+        body: JSON.stringify({
+          year: pmDataYear,
+          name: String(name).trim(),
+          first_column_name: firstCol,
+          sort_order: deptGroups.length + 1
+        })
       });
-      fixManpowerInData(data);
-      renderTable();
+      if (!r.ok) {
+        matrixHeaderError(await r.json().catch(function () { return {}; }), '新增部门分组失败');
+        return;
+      }
+      await reloadManpowerHeaderAndCurrentMonth();
     }
 
-    function addDeptToGroup(gi) {
+    async function addDeptToGroup(gi) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
       const g = deptGroups[gi];
-      if (!g) return;
+      if (!g || g._groupId == null) return;
       const name = prompt('新子部门列名称：');
       if (!name || !String(name).trim()) return;
-      g.depts.push(String(name).trim());
-      const insertAt = flatDeptIndex(gi, g.depts.length - 1);
-      data.forEach(function (set) {
-        getProgramProjectSets(set).forEach(function (projectSet) {
-          getSubProjects(projectSet).forEach(function (p) {
-            ensureProjectHasManpowerByMonth(p);
-            if (Object.keys(p.manpowerByMonth).length === 0) {
-              getMonthSlice(p, manpowerSelYear, manpowerSelMonth);
-            }
-            Object.keys(p.manpowerByMonth).forEach(function (k) {
-              var arr = p.manpowerByMonth[k];
-              while (arr.length < insertAt) arr.push(0);
-              arr.splice(insertAt, 0, 0);
-            });
-            if (!Array.isArray(p.manpower)) p.manpower = [];
-            while (p.manpower.length < insertAt) p.manpower.push(0);
-            p.manpower.splice(insertAt, 0, 0);
-          });
-        });
-      });
-      fixManpowerInData(data);
-      renderTable();
+      var r = await pmFetch(
+        '/api/v1/manpower-department-groups/' +
+          encodeURIComponent(String(g._groupId)) +
+          '/columns?year=' +
+          pmDataYear,
+        {
+          method: 'POST',
+          body: JSON.stringify({ name: String(name).trim(), sort_order: (g.depts || []).length + 1 })
+        }
+      );
+      if (!r.ok) {
+        matrixHeaderError(await r.json().catch(function () { return {}; }), '新增列失败');
+        return;
+      }
+      await reloadManpowerHeaderAndCurrentMonth();
     }
 
-    function deleteDeptColumn(gi, di) {
+    async function deleteDeptColumn(gi, di) {
       if (!requireManpowerMonthViewForStructure()) return;
       if (!requireAdminOrAlert()) return;
       const g = deptGroups[gi];
-      if (!g || !g.depts[di]) return;
+      if (!g || !g.depts[di] || !g._columnIds || g._columnIds[di] == null) return;
       if (g.depts.length <= 1) {
-        alert('每组至少保留一列。');
+        alert('每组至少保留一列；如需删除，请删除整个部门分组。');
         return;
       }
       const label = g.depts[di];
-      if (!confirm('确定删除列「' + label + '」？对应人力数据列将一并删除。')) return;
-      const idx = flatDeptIndex(gi, di);
-      g.depts.splice(di, 1);
-      data.forEach(function (set) {
-        getProgramProjectSets(set).forEach(function (projectSet) {
-          getSubProjects(projectSet).forEach(function (p) {
-            ensureProjectHasManpowerByMonth(p);
-            Object.keys(p.manpowerByMonth).forEach(function (k) {
-              var arr = p.manpowerByMonth[k];
-              if (idx < arr.length) arr.splice(idx, 1);
-            });
-            if (Array.isArray(p.manpower) && idx < p.manpower.length) {
-              p.manpower.splice(idx, 1);
-            }
-          });
-        });
-      });
-      fixManpowerInData(data);
-      renderTable();
+      if (!confirm('确定删除列「' + label + '」？对应人力单元格数据将一并删除。')) return;
+      var r = await pmFetch(
+        '/api/v1/manpower-columns/' + encodeURIComponent(String(g._columnIds[di])) + '?year=' + pmDataYear,
+        { method: 'DELETE' }
+      );
+      if (!r.ok) {
+        matrixHeaderError(await r.json().catch(function () { return {}; }), '删除列失败');
+        return;
+      }
+      await reloadManpowerHeaderAndCurrentMonth();
+    }
+
+    async function deleteDeptGroup(gi) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!requireAdminOrAlert()) return;
+      const g = deptGroups[gi];
+      if (!g || g._groupId == null) return;
+      if (!confirm('确定删除部门分组「' + g.name + '」？其下列与人力单元格数据将一并删除。')) return;
+      var r = await pmFetch(
+        '/api/v1/manpower-department-groups/' + encodeURIComponent(String(g._groupId)) + '?year=' + pmDataYear,
+        { method: 'DELETE' }
+      );
+      if (!r.ok) {
+        matrixHeaderError(await r.json().catch(function () { return {}; }), '删除部门分组失败');
+        return;
+      }
+      await reloadManpowerHeaderAndCurrentMonth();
     }
 
     function appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, structureEditable, omitPinColClass) {

@@ -85,9 +85,6 @@ class SubProject(Base):
     phase_assessments: Mapped[list[PhaseAssessment]] = relationship(
         back_populates="sub_project", cascade="all, delete-orphan"
     )
-    manpower_allocations: Mapped[list[ManpowerAllocation]] = relationship(
-        back_populates="sub_project", cascade="all, delete-orphan"
-    )
     manpower_cells: Mapped[list[ManpowerCell]] = relationship(
         back_populates="sub_project", cascade="all, delete-orphan"
     )
@@ -106,7 +103,7 @@ class PhaseAssessment(Base):
     )
     period: Mapped[str] = mapped_column(String(7), nullable=False, index=True)
     delivery_target: Mapped[str | None] = mapped_column(Text, nullable=True)
-    on_track: Mapped[str | None] = mapped_column(String(4), nullable=True)
+    on_track: Mapped[str | None] = mapped_column(String(10), nullable=True)
     actual_delivery: Mapped[str | None] = mapped_column(Text, nullable=True)
     execution_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
     problem_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -115,28 +112,6 @@ class PhaseAssessment(Base):
     updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
 
     sub_project: Mapped[SubProject] = relationship(back_populates="phase_assessments")
-
-
-class ManpowerAllocation(Base):
-    __tablename__ = "manpower_allocations"
-    __table_args__ = (
-        UniqueConstraint(
-            "sub_project_id", "period", "department", "role", name="uk_prj_period_dept_role"
-        ),
-    )
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    sub_project_id: Mapped[int] = mapped_column(
-        ForeignKey("sub_projects.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    period: Mapped[str] = mapped_column(String(7), nullable=False, index=True)
-    department: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
-    role: Mapped[str] = mapped_column(String(50), nullable=False)
-    allocation: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False, default=Decimal("0.00"))
-    created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
-
-    sub_project: Mapped[SubProject] = relationship(back_populates="manpower_allocations")
 
 
 class ManpowerDepartmentGroup(Base):
@@ -209,14 +184,14 @@ class ProjectRisk(Base):
     sub_project_id: Mapped[int] = mapped_column(
         ForeignKey("sub_projects.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    risk_category: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
-    risk_source: Mapped[str] = mapped_column(String(20), nullable=False)
+    risk_category: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    risk_source: Mapped[str] = mapped_column(String(50), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     solution: Mapped[str | None] = mapped_column(Text, nullable=True)
-    level: Mapped[str] = mapped_column(String(4), nullable=False, default="中", index=True)
-    assignee: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    level: Mapped[str] = mapped_column(String(10), nullable=False, default="中", index=True)
+    assignee: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     resolution_date: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
-    status: Mapped[str] = mapped_column(String(10), nullable=False, default="Open", index=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="Open", index=True)
     closed_at: Mapped[datetime | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)

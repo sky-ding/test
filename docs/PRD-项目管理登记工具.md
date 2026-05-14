@@ -1,7 +1,7 @@
 # 产品需求文档（PRD）
 
 **产品名称**：项目管理登记（Web 工具）  
-**文档版本**：1.5  
+**文档版本**：1.6  
 **对应代码库**：前端 [`frontend/index.html`](../frontend/index.html)（主应用）、[`frontend/login.html`](../frontend/login.html)（登录页）；后端 [`backend/`](../backend/)（FastAPI + SQLAlchemy；**生产/团队推荐 MySQL**，未配置时本地可用 SQLite `backend/data/app.db`）+ 会话鉴权  
 **文档说明**：本文档基于当前代码实现梳理，用于产品对齐、验收与迭代规划。
 
@@ -15,9 +15,9 @@
 
 **持久化（当前实现）**：
 
-- **浏览器端**：人力、阶段、风险、列宽等仍可通过 **`localStorage`** 保存在本机浏览器（与早期单机版行为一致）。  
-- **服务端**：**FastAPI** 提供 **会话 Cookie 鉴权**（`POST /api/v1/auth/login` 等），并对 **项目阶段状态、部门项目人力登记、项目风险登记** 提供 **REST 接口** 读写 **`registry`（与 `users` 同库）**：配置 **`PM_MYSQL_*`** 时使用 **MySQL**（多实例应指向同一库）；否则使用本地 **SQLite** `backend/data/app.db`。**GET** 需登录；**PUT** 仅 **管理员**。前端主流程在启动时请求当前用户；未登录跳转 `login.html`。  
-- **服务端（关系型登记）**：使用 **`GET /api/v1/programs/tree`** 时，阶段 / 人力 / 风险写入规范化表。人力在库内已有人力矩阵表头（`manpower_department_groups` 等）时，前端通过 **`GET/PUT /api/v2/manpower-matrix`** 按 **`column_id`** 读写 **`manpower_cells`**；同一年若已启用矩阵，**`PUT /api/v1/manpower-allocations` 返回 410**（应改用 v2），**`GET /api/v1/manpower-allocations`** 仍可从矩阵 **合成** 旧行格式以便只读兼容。
+- **浏览器端**：localStorage 仅保留离线降级、列宽、会话偏好等浏览器侧状态；登录后的业务登记以服务端关系型库为准。  
+- **服务端**：**FastAPI** 提供 **会话 Cookie 鉴权**（`POST /api/v1/auth/login` 等），并以规范化关系表保存项目树、阶段状态、人力矩阵、项目风险和用户账号。配置 **`PM_MYSQL_*`** 时使用 **MySQL**（多实例应指向同一库）；否则使用本地 **SQLite** `backend/data/app.db`。**GET** 需登录；**写操作** 仅 **管理员**。前端主流程在启动时请求当前用户；未登录跳转 `login.html`。  
+- **人力矩阵**：前端通过 **`GET/PUT /api/v1/manpower-allocations`** 使用 `dept_groups + cells` 契约，按稳定 **`column_id`** 读写 **`manpower_cells`**；部门分组与列通过 **`/api/v1/manpower-department-groups`** 和 **`/api/v1/manpower-columns`** 维护。旧 `manpower_allocations` 行存不再作为正式业务表。
 
 适合本机或内网「静态页 + API」部署、轻量台账，以及需要 **账号级权限** 的小团队用法。
 
@@ -79,7 +79,7 @@
 | 登录与门禁 | 使用 **`frontend/login.html`** 登录；主应用 **`index.html`** 启动时请求 **`GET /api/v1/auth/me`**（携带 Cookie）；未登录（401）跳转登录页。认证不可达或长时间无响应时，前端有 **超时与降级**（可按实现进入仅本地数据的只读模式，详见技术设计文档）。 |
 | 顶部 Tab | 项目阶段状态、部门项目人力登记、项目风险登记、设置。 |
 | 权限门禁 | `window.pmIsAdmin()` 由 **当前登录用户** 的 `role`（`admin` / `viewer`）驱动；多处 `requireAdminOrAlert()` 拦截写操作。 |
-| 保存粒度 | 人力、风险、阶段 **分按钮保存**。默认写入 **不同 localStorage 键**。调用 **PUT `/api/v1/manpower|phase|risk`** 时需 **管理员** 且携带有效会话。 |
+| 保存粒度 | 人力、风险、阶段 **分按钮保存**。登录后分别调用关系型 API；写操作需 **管理员** 且携带有效会话。 |
 | 退出 | 导航栏与设置内 **退出登录**：通知服务端 `POST /api/v1/auth/logout`（不阻塞跳转），并进入 `login.html`。 |
 | 工程布局 | **`frontend/index.html`**、**`frontend/login.html`**；根目录 `README.md`、`package.json`、`docs/`。 |
 
@@ -89,26 +89,26 @@
 - **表格结构**：项目集（行合并）+ 项目 + 多列文本字段（多行输入框）。  
 - **字段（按年月切片存 `phaseByMonth`）**：项目阶段目标、项目阶段交付、阶段工作亮点、阶段工作不足、下一阶段注意事项。  
 - **结构维护（管理员）**：新项目集、子项目、改名、删除（与人力表共用删除确认弹窗逻辑，数据以 `phaseData` 为准）。  
-- **持久化（浏览器）**：`PM-tool-phase-v1`。**服务端**：`PUT/GET /api/v1/phase`（载荷 `{ phaseData, savedAt? }`），详见技术设计文档。  
+- **持久化**：登录后使用 `GET/PUT /api/v1/phase-assessments`，本地存储仅用于离线降级。
 - **阶段分析**：工具栏按钮打开模态框，展示当前所选年月说明；正文预留 AI 分析文案。
 
 ### 3.3 部门项目人力登记
 
 - **子视图**：月度（默认）、季度、年度。  
-- **月度**：年、月、部门多级表头；单元格人数编辑（失焦保存到内存，需点「保存」写入 localStorage）。  
-- **部门结构**：部门分组 + 每组下多列；支持增删列/组（需在月度上下文校验）。  
+- **月度**：年、月、部门多级表头；单元格人数编辑（失焦保存到内存，需点「保存」写入服务端 `manpower_cells`）。  
+- **部门结构**：部门分组 + 每组下多列；支持增删列/组（需在月度上下文校验），表头维护通过服务端 API 落库。
 - **与阶段表同步**：`syncManpowerStructureFromPhase()` — 以 `phaseData` 为权威；同项目集内项目数一致时 **按下标** 合并 `manpowerByMonth`，否则 **按项目名称** 匹配旧行；多出的项目人力为空/零。  
 - **无阶段存档时**：从已加载的人力数据生成阶段表骨架（仅名称，`phaseByMonth` 空），再同步，兼容旧数据。  
 - **列宽**：月度注册表列宽可拖拽调整，持久化 `PM-tool-register-colwidths-v1`。  
 - **分析**：「项目月度人力分析」— 项目集占比饼图、各集内子项目占比、子项目排行条形图（Chart.js）。  
-- **持久化（浏览器）**：`PM-tool-manpower-v1`（含 `data`、`deptGroups`）。**服务端**：`PUT/GET /api/v1/manpower`（载荷 `{ data, deptGroups, savedAt? }`）。  
+- **持久化**：`GET/PUT /api/v1/manpower-allocations?year=&period=`，载荷为 `dept_groups + cells`；保存时提交 `cells: [{ sub_project_id, column_id, allocation }]`。
 
 ### 3.4 项目风险登记
 
 - **字段**：项目、风险登记时间、风险登记人、风险说明、风险评估、风险等级（低/中/高/极高）、目前状态、预计解除时间（日期控件）。  
 - **交互**：表头排序（升序/降序切换）；删除确认。  
 - **分析**：目前状态饼图；按「风险评估」等规则分组条形图，支持按数量/按组内最高等级排序。  
-- **持久化（浏览器）**：`PM-tool-risk-v1`。**服务端**：`PUT/GET /api/v1/risk`（载荷 `{ riskRows, savedAt? }`）。  
+- **持久化**：登录后使用 `/api/v1/project-risks` 列表与行级增删改，本地存储仅用于离线降级。
 
 ### 3.5 设置
 
@@ -165,7 +165,7 @@ flowchart TD
 1. 切换到「部门项目人力登记」—「月度」。  
 2. 选择年、月（与内存中 `manpowerSelYear/Month` 绑定）。  
 3. 点击单元格输入 0–99，失焦写回 `data` 并 `renderTable`。  
-4. 点击「保存」将 `data` 与 `deptGroups` 写入浏览器存储键 `PM-tool-manpower-v1`（若已对接后端，可同时或改为 `PUT /api/v1/manpower`）。
+4. 点击「保存」将当前年份各月份的人力单元格提交到 `PUT /api/v1/manpower-allocations?year=&period=`。
 
 ### 4.4 风险登记与排序
 
@@ -194,17 +194,11 @@ flowchart TD
 | `PM-tool-app-settings-v1` | 应用预留键（如 `savedAt` 等轻量字段）；**不用于切换登录角色**；无独立「通用设置」界面 |
 | `PM-tool-register-colwidths-v1` | 月度表列宽 |
 
-### 5.2 服务端（MySQL 或 SQLite，`registry` 文档表）
+### 5.2 服务端（MySQL 或 SQLite，关系型表）
 
-| 逻辑键 | HTTP | 载荷（与上表 JSON 结构对齐） |
-|--------|------|------------------------------|
-| `manpower` | `GET`/`PUT` `/api/v1/manpower` | `{ data, deptGroups, savedAt }` |
-| `phase` | `GET`/`PUT` `/api/v1/phase` | `{ phaseData, savedAt }` |
-| `risk` | `GET`/`PUT` `/api/v1/risk` | `{ riskRows, savedAt }` |
+服务端主数据表包括 `programs` / `sub_programs` / `sub_projects`、`phase_assessments`、`manpower_department_groups` / `manpower_columns` / `manpower_cells`、`project_risks`、`users`。旧 `registry` 若历史库中存在仅作为兼容归档，不再作为正式业务登记入口。
 
 **用户表（`users`）**：登录账号、密码哈希、角色、是否启用等；首次启动种子用户 **Sky**（初始密码见环境变量说明，默认 `123123`）。表结构与 ORM 对 MySQL / SQLite 一致。
-
-**单租户 MVP**：`registry` 全局各类型一条快照；已支持 **多登录账号** 与 **管理员维护用户**，无多工作区隔离（可后续扩展）。
 
 ---
 
@@ -223,7 +217,7 @@ flowchart TD
 
 ## 7. 已知限制与后续可迭代方向
 
-1. **前端与 registry 全量对接**：主流程仍以 **localStorage** 为主；若需「打开即读库、保存即写库」，可在 Storage 抽象层统一接 API。  
+1. **表头删除策略与审计**：当前按外键级联删除列与历史单元格；如需留痕，可后续增加逻辑删除与审计表。  
 2. **阶段状态分析**：界面已预留，结论生成（如 AI）未实现。  
 3. **协作与审计**：有登录与角色，仍 **无多租户数据隔离、无操作审计日志**；生产需 HTTPS、强密钥、同源或受控跨站策略。  
 4. **导出/导入**：未内置 JSON 导出导入 UI（可作为后续 PRD 条目）。  
@@ -241,6 +235,7 @@ flowchart TD
 | 1.3 | 2026-05-12 | **团队生产推荐 MySQL**（`PM_MYSQL_*`）；与本地 SQLite 二选一说明；多实例共享 `PM_SESSION_SECRET` |
 | 1.4 | 2026-05-13 | 设置内移除「通用设置」子页；`PM-tool-app-settings-v1` 与已知限制表述与实现对齐 |
 | 1.5 | 2026-05-13 | **人力矩阵**：`GET/PUT /api/v2/manpower-matrix`；矩阵年 **`PUT /api/v1/manpower-allocations` 410**；**`GET /api/v1/manpower-allocations`** 可从矩阵合成旧行格式 |
+| 1.6 | 2026-05-14 | 全面关系型改造：人力矩阵收敛到 `GET/PUT /api/v1/manpower-allocations`，旧行存与 registry 正式业务入口下线，补齐表头维护 API |
 
 ---
 

@@ -22,7 +22,6 @@ from app.config import settings  # noqa: E402
 from app.db import engine  # noqa: E402
 from app.models import RegistryEntry, User  # noqa: E402
 from app.models_relational import (  # noqa: E402
-    ManpowerAllocation,
     ManpowerCell,
     ManpowerColumn,
     ManpowerDepartmentGroup,
@@ -80,7 +79,6 @@ def main() -> int:
             ("manpower_department_groups rows", ManpowerDepartmentGroup),
             ("manpower_columns rows", ManpowerColumn),
             ("manpower_cells rows", ManpowerCell),
-            ("manpower_allocations rows", ManpowerAllocation),
             ("project_risks rows", ProjectRisk),
         ):
             try:

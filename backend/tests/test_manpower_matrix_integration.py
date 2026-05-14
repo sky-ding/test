@@ -1,10 +1,9 @@
-"""人力矩阵 v2 与 v1 读合成 / 写停用的冒烟集成测试（内存 SQLite）。"""
+"""关系型登记主链路冒烟测试（内存 SQLite）。"""
 
 from __future__ import annotations
 
 import os
 import sys
-from decimal import Decimal
 from pathlib import Path
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
@@ -58,10 +57,7 @@ def client(monkeypatch: pytest.MonkeyPatch):
     app.dependency_overrides.clear()
 
 
-def test_v2_put_get_v1_list_synthesis_and_v1_put_gone(client) -> None:
-    from app.db import SessionLocal
-    from app.models_relational import ManpowerCell, ManpowerColumn, ManpowerDepartmentGroup
-
+def _create_sub_project(client) -> int:
     y = 2035
     r = client.post("/api/v1/programs", json={"year": y, "name": "ProgMatrixTest"})
     assert r.status_code == 201, r.text
@@ -81,60 +77,90 @@ def test_v2_put_get_v1_list_synthesis_and_v1_put_gone(client) -> None:
     )
     assert r3.status_code == 201, r3.text
     tree3 = r3.json()
-    sub_project_id = tree3["programs"][0]["sub_programs"][0]["sub_projects"][0]["id"]
+    return tree3["programs"][0]["sub_programs"][0]["sub_projects"][0]["id"]
 
-    db = SessionLocal()
-    try:
-        g = ManpowerDepartmentGroup(year=y, name="技术部", sort_order=1)
-        db.add(g)
-        db.flush()
-        col = ManpowerColumn(group_id=g.id, year=y, name="前端", sort_order=1)
-        db.add(col)
-        db.flush()
-        db.add(
-            ManpowerCell(
-                sub_project_id=sub_project_id,
-                period=f"{y}-01",
-                column_id=col.id,
-                allocation=Decimal("3.50"),
-            )
-        )
-        db.commit()
-        column_id = col.id
-    finally:
-        db.close()
 
-    mx = client.get(f"/api/v2/manpower-matrix?year={y}&period={y}-01")
-    assert mx.status_code == 200, mx.text
-    mj = mx.json()
-    assert len(mj["dept_groups"]) == 1
-    assert mj["dept_groups"][0]["name"] == "技术部"
-    assert len(mj["cells"]) == 1
+def test_relational_project_phase_risk_user_and_manpower_matrix_flow(client) -> None:
+    y = 2035
+    sub_project_id = _create_sub_project(client)
 
-    v1 = client.get(f"/api/v1/manpower-allocations?year={y}&period={y}-01")
-    assert v1.status_code == 200, v1.text
-    rows = v1.json()
-    assert len(rows) == 1
-    assert rows[0]["department"] == "技术部"
-    assert rows[0]["role"] == "前端"
-    assert rows[0]["sub_project_id"] == sub_project_id
-    assert float(rows[0]["allocation"]) == 3.5
-
-    gone = client.put(
-        f"/api/v1/manpower-allocations?year={y}&sub_project_id={sub_project_id}&period={y}-01",
-        json={"rows": [{"department": "技术部", "role": "前端", "allocation": "1"}]},
+    group = client.post(
+        "/api/v1/manpower-department-groups",
+        json={"year": y, "name": "技术部", "first_column_name": "前端", "sort_order": 1},
     )
-    assert gone.status_code == 410
+    assert group.status_code == 201, group.text
+    group_body = group.json()
+    group_id = group_body["id"]
+    column_id = group_body["columns"][0]["id"]
+
+    col2 = client.post(
+        f"/api/v1/manpower-department-groups/{group_id}/columns?year={y}",
+        json={"name": "后端", "sort_order": 2},
+    )
+    assert col2.status_code == 201, col2.text
+
+    patched_group = client.patch(
+        f"/api/v1/manpower-department-groups/{group_id}?year={y}",
+        json={"name": "研发部"},
+    )
+    assert patched_group.status_code == 200
+
+    patched_col = client.patch(
+        f"/api/v1/manpower-columns/{column_id}?year={y}",
+        json={"name": "前端开发"},
+    )
+    assert patched_col.status_code == 200
+
+    mx_empty = client.get(f"/api/v1/manpower-allocations?year={y}&period={y}-01")
+    assert mx_empty.status_code == 200, mx_empty.text
+    assert mx_empty.json()["dept_groups"][0]["name"] == "研发部"
+    assert mx_empty.json()["dept_groups"][0]["columns"][0]["name"] == "前端开发"
 
     put = client.put(
-        f"/api/v2/manpower-matrix?year={y}&period={y}-01",
-        json={
-            "cells": [{"sub_project_id": sub_project_id, "column_id": column_id, "allocation": "9.00"}]
-        },
+        f"/api/v1/manpower-allocations?year={y}&period={y}-01",
+        json={"cells": [{"sub_project_id": sub_project_id, "column_id": column_id, "allocation": "9.00"}]},
     )
     assert put.status_code == 200, put.text
-    v1b = client.get(f"/api/v1/manpower-allocations?year={y}&period={y}-01")
-    assert v1b.status_code == 200
-    rows_b = v1b.json()
-    assert len(rows_b) == 1
-    assert float(rows_b[0]["allocation"]) == 9.0
+    body = put.json()
+    assert len(body["cells"]) == 1
+    assert float(body["cells"][0]["allocation"]) == 9.0
+
+    legacy_shape = client.put(
+        f"/api/v1/manpower-allocations?year={y}&sub_project_id={sub_project_id}&period={y}-01",
+        json={"rows": [{"department": "研发部", "role": "前端开发", "allocation": "1"}]},
+    )
+    assert legacy_shape.status_code == 422
+
+    assert client.get(f"/api/v2/manpower-matrix?year={y}&period={y}-01").status_code == 404
+
+    phase = client.put(
+        f"/api/v1/phase-assessments?year={y}",
+        json={
+            "sub_project_id": sub_project_id,
+            "period": f"{y}-01",
+            "goal": "交付目标",
+            "planMatch": "partially",
+        },
+    )
+    assert phase.status_code == 200, phase.text
+    assert phase.json()["on_track"] == "partially"
+
+    risk = client.post(
+        f"/api/v1/project-risks?year={y}",
+        json={
+            "sub_project_id": sub_project_id,
+            "risk_category": "外部依赖风险",
+            "risk_source": "供应商与流程",
+            "issue": "存在跨团队依赖",
+            "solution": "每日跟进",
+            "level": "中高",
+            "owner": "负责人甲",
+            "status": "Open",
+        },
+    )
+    assert risk.status_code == 201, risk.text
+    assert risk.json()["risk_category"] == "外部依赖风险"
+
+    users = client.get("/api/v1/users")
+    assert users.status_code == 200, users.text
+    assert len(users.json()) >= 1

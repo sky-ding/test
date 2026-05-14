@@ -1,147 +1,129 @@
-"""人力行存：按 year+period 列表；按 sub_project_id+period 整批替换。"""
+"""人力矩阵：按 year+period 返回表头与单元格；按 period 批量 upsert cells。"""
 
 from __future__ import annotations
 
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import delete, func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.agent_debug_log import agent_dbg
 from app.db import get_db
 from app.deps import AdminUser, CurrentUser
 from app.models_relational import (
-    ManpowerAllocation,
     ManpowerCell,
     ManpowerColumn,
     ManpowerDepartmentGroup,
     SubProject,
 )
 from app.relational_api import assert_period_matches_year, assert_sub_project_year, parse_year
-from app.schemas_relational import ManpowerAllocationOut, ManpowerReplaceBody
+from app.schemas_relational import (
+    ManpowerMatrixCellOut,
+    ManpowerMatrixColumnOut,
+    ManpowerMatrixGroupOut,
+    ManpowerMatrixPutBody,
+    ManpowerMatrixResponse,
+)
 
 router = APIRouter(prefix="/manpower-allocations", tags=["manpower-allocations"])
 
 
-def _year_has_manpower_matrix(db: Session, y: int) -> bool:
-    n = db.scalar(
-        select(func.count()).select_from(ManpowerDepartmentGroup).where(ManpowerDepartmentGroup.year == y)
+def build_manpower_matrix_response(db: Session, y: int, p: str) -> ManpowerMatrixResponse:
+    groups = list(
+        db.scalars(
+            select(ManpowerDepartmentGroup)
+            .where(ManpowerDepartmentGroup.year == y)
+            .order_by(ManpowerDepartmentGroup.sort_order, ManpowerDepartmentGroup.id)
+        ).all()
     )
-    return bool(n and n > 0)
-
-
-def _synthesize_allocations_from_matrix(db: Session, y: int, p: str) -> list[ManpowerAllocationOut]:
-    stmt = (
-        select(ManpowerCell, ManpowerColumn.name, ManpowerDepartmentGroup.name)
-        .join(ManpowerColumn, ManpowerCell.column_id == ManpowerColumn.id)
-        .join(ManpowerDepartmentGroup, ManpowerColumn.group_id == ManpowerDepartmentGroup.id)
-        .join(SubProject, ManpowerCell.sub_project_id == SubProject.id)
-        .where(SubProject.year == y, ManpowerCell.period == p)
-        .order_by(
-            ManpowerCell.sub_project_id,
-            ManpowerDepartmentGroup.sort_order,
-            ManpowerDepartmentGroup.id,
-            ManpowerColumn.sort_order,
-            ManpowerColumn.id,
+    dept_groups: list[ManpowerMatrixGroupOut] = []
+    for g in groups:
+        cols = list(
+            db.scalars(
+                select(ManpowerColumn)
+                .where(ManpowerColumn.group_id == g.id)
+                .order_by(ManpowerColumn.sort_order, ManpowerColumn.id)
+            ).all()
         )
-    )
-    out: list[ManpowerAllocationOut] = []
-    for cell, role_name, dept_name in db.execute(stmt).all():
-        out.append(
-            ManpowerAllocationOut(
-                id=cell.id,
-                sub_project_id=cell.sub_project_id,
-                period=cell.period,
-                department=dept_name,
-                role=role_name,
-                allocation=cell.allocation,
+        dept_groups.append(
+            ManpowerMatrixGroupOut(
+                id=g.id,
+                name=g.name,
+                sort_order=g.sort_order,
+                columns=[
+                    ManpowerMatrixColumnOut(id=c.id, name=c.name, sort_order=c.sort_order) for c in cols
+                ],
             )
         )
-    return out
+
+    cells_q = (
+        select(ManpowerCell)
+        .join(SubProject, ManpowerCell.sub_project_id == SubProject.id)
+        .where(SubProject.year == y, ManpowerCell.period == p)
+        .order_by(ManpowerCell.sub_project_id, ManpowerCell.column_id)
+    )
+    cells = [
+        ManpowerMatrixCellOut(
+            sub_project_id=c.sub_project_id,
+            period=c.period,
+            column_id=c.column_id,
+            allocation=c.allocation,
+        )
+        for c in db.scalars(cells_q).all()
+    ]
+    return ManpowerMatrixResponse(year=y, period=p, dept_groups=dept_groups, cells=cells)
 
 
-@router.get("", response_model=list[ManpowerAllocationOut])
+@router.get("", response_model=ManpowerMatrixResponse)
 def list_manpower_allocations(
     _user: CurrentUser,
     year: int = Query(..., ge=2000, le=2100),
     period: str = Query(..., min_length=7, max_length=7),
     db: Session = Depends(get_db),
-) -> list[ManpowerAllocationOut]:
+) -> ManpowerMatrixResponse:
     _ = _user
     y = parse_year(year)
     p = assert_period_matches_year(period, y)
-    if _year_has_manpower_matrix(db, y):
-        rows = _synthesize_allocations_from_matrix(db, y, p)
-    else:
-        stmt = (
-            select(ManpowerAllocation)
-            .join(SubProject, ManpowerAllocation.sub_project_id == SubProject.id)
-            .where(SubProject.year == y, ManpowerAllocation.period == p)
-            .order_by(ManpowerAllocation.sub_project_id, ManpowerAllocation.department, ManpowerAllocation.role)
-        )
-        rows = list(db.scalars(stmt).all())
-    # region agent log
-    agent_dbg(
-        "H1",
-        "manpower_allocations.py:list",
-        "list_manpower_allocations",
-        {"year": y, "period": p, "row_count": len(rows), "sub_project_ids": list({r.sub_project_id for r in rows})[:20]},
-    )
-    # endregion
-    return rows
+    return build_manpower_matrix_response(db, y, p)
 
 
-@router.put("", response_model=list[ManpowerAllocationOut])
+@router.put("", response_model=ManpowerMatrixResponse)
 def replace_manpower_for_period(
     _admin: AdminUser,
-    body: ManpowerReplaceBody,
+    body: ManpowerMatrixPutBody,
     year: int = Query(..., ge=2000, le=2100),
-    sub_project_id: int = Query(..., ge=1),
     period: str = Query(..., min_length=7, max_length=7),
     db: Session = Depends(get_db),
-) -> list[ManpowerAllocation]:
+) -> ManpowerMatrixResponse:
     _ = _admin
     y = parse_year(year)
     p = assert_period_matches_year(period, y)
-    if _year_has_manpower_matrix(db, y):
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE,
-            detail="人力已切换为矩阵表存储，请使用 PUT /api/v2/manpower-matrix 批量写入单元格。",
+    for item in body.cells:
+        assert_sub_project_year(db, item.sub_project_id, y)
+        col = db.get(ManpowerColumn, item.column_id)
+        if col is None or int(col.year) != y:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid column_id {item.column_id} for year {y}",
+            )
+        row = db.scalar(
+            select(ManpowerCell).where(
+                ManpowerCell.sub_project_id == item.sub_project_id,
+                ManpowerCell.period == p,
+                ManpowerCell.column_id == item.column_id,
+            )
         )
-    assert_sub_project_year(db, sub_project_id, y)
-    db.execute(
-        delete(ManpowerAllocation).where(
-            ManpowerAllocation.sub_project_id == sub_project_id,
-            ManpowerAllocation.period == p,
-        )
-    )
-    out: list[ManpowerAllocation] = []
-    for r in body.rows:
-        row = ManpowerAllocation(
-            sub_project_id=sub_project_id,
-            period=p,
-            department=r.department.strip(),
-            role=r.role.strip(),
-            allocation=Decimal(r.allocation),
-        )
-        db.add(row)
-        out.append(row)
+        alloc = Decimal(item.allocation).quantize(Decimal("0.01"))
+        if row is None:
+            db.add(
+                ManpowerCell(
+                    sub_project_id=item.sub_project_id,
+                    period=p,
+                    column_id=item.column_id,
+                    allocation=alloc,
+                )
+            )
+        else:
+            row.allocation = alloc
     db.commit()
-    for row in out:
-        db.refresh(row)
-    # region agent log
-    agent_dbg(
-        "H2",
-        "manpower_allocations.py:put",
-        "replace_manpower_for_period",
-        {
-            "year": y,
-            "period": p,
-            "sub_project_id": sub_project_id,
-            "rows_written": len(out),
-            "sum_alloc": float(sum(float(r.allocation) for r in out)) if out else 0.0,
-        },
-    )
-    # endregion
-    return out
+    return build_manpower_matrix_response(db, y, p)

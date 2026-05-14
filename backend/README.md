@@ -19,7 +19,7 @@ pip install -r requirements.txt
 
 1. 在 MySQL 中**预先创建**数据库（字符集建议 **utf8mb4**），并授予应用账号建表/读写权限。  
 2. 复制 **[.env.example](.env.example)** 为 `backend/.env`，填写 **`PM_MYSQL_HOST` / `PM_MYSQL_USER` / `PM_MYSQL_DATABASE`**（及密码、端口等）；**所有实例**使用**相同**的 `PM_MYSQL_*` 与 **`PM_SESSION_SECRET`**（否则 Cookie 会话在实例间无效）。  
-3. 启动应用会自动 `create_all` 建表（含 `programs` / `sub_programs` / `sub_projects` / `phase_assessments` / `manpower_allocations` / `manpower_department_groups` / `manpower_columns` / `manpower_cells` / `project_risks`）；MySQL 亦可由 DBA 执行 **[migrations/001_relational_schema.sql](migrations/001_relational_schema.sql)** 与 **[migrations/002_manpower_matrix.sql](migrations/002_manpower_matrix.sql)**。首次启动会 seed 内置用户（若库中尚无同名账号）。  
+3. 启动应用会自动 `create_all` 建表（含 `programs` / `sub_programs` / `sub_projects` / `phase_assessments` / `manpower_department_groups` / `manpower_columns` / `manpower_cells` / `project_risks` / `users`）；MySQL 亦可由 DBA 执行 **[migrations/001_relational_schema.sql](migrations/001_relational_schema.sql)** 与 **[migrations/002_manpower_matrix.sql](migrations/002_manpower_matrix.sql)**。如部署库仍有旧行存表，确认无旧数据后执行 **[migrations/003_drop_legacy_manpower_allocations.sql](migrations/003_drop_legacy_manpower_allocations.sql)**。首次启动会 seed 内置用户（若库中尚无同名账号）。  
 4. 连接与登记数据冒烟：
 
 ```bash
@@ -34,7 +34,7 @@ python scripts/migrate_sqlite_to_mysql.py
 
 目标 MySQL 里若已有 `users`/`registry` 数据，脚本默认会拒绝覆盖；需使用 `--force`（**会清空** MySQL 侧这两张表后再导入）。
 
-6. **迁移后验证**：`python scripts/check_db.py`；`pytest tests/test_manpower_matrix_integration.py`（需已 `pip install -r requirements.txt`）；再用管理员在 `/docs` 中对 `GET /api/v1/programs/tree`、`phase-assessments`、`manpower-matrix`、`manpower-allocations`、`project-risks` 做一次冒烟。
+6. **迁移后验证**：`python scripts/check_db.py`；`pytest tests/test_manpower_matrix_integration.py`（需已 `pip install -r requirements.txt`）；再用管理员在 `/docs` 中对 `GET /api/v1/programs/tree`、`phase-assessments`、`manpower-allocations`、`manpower-department-groups`、`manpower-columns`、`project-risks` 做一次冒烟。
 
 7. **（可选）** 若需将旧 `registry` JSON 迁入新表，可扩展 **`scripts/registry_json_to_sql.py`**；默认 2027 冷启动无需运行。
 
@@ -42,10 +42,10 @@ python scripts/migrate_sqlite_to_mysql.py
 
 ### 故障排查：登记与页面
 
-- **人力 / 阶段 / 风险** 已改为关系型表 + 按年 API；整包 `PUT /api/v1/manpower|phase|risk` 已 **410 下线**。前端按 **数据年份** 请求 `GET /api/v1/programs/tree?year=`，并以 `sub_project_id` + `period`（yyyy-MM）读写业务表。  
+- **人力 / 阶段 / 风险** 已改为关系型表 + 按年 API；旧整包 `GET/PUT /api/v1/manpower|phase|risk` 已不再注册为正式业务接口。前端按 **数据年份** 请求 `GET /api/v1/programs/tree?year=`，并以 `sub_project_id` + `period`（yyyy-MM）读写业务表。  
 - 多实例部署时，各实例的 **`PM_MYSQL_*` 与 `PM_SESSION_SECRET` 必须一致**，且指向同一库。  
 - 页面表格为空：在**与线上一致**的 `backend/.env` 下执行 `python scripts/check_db.py`；若该年尚无项目树，请在「设置」中创建项目集或调用 `POST /api/v1/programs`。  
-- 人力表某年月全为 0：多为当前所选 **yyyy-MM** 在库中尚无 `manpower_cells`（矩阵模式）或 `manpower_allocations`（旧行存）数据；切换月份或保存后会写入。矩阵 API 见 `GET/PUT /api/v2/manpower-matrix`（[docs/项目管理登记系统数据库设计文档.md](../docs/项目管理登记系统数据库设计文档.md)）。
+- 人力表某年月全为 0：多为当前所选 **yyyy-MM** 在库中尚无 `manpower_cells` 数据；先确认该年已有 `manpower_department_groups` / `manpower_columns` 表头，再保存当月单元格。矩阵 API 见 `GET/PUT /api/v1/manpower-allocations`（[docs/项目管理登记系统数据库设计文档.md](../docs/项目管理登记系统数据库设计文档.md)）。
 
 ## 启动
 
@@ -146,7 +146,7 @@ cd D:\Study\test01\test\backend
 
 ## API 摘要
 
-除另有说明外，新登记接口的 **GET 需已登录**，**写操作需管理员**。旧整包 JSON 接口 `GET/PUT /api/v1/manpower`、`/phase`、`/risk` 返回 **410 Gone**。
+除另有说明外，新登记接口的 **GET 需已登录**，**写操作需管理员**。旧整包 JSON 接口 `GET/PUT /api/v1/manpower`、`/phase`、`/risk` 不再注册为正式业务接口。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -171,13 +171,16 @@ cd D:\Study\test01\test\backend
 | DELETE | `/api/v1/programs/sub-projects/{id}?year=` | 删除子项目 |
 | GET | `/api/v1/phase-assessments?year=&period=` | 该年该月的阶段评估列表 |
 | PUT | `/api/v1/phase-assessments?year=` | Upsert 一条阶段评估（body 含 `sub_project_id`, `period`；兼容旧字段名 `goal`/`deliver`/…） |
-| GET | `/api/v1/manpower-allocations?year=&period=` | 该年该月人力行列表；若该年已有人力矩阵表头（`manpower_department_groups`），则从 `manpower_cells` **合成**为旧行格式 |
-| PUT | `/api/v1/manpower-allocations?year=&sub_project_id=&period=` | 无矩阵表头时年：替换某子项目该月全部人力行；**已启用矩阵的年份返回 410**，请改用下方 v2 |
-| GET | `/api/v2/manpower-matrix?year=&period=` | 矩阵表头 `dept_groups` + 该月 `cells`（需登录） |
-| PUT | `/api/v2/manpower-matrix?year=&period=` | 批量 upsert 单元格（**管理员**；body：`{ cells: [{sub_project_id, column_id, allocation}] }`） |
+| GET | `/api/v1/manpower-allocations?year=&period=` | 矩阵表头 `dept_groups` + 该月 `cells`（需登录） |
+| PUT | `/api/v1/manpower-allocations?year=&period=` | 批量 upsert 单元格（**管理员**；body：`{ cells: [{sub_project_id, column_id, allocation}] }`） |
+| GET | `/api/v1/manpower-department-groups?year=` | 表头分组与列列表 |
+| POST | `/api/v1/manpower-department-groups` | 新建表头分组（**管理员**；可带 `first_column_name`） |
+| PATCH/DELETE | `/api/v1/manpower-department-groups/{id}?year=` | 更新/删除表头分组（**管理员**） |
+| POST | `/api/v1/manpower-department-groups/{id}/columns?year=` | 新建二级列（**管理员**） |
+| PATCH/DELETE | `/api/v1/manpower-columns/{id}?year=` | 更新/删除二级列（**管理员**） |
 | GET | `/api/v1/project-risks?year=` 或 `?sub_project_id=` | 风险列表 |
 | POST | `/api/v1/project-risks?year=` | 新建风险（body 兼容 `issue`/`owner`/`closeTime`） |
 | PATCH | `/api/v1/project-risks/{id}?year=` | 更新风险 |
 | DELETE | `/api/v1/project-risks/{id}?year=` | 删除风险 |
 
-数据：`users`、`registry`（旧数据可保留）、以及上述规范化表。未配置 MySQL 时为 `backend/data/app.db`（SQLite）；配置 `PM_MYSQL_*` 时使用 MySQL。CORS 来源可通过 `PM_CORS_ORIGINS`（逗号分隔）覆盖，参见 `app/config.py`。
+数据：`users` 以及上述规范化表。`registry` 若历史库中存在可保留归档，但不再作为正式登记数据入口。未配置 MySQL 时为 `backend/data/app.db`（SQLite）；配置 `PM_MYSQL_*` 时使用 MySQL。CORS 来源可通过 `PM_CORS_ORIGINS`（逗号分隔）覆盖，参见 `app/config.py`。
