@@ -3958,6 +3958,31 @@
       r1R.style.height = px1;
     }
 
+    function syncSplitTbodyRowHeights(leftTableId, rightTableId) {
+      var tf = document.getElementById(leftTableId);
+      var tr = document.getElementById(rightTableId);
+      if (!tf || !tr || !tf.tBodies.length || !tr.tBodies.length) return;
+      var leftRows = Array.prototype.slice.call(tf.tBodies[0].rows || []);
+      var rightRows = Array.prototype.slice.call(tr.tBodies[0].rows || []);
+      var n = Math.min(leftRows.length, rightRows.length);
+      for (var i = 0; i < n; i++) {
+        leftRows[i].style.height = '';
+        rightRows[i].style.height = '';
+      }
+      void tf.offsetHeight;
+      void tr.offsetHeight;
+      for (var j = 0; j < n; j++) {
+        var h = Math.max(
+          leftRows[j].getBoundingClientRect().height,
+          rightRows[j].getBoundingClientRect().height,
+          1
+        );
+        var px = Math.ceil(h) + 'px';
+        leftRows[j].style.height = px;
+        rightRows[j].style.height = px;
+      }
+    }
+
     function syncReadonlySplitTheadHeights(leftTableId, rightTableId) {
       var tf = document.getElementById(leftTableId);
       var tr = document.getElementById(rightTableId);
@@ -6894,12 +6919,15 @@
           syncManpowerTableStickyLayout();
           if (manpowerSubView === 'month') {
             syncRegisterMonthSplitTheadHeights();
+            syncSplitTbodyRowHeights('register-table-frozen', 'register-table');
             syncManpowerTableStickyLayout();
           } else if (manpowerSubView === 'season') {
             syncReadonlySplitTheadHeights('register-table-season-frozen', 'register-table-season');
+            syncSplitTbodyRowHeights('register-table-season-frozen', 'register-table-season');
             syncManpowerTableStickyLayout();
           } else {
             syncReadonlySplitTheadHeights('register-table-year-frozen', 'register-table-year');
+            syncSplitTbodyRowHeights('register-table-year-frozen', 'register-table-year');
             syncManpowerTableStickyLayout();
           }
         });
