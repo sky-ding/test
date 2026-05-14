@@ -9,7 +9,7 @@
 | `frontend/index.html` | 主应用（需先登录） |
 | `frontend/login.html` | 登录页 |
 | `backend/` | Python FastAPI 服务与持久化 |
-| `docs/` | PRD、技术设计、用户操作指南（**当前文档版本 v1.2**，与登录鉴权等实现一致） |
+| `docs/` | PRD、技术设计、数据库设计、用户操作指南（与当前关系型登记实现一致） |
 
 ## 协作与 Git
 
@@ -22,7 +22,7 @@
   然后打开 <http://127.0.0.1:3000/login.html> 登录，或访问 <http://127.0.0.1:3000> 时未登录会自动跳转到登录页。
 - 前端默认 API 地址为 `http://127.0.0.1:8001`，可在页面加载前设置 `window.PM_API_BASE`（见 `index.html` / `login.html` 内脚本）。
 - **会话 Cookie**：登录后浏览器会保存 `pm_session`。开发环境下前端在 **3000** 端口、API 在 **8001** 端口属于**跨站**，部分浏览器对第三方 Cookie 较严格；若登录后仍被反复踢回登录页，请使用 **反向代理将前端与 `/api` 配成同源**，或查阅下文环境变量调整 `PM_SESSION_SAME_SITE` / `PM_SESSION_HTTPS_ONLY`（生产环境务必 HTTPS + 同源）。
-- 业务数据仍主要保存在 **localStorage**；服务端 `registry` API 已需登录，**写操作仅管理员**。
+- 登录后业务数据以 **关系型 API** 为准：项目树、阶段、人力矩阵、风险和用户均写入后端数据库；localStorage 仅保留离线降级、列宽等浏览器侧状态。
 
 ## 鉴权与环境变量（首次部署必读）
 

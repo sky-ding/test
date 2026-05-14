@@ -1,6 +1,6 @@
 -- 人力复合表：表头（一级分组 + 二级列）+ 单元格事实表（见 docs/项目管理登记系统数据库设计文档.md）
 -- 约定（评审基线）：
---   * API：GET/PUT /api/v2/manpower-matrix?year=&period= ，载荷含 dept_groups + cells
+--   * API：GET/PUT /api/v1/manpower-allocations?year=&period= ，载荷含 dept_groups + cells
 --   * 列 ID：manpower_columns.id 为单元格稳定外键；按年隔离（year 与 sub_projects.year 一致）
 --   * allocation：DECIMAL(6,2)，与 ORM Numeric(6,2) 对齐
 -- MySQL 8+；风格与 001_relational_schema.sql 一致（TIMESTAMP、utf8mb4）。

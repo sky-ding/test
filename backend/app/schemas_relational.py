@@ -109,7 +109,7 @@ class PhaseAssessmentUpsert(BaseModel):
     sub_project_id: int
     period: str = Field(min_length=7, max_length=7)
     delivery_target: str | None = None
-    on_track: str | None = Field(default=None, max_length=4)
+    on_track: str | None = Field(default=None, max_length=10)
     actual_delivery: str | None = None
     execution_analysis: str | None = None
     problem_analysis: str | None = None
@@ -139,36 +139,7 @@ class PhaseAssessmentUpsert(BaseModel):
         return self
 
 
-# --- 人力 ---
-
-
-class ManpowerAllocationRow(BaseModel):
-    department: str = Field(min_length=1, max_length=50)
-    role: str = Field(min_length=1, max_length=50)
-    allocation: Decimal = Field(default=Decimal("0.00"), ge=Decimal("0"), le=Decimal("999.99"))
-
-    @field_validator("allocation")
-    @classmethod
-    def two_decimals(cls, v: Decimal) -> Decimal:
-        return v.quantize(Decimal("0.01"))
-
-
-class ManpowerAllocationOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    sub_project_id: int
-    period: str
-    department: str
-    role: str
-    allocation: Decimal
-
-
-class ManpowerReplaceBody(BaseModel):
-    rows: list[ManpowerAllocationRow]
-
-
-# --- 人力矩阵（v2，见 docs/项目管理登记系统数据库设计文档.md §15.2） ---
+# --- 人力矩阵（v1，见 docs/项目管理登记系统数据库设计文档.md §15.2） ---
 
 
 class ManpowerMatrixColumnOut(BaseModel):
@@ -217,6 +188,28 @@ class ManpowerMatrixPutBody(BaseModel):
     cells: list[ManpowerMatrixCellIn]
 
 
+class ManpowerDepartmentGroupCreate(BaseModel):
+    year: Annotated[int, Field(ge=2000, le=2100)]
+    name: str = Field(min_length=1, max_length=100)
+    sort_order: int = 0
+    first_column_name: str | None = Field(default=None, min_length=1, max_length=100)
+
+
+class ManpowerDepartmentGroupPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    sort_order: int | None = None
+
+
+class ManpowerColumnCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    sort_order: int = 0
+
+
+class ManpowerColumnPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    sort_order: int | None = None
+
+
 # --- 风险 ---
 
 
@@ -240,14 +233,14 @@ class ProjectRiskCreate(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     sub_project_id: int
-    risk_category: str = Field(max_length=20)
-    risk_source: str = Field(max_length=20)
+    risk_category: str = Field(max_length=50)
+    risk_source: str = Field(max_length=50)
     description: str | None = None
     solution: str | None = None
-    level: str = Field(default="中", max_length=4)
-    assignee: str | None = Field(default=None, max_length=50)
+    level: str = Field(default="中", max_length=10)
+    assignee: str | None = Field(default=None, max_length=100)
     resolution_date: date | None = None
-    status: str = Field(default="Open", max_length=10)
+    status: str = Field(default="Open", max_length=20)
     issue: str | None = None
     owner: str | None = None
     closeTime: str | None = None
@@ -287,14 +280,14 @@ class ProjectRiskCreate(BaseModel):
 class ProjectRiskPatch(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    risk_category: str | None = Field(default=None, max_length=20)
-    risk_source: str | None = Field(default=None, max_length=20)
+    risk_category: str | None = Field(default=None, max_length=50)
+    risk_source: str | None = Field(default=None, max_length=50)
     description: str | None = None
     solution: str | None = None
-    level: str | None = Field(default=None, max_length=4)
-    assignee: str | None = Field(default=None, max_length=50)
+    level: str | None = Field(default=None, max_length=10)
+    assignee: str | None = Field(default=None, max_length=100)
     resolution_date: date | None = None
-    status: str | None = Field(default=None, max_length=10)
+    status: str | None = Field(default=None, max_length=20)
     issue: str | None = None
     owner: str | None = None
     closeTime: str | None = None
