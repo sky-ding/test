@@ -61,3 +61,12 @@ def test_risk_prompt_no_longer_points_to_settings_project_tree() -> None:
     assert "请先在「设置」中为该年创建项目树" not in src
     assert "请先在项目阶段状态或部门项目人力登记页创建项目树" in src
     assert "firstSubProjectMetaInTree()" in src
+
+
+def test_manpower_split_tables_sync_body_row_heights() -> None:
+    src = _html()
+
+    assert "function syncSplitTbodyRowHeights(" in src
+    assert "syncSplitTbodyRowHeights('register-table-frozen', 'register-table')" in src
+    assert "syncSplitTbodyRowHeights('register-table-season-frozen', 'register-table-season')" in src
+    assert "syncSplitTbodyRowHeights('register-table-year-frozen', 'register-table-year')" in src
