@@ -350,14 +350,20 @@
       font-size: 12px;
     }
 
-    #phase-table tbody tr:hover td,
-    #panel-manpower table tbody tr:hover td {
+    #panel-manpower #register-table-frozen tbody tr:hover td,
+    #panel-manpower #register-table tbody tr:hover td,
+    #panel-manpower #register-table-season-frozen tbody tr:hover td,
+    #panel-manpower #register-table-season tbody tr:hover td,
+    #panel-manpower #register-table-year-frozen tbody tr:hover td,
+    #panel-manpower #register-table-year tbody tr:hover td {
       background: var(--accent-soft) !important;
     }
 
     #register-table {
       table-layout: fixed;
       border-collapse: collapse;
+      width: max-content;
+      min-width: 100%;
     }
 
     #register-table thead th.col-set,
@@ -387,7 +393,7 @@
     #register-table-season-frozen .col-set,
     #register-table-year-frozen .col-set {
       min-width: 0;
-      padding: 6px 10px;
+      padding: 4px 6px;
       vertical-align: middle;
     }
 
@@ -396,8 +402,14 @@
     #register-table-season-frozen .col-proj,
     #register-table-year-frozen .col-proj {
       min-width: 0;
-      padding: 6px 10px;
+      padding: 6px 8px;
       vertical-align: middle;
+    }
+
+    #register-table-frozen td.col-set .cell-head-inline,
+    #register-table-season-frozen td.col-set .cell-head-inline,
+    #register-table-year-frozen td.col-set .cell-head-inline {
+      gap: 4px;
     }
 
     #register-table td.col-set .editable-text,
@@ -474,7 +486,12 @@
     }
 
     #panel-phase .table-footer-stats {
-      max-width: 1240px;
+      display: none;
+    }
+
+    #phase-table-footer-stats,
+    [id^="manpower-footer-stats-"] {
+      display: none !important;
     }
 
     #panel-risk .manpower-toolbar,
@@ -505,15 +522,6 @@
       padding: 9px 6px;
     }
 
-    #register-table td.center-cell.col-mp {
-      min-width: 0;
-    }
-
-    #register-table td.center-cell.col-sum,
-    #register-table td.center-cell.col-ratio {
-      min-width: 0;
-    }
-
     #register-table thead th,
     #register-table-frozen thead th,
     #register-table-season thead th,
@@ -528,6 +536,22 @@
       position: sticky;
       top: 0;
       z-index: 22;
+    }
+
+    #phase-table thead th {
+      position: relative;
+      background: linear-gradient(180deg, #f8f9fb 0%, var(--header-bg) 100%) !important;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    /* 阶段表列宽拖拽手柄需压在表头之上，否则不易拖动 */
+    #phase-table thead th .register-col-resize-handle {
+      z-index: 28;
+    }
+
+    #risk-table thead th {
+      background: linear-gradient(180deg, #f8f9fb 0%, var(--header-bg) 100%) !important;
+      border-bottom: 1px solid var(--border-light);
     }
 
     /* 风险表：与阶段表一致，单行 thead 在滚动容器内置顶 */
@@ -573,17 +597,31 @@
 
     #phase-table .pin-col-2 {
       position: sticky;
-      left: var(--pin-left-2, 168px);
+      left: var(--pin-left-2, 100px);
       z-index: 12;
       background: var(--surface);
     }
 
     #phase-table .pin-col-3 {
       position: sticky;
-      left: var(--pin-left-3, 368px);
+      left: var(--pin-left-3, 212px);
       z-index: 12;
       background: var(--surface);
       box-shadow: 1px 0 0 var(--border-light), 8px 0 12px rgba(15, 23, 42, 0.06);
+    }
+
+    #phase-table tbody td.col-set,
+    #phase-table tbody td.col-proj {
+      background: #fff !important;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    #phase-table tbody td.col-set .cell-head-inline,
+    #phase-table tbody td.col-proj .cell-head-inline,
+    #phase-table tbody td.col-set .editable-text,
+    #phase-table tbody td.col-proj .editable-text {
+      font-size: 12px;
     }
 
     #phase-table thead .pin-col-1,
@@ -592,15 +630,9 @@
       z-index: 26;
     }
 
-    .manpower-toolbar .manpower-subtabs {
+    #panel-manpower .manpower-toolbar .manpower-subtabs {
       margin-right: 8px;
       flex-shrink: 0;
-    }
-
-    /*
-     * 人力登记：月/季/年切换已并入 .manpower-toolbar；压低分段条，与同一条筛选栏对齐。
-     */
-    #panel-manpower .manpower-toolbar .manpower-subtabs {
       padding: 2px;
       gap: 2px;
       box-shadow: none;
@@ -625,7 +657,7 @@
     #panel-manpower #register-table-season .pin-col-2,
     #panel-manpower #register-table-year .pin-col-2 {
       position: sticky;
-      left: var(--pin-left-2, 168px);
+      left: var(--pin-left-2, 100px);
       z-index: 12;
       background: var(--surface);
     }
@@ -633,7 +665,7 @@
     #panel-manpower #register-table-season .pin-col-3,
     #panel-manpower #register-table-year .pin-col-3 {
       position: sticky;
-      left: var(--pin-left-3, 368px);
+      left: var(--pin-left-3, 212px);
       z-index: 12;
       background: var(--surface);
       box-shadow: 1px 0 0 var(--border-light), 8px 0 12px rgba(15, 23, 42, 0.06);
@@ -666,8 +698,24 @@
       background: var(--manpower-stripe-b-sub) !important;
     }
 
-    .manpower-panel-head:empty {
-      display: none;
+    #panel-manpower #register-table-frozen tbody td.main.col-set,
+    #panel-manpower #register-table-frozen tbody td.sub.col-set,
+    #panel-manpower #register-table-frozen tbody td.sub.col-proj,
+    #panel-manpower #register-table-season-frozen tbody td.main.col-set,
+    #panel-manpower #register-table-season-frozen tbody td.sub.col-set,
+    #panel-manpower #register-table-season-frozen tbody td.sub.col-proj,
+    #panel-manpower #register-table-year-frozen tbody td.main.col-set,
+    #panel-manpower #register-table-year-frozen tbody td.sub.col-set,
+    #panel-manpower #register-table-year-frozen tbody td.sub.col-proj {
+      background: #fff !important;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    #panel-manpower #register-table-frozen tbody td .editable-text,
+    #panel-manpower #register-table-season-frozen tbody td .editable-text,
+    #panel-manpower #register-table-year-frozen tbody td .editable-text {
+      font-size: 12px;
     }
 
     .register-col-resize-handle {
@@ -783,7 +831,8 @@
 
     #phase-table {
       table-layout: fixed;
-      width: 100%;
+      width: max-content;
+      min-width: 100%;
       border-collapse: separate;
       border-spacing: 0;
     }
@@ -801,8 +850,15 @@
     #phase-table .col-set,
     #phase-table .col-proj {
       min-width: 0;
-      padding: 6px 10px;
       vertical-align: middle;
+    }
+
+    #phase-table .col-set {
+      padding: 4px 6px;
+    }
+
+    #phase-table .col-proj {
+      padding: 6px 8px;
     }
 
     #phase-table td.col-set .cell-head-inline,
@@ -810,6 +866,10 @@
       flex-wrap: nowrap;
       justify-content: flex-start;
       gap: 8px;
+    }
+
+    #phase-table td.col-set .cell-head-inline {
+      gap: 4px;
     }
 
     #phase-table td.col-set .cell-head-inline > span:first-child,
@@ -829,7 +889,7 @@
     #phase-table td.phase-field-cell {
       vertical-align: top;
       padding: 6px;
-      background: #fafaf9;
+      background: #fff;
       min-width: 100px;
     }
 
@@ -844,10 +904,24 @@
       font-family: inherit;
       font-size: 13px;
       line-height: 1.45;
-      resize: vertical;
+      resize: none;
+      overflow-y: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
       box-sizing: border-box;
       background: #fff;
       color: var(--text);
+    }
+
+    /* 完全隐藏滚动条（滚轮仍可滚动），避免出现滚动箭头或轨道 */
+    #phase-table textarea.phase-field-input::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      background: transparent;
+    }
+
+    #phase-table textarea.phase-field-input::-webkit-scrollbar-thumb {
+      background: transparent;
     }
 
     #phase-table textarea.phase-field-input:read-only {
@@ -876,6 +950,24 @@
       background: var(--header-bg-sub);
       color: var(--text-muted);
       cursor: default;
+    }
+
+    #phase-table select.phase-field-select.phase-field-select-no {
+      background: #fff1f0 !important;
+      color: #a8071a !important;
+      border-color: #ffccc7 !important;
+    }
+
+    #phase-table tbody tr:hover td {
+      background: var(--accent-soft) !important;
+    }
+
+    #phase-table tbody tr.phase-row-selected td {
+      background: #d6e8ff !important;
+    }
+
+    #phase-table tbody tr.phase-row-selected:hover td {
+      background: #b8d9ff !important;
     }
 
     .table-footer-stats {
@@ -1107,16 +1199,6 @@
       outline: none;
       border-color: var(--accent);
       box-shadow: var(--focus-ring);
-    }
-
-    .manpower-panel-head {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      width: 100%;
-      max-width: 1240px;
-      margin: 8px 0 6px;
-      box-sizing: border-box;
     }
 
     .manpower-subtabs {
@@ -1397,6 +1479,11 @@
       margin-bottom: 0;
     }
 
+    table#risk-table thead th {
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
     table#risk-table th.seq,
     table#risk-table td.seq {
       width: 52px;
@@ -1407,12 +1494,130 @@
       text-align: left;
       vertical-align: middle;
       min-width: 90px;
-      max-width: 240px;
     }
 
-    table#risk-table td.risk-cell.w-wide {
-      min-width: 140px;
-      max-width: 280px;
+    /* 项目：仅容纳路径/名称，不把省下的宽度吃在这里 */
+    table#risk-table th.risk-th-project,
+    table#risk-table td.risk-cell-project {
+      width: 1%;
+      min-width: 96px;
+      max-width: 128px;
+      padding: 4px 6px;
+      vertical-align: middle;
+    }
+
+    table#risk-table td.risk-cell-project .risk-input {
+      min-width: 0;
+      padding: 3px 6px;
+      font-size: 12px;
+    }
+
+    /* 长文本列：承接其它紧凑列省下的宽度 */
+    table#risk-table th.risk-th-textwide,
+    table#risk-table td.risk-cell-textwide {
+      min-width: 220px;
+      width: auto;
+      max-width: none;
+    }
+
+    table#risk-table td.risk-cell.w-wide.risk-cell-textwide {
+      min-width: 220px;
+      max-width: none;
+    }
+
+    /* 枚举下拉列：类别 / 来源 */
+    table#risk-table th.risk-th-tag,
+    table#risk-table td.risk-cell-tag {
+      width: 1%;
+      min-width: 72px;
+      max-width: 88px;
+      padding: 4px 5px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    table#risk-table td.risk-cell-tag .risk-select {
+      min-width: 0;
+      width: 100%;
+      padding: 3px 4px;
+      font-size: 12px;
+      text-align: center;
+      text-align-last: center;
+    }
+
+    /* 风险等级：低/中/高 */
+    table#risk-table th.risk-th-level,
+    table#risk-table td.risk-cell-level {
+      width: 1%;
+      min-width: 64px;
+      max-width: 76px;
+      padding: 4px 5px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    table#risk-table td.risk-cell-level .risk-select {
+      min-width: 0;
+      width: 100%;
+      padding: 3px 4px;
+      font-size: 12px;
+      text-align: center;
+      text-align-last: center;
+    }
+
+    /* 状态 */
+    table#risk-table th.risk-th-status,
+    table#risk-table td.risk-cell-status {
+      width: 1%;
+      min-width: 76px;
+      max-width: 92px;
+      padding: 4px 5px;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    table#risk-table td.risk-cell-status .risk-select {
+      min-width: 0;
+      width: 100%;
+      padding: 3px 4px;
+      font-size: 12px;
+      text-align: center;
+      text-align-last: center;
+    }
+
+    /* 登记 / 解除时间 */
+    table#risk-table th.risk-th-date,
+    table#risk-table td.risk-cell-date {
+      width: 1%;
+      min-width: 102px;
+      max-width: 112px;
+      padding: 4px 5px;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    table#risk-table td.risk-cell-date .risk-input[type="date"] {
+      width: 96px;
+      min-width: 96px;
+      max-width: 96px;
+      padding: 2px 3px;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+
+    /* 跟进人 */
+    table#risk-table th.risk-th-owner,
+    table#risk-table td.risk-cell-owner {
+      width: 1%;
+      min-width: 80px;
+      max-width: 110px;
+      padding: 4px 6px;
+    }
+
+    table#risk-table td.risk-cell-owner .risk-input {
+      min-width: 0;
+      padding: 3px 6px;
+      font-size: 12px;
     }
 
     .risk-input,
@@ -1437,7 +1642,20 @@
 
     textarea.risk-input {
       min-height: 44px;
-      resize: vertical;
+      resize: none;
+      overflow-y: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    table#risk-table textarea.risk-input::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      background: transparent;
+    }
+
+    table#risk-table textarea.risk-input::-webkit-scrollbar-thumb {
+      background: transparent;
     }
 
     table#risk-table tbody tr:hover td {
@@ -1460,10 +1678,22 @@
     .risk-select.risk-color-hold { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
     .risk-select.risk-color-close { background: #f5f5f5; color: #595959; border-color: #d9d9d9; }
 
+    table#risk-table th.risk-th-action,
+    table#risk-table td.risk-cell-action {
+      width: 1%;
+      min-width: 64px;
+      max-width: 80px;
+      white-space: nowrap;
+      text-align: center;
+      vertical-align: middle;
+      padding: 6px 8px;
+    }
+
     table#risk-table .delete-btn,
     td.center-cell .delete-btn {
-      padding: 5px 12px;
+      padding: 4px 10px;
       font-size: 13px;
+      white-space: nowrap;
       border-radius: var(--radius-sm);
       border: 1px solid var(--border);
       background: var(--surface);
@@ -1485,10 +1715,18 @@
       vertical-align: middle;
     }
 
+    table#risk-table th.risk-th-tag .risk-th-sort-btn,
+    table#risk-table th.risk-th-level .risk-th-sort-btn,
+    table#risk-table th.risk-th-status .risk-th-sort-btn,
+    table#risk-table th.risk-th-date .risk-th-sort-btn,
+    table#risk-table th.risk-th-owner .risk-th-sort-btn {
+      padding: 5px 6px;
+    }
+
     .risk-th-sort-btn {
       width: 100%;
       margin: 0;
-      padding: 6px 10px;
+      padding: 6px 8px;
       border: none;
       background: transparent;
       font: inherit;
@@ -1497,10 +1735,8 @@
       text-align: left;
       cursor: pointer;
       font-family: inherit;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 6px;
+      display: block;
+      white-space: nowrap;
       color: var(--text-muted);
       transition: background 0.15s, color 0.15s;
     }
@@ -1508,21 +1744,6 @@
     .risk-th-sort-btn:hover {
       background: rgba(0, 0, 0, 0.04);
       color: var(--text);
-    }
-
-    .risk-sort-ind {
-      flex-shrink: 0;
-      font-size: 11px;
-      min-width: 1.2em;
-    }
-
-    th.risk-th-sortable[aria-sort="none"] .risk-sort-ind {
-      opacity: 0.4;
-    }
-
-    th.risk-th-sortable[aria-sort="ascending"] .risk-sort-ind,
-    th.risk-th-sortable[aria-sort="descending"] .risk-sort-ind {
-      opacity: 1;
     }
 
     th.risk-th-sortable[aria-sort="ascending"] .risk-th-sort-btn,
@@ -2122,16 +2343,13 @@
     </div>
   </div>
   <div id="panel-manpower" class="tab-panel active" role="tabpanel">
-  <div class="manpower-panel-head">
-    <div class="manpower-subtabs" role="tablist" aria-label="人力数据时间维度">
-      <button type="button" class="manpower-subtab active" role="tab" aria-selected="true" data-manpower-page="month">月度</button>
-      <button type="button" class="manpower-subtab" role="tab" aria-selected="false" data-manpower-page="season">季度</button>
-      <button type="button" class="manpower-subtab" role="tab" aria-selected="false" data-manpower-page="year">年度</button>
-    </div>
-  </div>
-
   <div id="manpower-page-month" class="manpower-subpage active" role="tabpanel" aria-label="月度人力">
     <div class="manpower-toolbar">
+      <div class="manpower-subtabs" role="tablist" aria-label="人力数据时间维度">
+        <button type="button" class="manpower-subtab active" role="tab" aria-selected="true" data-manpower-page="month">月度</button>
+        <button type="button" class="manpower-subtab" role="tab" aria-selected="false" data-manpower-page="season">季度</button>
+        <button type="button" class="manpower-subtab" role="tab" aria-selected="false" data-manpower-page="year">年度</button>
+      </div>
       <label>年份 <input type="number" class="manpower-year-input" id="manpower-year-month" min="2000" max="2099" step="1"></label>
       <label>月份 <select id="manpower-month-select" aria-label="选择月份"></select></label>
       <button type="button" class="manpower-analysis-btn" id="btn-manpower-month-analysis" title="按当前所选年月汇总并展示图表">项目月度人力分析</button>
@@ -2680,6 +2898,11 @@
           });
         });
       });
+    }
+
+    function applyPhasePlanMatchStyle(sel) {
+      if (!sel) return;
+      sel.classList.toggle('phase-field-select-no', sel.value === '否');
     }
 
     function mapPhaseDataFromStorage(arr) {
@@ -3456,11 +3679,14 @@
         window._pmManpowerTheadResizeWired = true;
         window.addEventListener('resize', function () {
           requestAnimationFrame(function () {
-            syncManpowerTableStickyLayout();
             if (manpowerSubView === 'month') {
-              syncRegisterMonthSplitTheadHeights();
-              syncManpowerTableStickyLayout();
+              syncManpowerSplitTheadHeights('register-table-frozen', 'register-table');
+            } else if (manpowerSubView === 'season') {
+              syncManpowerSplitTheadHeights('register-table-season-frozen', 'register-table-season');
+            } else if (manpowerSubView === 'year') {
+              syncManpowerSplitTheadHeights('register-table-year-frozen', 'register-table-year');
             }
+            syncManpowerTableStickyLayout();
           });
         });
       }
@@ -3477,21 +3703,30 @@
 
     function getRegisterColMin(colIndex) {
       var deptCount = deptFlatCount();
-      if (colIndex === 0) return 100;
-      if (colIndex === 1) return 120;
-      if (colIndex === 2) return 120;
+      if (colIndex === 0) return 84;
+      if (colIndex === 1) return 92;
+      if (colIndex === 2) return 100;
       if (colIndex === 3 + deptCount) return 88;
       if (colIndex === 4 + deptCount) return 88;
       return 56;
+    }
+
+    function getRegisterColMax(colIndex) {
+      var deptCount = deptFlatCount();
+      if (colIndex === 0) return 116;
+      if (colIndex === 1) return 128;
+      if (colIndex === 2) return 220;
+      if (colIndex === 3 + deptCount || colIndex === 4 + deptCount) return 200;
+      return 520;
     }
 
     function loadRegisterColWidths() {
       const n = getRegisterColCount();
       const def = [];
       const deptCount = deptFlatCount();
-      def[0] = 168;
-      def[1] = 200;
-      def[2] = 200;
+      def[0] = 100;
+      def[1] = 112;
+      def[2] = 176;
       for (let i = 3; i < 3 + deptCount; i++) def[i] = 96;
       def[3 + deptCount] = 108;
       def[4 + deptCount] = 100;
@@ -3503,7 +3738,9 @@
           if (o && Array.isArray(o.widths)) {
             for (let j = 0; j < n && j < o.widths.length; j++) {
               const v = Number(o.widths[j]);
-              if (!isNaN(v) && v >= getRegisterColMin(j)) merged[j] = v;
+              if (!isNaN(v)) {
+                merged[j] = Math.max(getRegisterColMin(j), Math.min(getRegisterColMax(j), v));
+              }
             }
           }
         }
@@ -3514,9 +3751,9 @@
     function defaultReadonlyColWidths() {
       var widths = [];
       var deptCount = deptFlatCount();
-      widths[0] = 168;
-      widths[1] = 200;
-      widths[2] = 200;
+      widths[0] = 100;
+      widths[1] = 112;
+      widths[2] = 176;
       for (var i = 0; i < deptCount; i++) widths.push(96);
       widths.push(108);
       widths.push(100);
@@ -3536,9 +3773,9 @@
      * 否则用 thead 第一行（表头 rowspan 格）；colgroup 数值常小于实际渲染宽，仅用数组会叠列。
      */
     function measurePin01WidthsFromTable(table) {
-      if (!table || !table.tHead || !table.tHead.rows[0]) return { w0: 168, w1: 200 };
+      if (!table || !table.tHead || !table.tHead.rows[0]) return { w0: 100, w1: 112 };
       var r0 = table.tHead.rows[0];
-      if (!r0.cells || r0.cells.length < 3) return { w0: 168, w1: 200 };
+      if (!r0.cells || r0.cells.length < 3) return { w0: 100, w1: 112 };
       var tb = table.tBodies[0];
       var probe = null;
       if (tb && tb.rows.length) {
@@ -3574,8 +3811,8 @@
       if (!table) return;
       var n0 = parseFloat(w0);
       var n1 = parseFloat(w1);
-      if (isNaN(n0) || n0 < 0) n0 = 168;
-      if (isNaN(n1) || n1 < 0) n1 = 200;
+      if (isNaN(n0) || n0 < 0) n0 = 100;
+      if (isNaN(n1) || n1 < 0) n1 = 112;
       var left2 = n0 + 'px';
       var left3 = (n0 + n1) + 'px';
       table.querySelectorAll('.pin-col-1').forEach(function (el) {
@@ -3610,8 +3847,8 @@
       for (var i = 0; i < def.length; i++) {
         var w = latest[i];
         var v = Number(w);
-        if (!isNaN(v) && v >= getRegisterColMin(i)) {
-          out.push(v);
+        if (!isNaN(v)) {
+          out.push(Math.max(getRegisterColMin(i), Math.min(getRegisterColMax(i), v)));
         } else {
           out.push(def[i]);
         }
@@ -3717,18 +3954,10 @@
         const idx = registerColResizeDrag.colIndex;
         const w = registerColResizeDrag.startWidths;
         const deltaRaw = e.clientX - registerColResizeDrag.startX;
-        let delta = deltaRaw;
-        if (idx < w.length - 1) {
-          const minL = getRegisterColMin(idx);
-          const minR = getRegisterColMin(idx + 1);
-          const maxPos = w[idx + 1] - minR;
-          const maxNeg = -(w[idx] - minL);
-          delta = Math.max(maxNeg, Math.min(maxPos, delta));
-          registerColWidths[idx] = w[idx] + delta;
-          registerColWidths[idx + 1] = w[idx + 1] - delta;
-        } else {
-          registerColWidths[idx] = Math.max(getRegisterColMin(idx), Math.min(520, w[idx] + deltaRaw));
-        }
+        registerColWidths[idx] = Math.max(
+          getRegisterColMin(idx),
+          Math.min(getRegisterColMax(idx), w[idx] + deltaRaw)
+        );
         applyRegisterColWidthsToDom();
       }
 
@@ -3840,16 +4069,25 @@
     }
 
     function getPhaseColMin(colIndex) {
-      if (colIndex === 0) return 100;
-      if (colIndex === 1) return 120;
-      if (colIndex === 2) return 120;
+      if (colIndex === 0) return 84;
+      if (colIndex === 1) return 92;
+      if (colIndex === 2) return 100;
+      if (colIndex === 5) return 68;
       return 110;
+    }
+
+    function getPhaseColMax(colIndex) {
+      if (colIndex === 0) return 116;
+      if (colIndex === 1) return 128;
+      if (colIndex === 2) return 220;
+      return colIndex === 5 ? 120 : 560;
     }
 
     function loadPhaseColWidths() {
       var n = getPhaseColCount();
-      var def = [168, 200, 200];
+      var def = [100, 112, 176];
       for (var i = 3; i < n; i++) def[i] = 150;
+      if (n > 5) def[5] = 96;
       var merged = def.slice();
       try {
         var raw = localStorage.getItem('PM-tool-phase-colwidths-v1');
@@ -3858,7 +4096,11 @@
           if (o && Array.isArray(o.widths)) {
             for (var j = 0; j < n && j < o.widths.length; j++) {
               var v = Number(o.widths[j]);
-              if (!isNaN(v) && v >= getPhaseColMin(j)) merged[j] = v;
+              if (!isNaN(v)) {
+                var lo = getPhaseColMin(j);
+                var hi = getPhaseColMax(j);
+                merged[j] = Math.max(lo, Math.min(hi, v));
+              }
             }
           }
         }
@@ -3915,18 +4157,10 @@
         var idx = phaseColResizeDrag.colIndex;
         var w = phaseColResizeDrag.startWidths;
         var deltaRaw = e.clientX - phaseColResizeDrag.startX;
-        var delta = deltaRaw;
-        if (idx < w.length - 1) {
-          var minL = getPhaseColMin(idx);
-          var minR = getPhaseColMin(idx + 1);
-          var maxPos = w[idx + 1] - minR;
-          var maxNeg = -(w[idx] - minL);
-          delta = Math.max(maxNeg, Math.min(maxPos, delta));
-          phaseColWidths[idx] = w[idx] + delta;
-          phaseColWidths[idx + 1] = w[idx + 1] - delta;
-        } else {
-          phaseColWidths[idx] = Math.max(getPhaseColMin(idx), Math.min(520, w[idx] + deltaRaw));
-        }
+        phaseColWidths[idx] = Math.max(
+          getPhaseColMin(idx),
+          Math.min(getPhaseColMax(idx), w[idx] + deltaRaw)
+        );
         applyPhaseColWidthsToDom();
       }
       function onUp() {
@@ -3972,10 +4206,7 @@
       }
     }
 
-    /**
-     * 人力表布局同步：① 第二行 thead sticky 的 top = 第一行实际高度（--manpower-thead-r1h）；
-     * ② 含 pin-col 的表（季/年只读表）再写 --pin-left-* 与内联 left。月度分栏左右表无 pin，跳过②。
-     */
+    /** 同步两行表头第二行 sticky 的 top（--manpower-thead-r1h）。固定列 left 见 applyStickyPinLeftFromDom。 */
     function syncManpowerTableStickyLayout() {
       ['register-table-frozen', 'register-table', 'register-table-season-frozen', 'register-table-season', 'register-table-year-frozen', 'register-table-year'].forEach(function (id) {
         var table = document.getElementById(id);
@@ -3995,13 +4226,13 @@
       });
     }
 
-    /** 月度分栏：左右纵向滚动条同步（左表无横向滚） */
-    function ensureRegisterMonthScrollSync() {
-      var left = document.getElementById('register-split-left-wrap');
-      var right = document.getElementById('register-split-right-wrap');
+    /** 左右分栏表：同步纵向滚动（左侧隐藏滚动条） */
+    function ensureManpowerSplitScrollSync(leftWrapId, rightWrapId) {
+      var left = document.getElementById(leftWrapId);
+      var right = document.getElementById(rightWrapId);
       if (!left || !right) return;
-      if (right._registerMonthScrollSyncBound) return;
-      right._registerMonthScrollSyncBound = true;
+      if (right._manpowerSplitScrollSyncBound) return;
+      right._manpowerSplitScrollSyncBound = true;
       var syncing = false;
       right.addEventListener('scroll', function () {
         if (syncing) return;
@@ -4017,31 +4248,10 @@
       });
     }
 
-    function ensureReadonlySplitScrollSync(leftId, rightId) {
-      var left = document.getElementById(leftId);
-      var right = document.getElementById(rightId);
-      if (!left || !right) return;
-      if (right._pmSplitSyncBound) return;
-      right._pmSplitSyncBound = true;
-      var syncing = false;
-      right.addEventListener('scroll', function () {
-        if (syncing) return;
-        syncing = true;
-        left.scrollTop = right.scrollTop;
-        syncing = false;
-      });
-      left.addEventListener('scroll', function () {
-        if (syncing) return;
-        syncing = true;
-        right.scrollTop = left.scrollTop;
-        syncing = false;
-      });
-    }
-
-    /** 月度双表：逐行拉齐 thead 行高，使左右两行表头 + tbody 与对侧同一 scrollTop 时对齐 */
-    function syncRegisterMonthSplitTheadHeights() {
-      var tf = document.getElementById('register-table-frozen');
-      var tr = document.getElementById('register-table');
+    /** 左右分栏表：拉齐 thead 两行高度 */
+    function syncManpowerSplitTheadHeights(leftTableId, rightTableId) {
+      var tf = document.getElementById(leftTableId);
+      var tr = document.getElementById(rightTableId);
       if (!tf || !tr || !tf.tHead || !tr.tHead || tf.tHead.rows.length < 2 || tr.tHead.rows.length < 2) return;
       var r0L = tf.tHead.rows[0];
       var r1L = tf.tHead.rows[1];
@@ -4086,30 +4296,6 @@
         leftRows[j].style.height = px;
         rightRows[j].style.height = px;
       }
-    }
-
-    function syncReadonlySplitTheadHeights(leftTableId, rightTableId) {
-      var tf = document.getElementById(leftTableId);
-      var tr = document.getElementById(rightTableId);
-      if (!tf || !tr || !tf.tHead || !tr.tHead || tf.tHead.rows.length < 2 || tr.tHead.rows.length < 2) return;
-      var r0L = tf.tHead.rows[0];
-      var r1L = tf.tHead.rows[1];
-      var r0R = tr.tHead.rows[0];
-      var r1R = tr.tHead.rows[1];
-      r0L.style.height = '';
-      r1L.style.height = '';
-      r0R.style.height = '';
-      r1R.style.height = '';
-      void tf.offsetHeight;
-      void tr.offsetHeight;
-      var h0 = Math.max(r0L.getBoundingClientRect().height, r0R.getBoundingClientRect().height, 1);
-      var h1 = Math.max(r1L.getBoundingClientRect().height, r1R.getBoundingClientRect().height, 1);
-      var px0 = Math.ceil(h0) + 'px';
-      var px1 = Math.ceil(h1) + 'px';
-      r0L.style.height = px0;
-      r0R.style.height = px0;
-      r1L.style.height = px1;
-      r1R.style.height = px1;
     }
 
     // 用于弹窗时定位删除内容
@@ -5822,17 +6008,17 @@
       if (!thead) return;
       var headers = [
         { key: null, label: '序号', sortable: false, thClass: 'main seq' },
-        { key: 'category', label: '风险类别', sortable: true },
-        { key: 'source', label: '风险来源', sortable: true },
-        { key: 'project', label: '项目', sortable: true },
-        { key: 'issue', label: '问题&影响说明', sortable: true },
-        { key: 'solution', label: '解决方案', sortable: true },
-        { key: 'level', label: '风险等级', sortable: true },
-        { key: 'owner', label: '跟进人', sortable: true },
-        { key: 'regTime', label: '风险登记时间', sortable: true },
-        { key: 'closeTime', label: '风险解除时间', sortable: true },
-        { key: 'status', label: '状态', sortable: true },
-        { key: null, label: '操作', sortable: false }
+        { key: 'category', label: '风险类别', sortable: true, thClass: 'sub risk-th-tag' },
+        { key: 'source', label: '风险来源', sortable: true, thClass: 'sub risk-th-tag' },
+        { key: 'project', label: '项目', sortable: true, thClass: 'sub risk-th-project' },
+        { key: 'issue', label: '问题&影响说明', sortable: true, thClass: 'sub risk-th-textwide' },
+        { key: 'solution', label: '解决方案', sortable: true, thClass: 'sub risk-th-textwide' },
+        { key: 'level', label: '风险等级', sortable: true, thClass: 'sub risk-th-level' },
+        { key: 'owner', label: '跟进人', sortable: true, thClass: 'sub risk-th-owner' },
+        { key: 'regTime', label: '风险登记时间', sortable: true, thClass: 'sub risk-th-date' },
+        { key: 'closeTime', label: '风险解除时间', sortable: true, thClass: 'sub risk-th-date' },
+        { key: 'status', label: '状态', sortable: true, thClass: 'sub risk-th-status' },
+        { key: null, label: '操作', sortable: false, thClass: 'sub risk-th-action' }
       ];
       var tr = document.createElement('tr');
       headers.forEach(function (h) {
@@ -5845,15 +6031,11 @@
           var btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'risk-th-sort-btn';
-          btn.title = '按「' + h.label + '」排序，再次点击切换升序/降序';
-          var spanLabel = document.createElement('span');
-          spanLabel.textContent = h.label;
-          var ind = document.createElement('span');
-          ind.className = 'risk-sort-ind';
-          ind.setAttribute('aria-hidden', 'true');
-          ind.textContent = active ? (riskSortState.dir === 'asc' ? '▲' : '▼') : '↕';
-          btn.appendChild(spanLabel);
-          btn.appendChild(ind);
+          var sortHint = active
+            ? (riskSortState.dir === 'asc' ? '（当前升序，点击切换为降序）' : '（当前降序，点击切换为升序）')
+            : '（点击升序排序，再次点击降序）';
+          btn.title = '按「' + h.label + '」排序' + sortHint;
+          btn.textContent = h.label;
           (function (fk) {
             btn.addEventListener('click', function () { toggleRiskSort(fk); });
           })(h.key);
@@ -5996,12 +6178,12 @@
           return td;
         }
 
-        tr.appendChild(tdSelect('category', [['进度', '进度'], ['质量', '质量'], ['范围', '范围'], ['成本', '成本']]));
-        tr.appendChild(tdSelect('source', [['资源', '资源'], ['技术', '技术']]));
-        tr.appendChild(tdTextInput('project'));
+        tr.appendChild(tdSelect('category', [['进度', '进度'], ['质量', '质量'], ['范围', '范围'], ['成本', '成本']], 'risk-cell-tag'));
+        tr.appendChild(tdSelect('source', [['资源', '资源'], ['技术', '技术']], 'risk-cell-tag'));
+        tr.appendChild(tdTextInput('project', 'risk-cell-project'));
 
         const tdIssue = document.createElement('td');
-        tdIssue.className = 'risk-cell w-wide';
+        tdIssue.className = 'risk-cell w-wide risk-cell-textwide';
         const taIssue = document.createElement('textarea');
         taIssue.className = 'risk-input';
         taIssue.setAttribute('data-risk-field', 'issue');
@@ -6015,7 +6197,7 @@
         tr.appendChild(tdIssue);
 
         const tdSolution = document.createElement('td');
-        tdSolution.className = 'risk-cell w-wide';
+        tdSolution.className = 'risk-cell w-wide risk-cell-textwide';
         const taSolution = document.createElement('textarea');
         taSolution.className = 'risk-input';
         taSolution.setAttribute('data-risk-field', 'solution');
@@ -6028,12 +6210,12 @@
         tdSolution.appendChild(taSolution);
         tr.appendChild(tdSolution);
 
-        tr.appendChild(tdSelect('level', [['高', '高'], ['中', '中'], ['低', '低']]));
+        tr.appendChild(tdSelect('level', [['高', '高'], ['中', '中'], ['低', '低']], 'risk-cell-level'));
 
-        tr.appendChild(tdTextInput('owner'));
+        tr.appendChild(tdTextInput('owner', 'risk-cell-owner'));
 
         const tdRegDate = document.createElement('td');
-        tdRegDate.className = 'risk-cell';
+        tdRegDate.className = 'risk-cell risk-cell-date';
         const rin = document.createElement('input');
         rin.type = 'date';
         rin.className = 'risk-input';
@@ -6047,7 +6229,7 @@
         tr.appendChild(tdRegDate);
 
         const tdCloseDate = document.createElement('td');
-        tdCloseDate.className = 'risk-cell';
+        tdCloseDate.className = 'risk-cell risk-cell-date';
         const din = document.createElement('input');
         din.type = 'date';
         din.className = 'risk-input';
@@ -6060,10 +6242,10 @@
         tdCloseDate.appendChild(din);
         tr.appendChild(tdCloseDate);
 
-        tr.appendChild(tdSelect('status', [['open', 'open'], ['close', 'close'], ['hold', 'hold']]));
+        tr.appendChild(tdSelect('status', [['open', 'open'], ['close', 'close'], ['hold', 'hold']], 'risk-cell-status'));
 
         const tdAct = document.createElement('td');
-        tdAct.className = 'center-cell';
+        tdAct.className = 'center-cell risk-cell-action';
         if (allowEdit) {
           const delBtn = document.createElement('button');
           delBtn.type = 'button';
@@ -6072,7 +6254,7 @@
           delBtn.onclick = function () { showRiskDeleteModal(idx); };
           tdAct.appendChild(delBtn);
         } else {
-          tdAct.className = 'center-cell risk-readonly-cell';
+          tdAct.className = 'center-cell risk-cell-action risk-readonly-cell';
           tdAct.textContent = '—';
         }
         tr.appendChild(tdAct);
@@ -6123,41 +6305,13 @@
 
     function updatePhaseTableFooterStats() {
       var el = document.getElementById('phase-table-footer-stats');
-      var tb = document.getElementById('phase-table-body');
-      if (!el || !tb) return;
-      var dataRows = tb.querySelectorAll('tr[data-phase-program]');
-      if (!dataRows.length) {
-        el.textContent = '';
-        return;
-      }
-      var n = 0;
-      dataRows.forEach(function (tr) {
-        if (tr.style.display !== 'none') n++;
-      });
-      el.textContent = '共 ' + n + ' 条记录';
+      if (el) el.textContent = '';
     }
 
     function updateManpowerFooterStatsRowCount() {
-      var tbId =
-        manpowerSubView === 'month'
-          ? 'table-body'
-          : manpowerSubView === 'season'
-            ? 'register-season-body'
-            : 'register-year-body';
-      var elId =
-        manpowerSubView === 'month'
-          ? 'manpower-footer-stats-month'
-          : manpowerSubView === 'season'
-            ? 'manpower-footer-stats-season'
-            : 'manpower-footer-stats-year';
       document.querySelectorAll('.table-footer-stats[id^="manpower-footer-stats-"]').forEach(function (n) {
         if (n && n.textContent !== undefined) n.textContent = '';
       });
-      var tb = document.getElementById(tbId);
-      var el = document.getElementById(elId);
-      if (!tb || !el) return;
-      var cnt = tb.querySelectorAll('tr').length;
-      el.textContent = cnt ? ('共 ' + cnt + ' 条记录') : '';
     }
 
     function updateRiskTableFooterStats() {
@@ -6304,9 +6458,11 @@
                   sel.appendChild(o);
                 });
                 sel.disabled = !admin;
+                applyPhasePlanMatchStyle(sel);
                 if (admin) {
                   sel.addEventListener('change', function () {
                     slice[key] = sel.value;
+                    applyPhasePlanMatchStyle(sel);
                   });
                 }
                 td.appendChild(sel);
@@ -6324,6 +6480,16 @@
                 td.appendChild(ta);
               }
               tr.appendChild(td);
+            });
+            tr.addEventListener('click', function (e) {
+              if (e.target.closest('textarea, select, button, .icon-btn')) return;
+              var body = document.getElementById('phase-table-body');
+              if (body) {
+                body.querySelectorAll('tr.phase-row-selected').forEach(function (r) {
+                  r.classList.remove('phase-row-selected');
+                });
+              }
+              tr.classList.add('phase-row-selected');
             });
             tb.appendChild(tr);
           });
@@ -7189,33 +7355,30 @@
         syncProjectManpowerPointerToMonth();
         renderManpowerTheadMonth();
         renderMonthTableBody();
-        ensureRegisterMonthScrollSync();
+        ensureManpowerSplitScrollSync('register-split-left-wrap', 'register-split-right-wrap');
         updateManpowerMonthSourceHint();
       } else if (manpowerSubView === 'season') {
         renderManpowerTheadSeason();
         renderSeasonTableBody();
-        ensureReadonlySplitScrollSync('register-season-split-left-wrap', 'register-season-split-right-wrap');
+        ensureManpowerSplitScrollSync('register-season-split-left-wrap', 'register-season-split-right-wrap');
       } else {
         renderManpowerTheadYear();
         renderYearTableBody();
-        ensureReadonlySplitScrollSync('register-year-split-left-wrap', 'register-year-split-right-wrap');
+        ensureManpowerSplitScrollSync('register-year-split-left-wrap', 'register-year-split-right-wrap');
       }
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
-          syncManpowerTableStickyLayout();
           if (manpowerSubView === 'month') {
-            syncRegisterMonthSplitTheadHeights();
+            syncManpowerSplitTheadHeights('register-table-frozen', 'register-table');
             syncSplitTbodyRowHeights('register-table-frozen', 'register-table');
-            syncManpowerTableStickyLayout();
           } else if (manpowerSubView === 'season') {
-            syncReadonlySplitTheadHeights('register-table-season-frozen', 'register-table-season');
+            syncManpowerSplitTheadHeights('register-table-season-frozen', 'register-table-season');
             syncSplitTbodyRowHeights('register-table-season-frozen', 'register-table-season');
-            syncManpowerTableStickyLayout();
           } else {
-            syncReadonlySplitTheadHeights('register-table-year-frozen', 'register-table-year');
+            syncManpowerSplitTheadHeights('register-table-year-frozen', 'register-table-year');
             syncSplitTbodyRowHeights('register-table-year-frozen', 'register-table-year');
-            syncManpowerTableStickyLayout();
           }
+          syncManpowerTableStickyLayout();
         });
       });
       updateManpowerFooterStatsRowCount();
