@@ -216,7 +216,8 @@
 
     #panel-phase .table-shell,
     #panel-manpower .table-shell,
-    #panel-manpower .table-shell-manpower-month-split {
+    #panel-manpower .table-shell-manpower-month-split,
+    #panel-risk .table-shell {
       max-height: calc(100vh - 180px);
     }
 
@@ -480,7 +481,7 @@
     #panel-risk .risk-table-wrap,
     #panel-risk .panel-actions {
       width: 100%;
-      max-width: 1180px;
+      max-width: 1240px;
       box-sizing: border-box;
     }
 
@@ -524,6 +525,13 @@
 
     /* 阶段表：单行 thead，整块 sticky 即可 */
     #phase-table thead {
+      position: sticky;
+      top: 0;
+      z-index: 22;
+    }
+
+    /* 风险表：与阶段表一致，单行 thead 在滚动容器内置顶 */
+    #risk-table thead {
       position: sticky;
       top: 0;
       z-index: 22;
@@ -587,6 +595,23 @@
     .manpower-toolbar .manpower-subtabs {
       margin-right: 8px;
       flex-shrink: 0;
+    }
+
+    /*
+     * 人力登记：月/季/年切换已并入 .manpower-toolbar；压低分段条，与同一条筛选栏对齐。
+     */
+    #panel-manpower .manpower-toolbar .manpower-subtabs {
+      padding: 2px;
+      gap: 2px;
+      box-shadow: none;
+      border-color: var(--border-light);
+      background: var(--surface);
+    }
+
+    #panel-manpower .manpower-toolbar .manpower-subtab {
+      padding: 4px 12px;
+      font-size: 13px;
+      line-height: 1.2;
     }
 
     #panel-manpower #register-table-season .pin-col-1,
@@ -868,7 +893,7 @@
     }
 
     .risk-table-wrap .table-footer-stats {
-      max-width: 1180px;
+      max-width: 1240px;
     }
 
     #panel-phase .manpower-toolbar,
@@ -1090,7 +1115,7 @@
       align-items: center;
       width: 100%;
       max-width: 1240px;
-      margin: 20px 0 14px;
+      margin: 8px 0 6px;
       box-sizing: border-box;
     }
 
@@ -1140,6 +1165,15 @@
 
     .risk-toolbar {
       justify-content: flex-end;
+    }
+
+    /* 风险登记：筛选与「项目风险分析」同行，分析按钮靠右（与阶段状态工具条一致） */
+    #panel-risk .manpower-toolbar.risk-toolbar {
+      justify-content: flex-start;
+    }
+
+    #panel-risk .manpower-toolbar.risk-toolbar .manpower-analysis-btn {
+      margin-left: auto;
     }
 
     .manpower-analysis-sort-row {
@@ -1205,14 +1239,16 @@
       display: block;
     }
 
+    /* 阶段状态 / 人力登记 / 风险登记：顶部筛选条共用，统一内边距与行距 */
     .manpower-toolbar {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 8px 14px;
-      margin-bottom: 12px;
-      padding: 8px 12px;
-      min-height: 44px;
+      gap: 6px 12px;
+      margin-bottom: 10px;
+      padding: 6px 10px;
+      min-height: 0;
+      box-sizing: border-box;
       background: var(--header-bg-sub);
       border: 1px solid var(--border-light);
       border-radius: var(--radius-sm);
@@ -1348,7 +1384,7 @@
 
     .risk-table-wrap {
       width: 100%;
-      max-width: 1180px;
+      max-width: 1240px;
       margin: 0 0 8px;
     }
 
@@ -2175,6 +2211,18 @@
   </div>
   <div id="panel-risk" class="tab-panel" role="tabpanel" aria-label="项目风险登记">
     <div class="manpower-toolbar risk-toolbar">
+      <label>级别 <select id="risk-filter-level" aria-label="按风险等级筛选" title="不改变已加载数据，仅过滤当前表格显示">
+        <option value="">全部</option>
+        <option value="高">高</option>
+        <option value="中">中</option>
+        <option value="低">低</option>
+      </select></label>
+      <label>状态 <select id="risk-filter-status" aria-label="按状态筛选" title="不改变已加载数据，仅过滤当前表格显示">
+        <option value="">全部</option>
+        <option value="open">open</option>
+        <option value="close">close</option>
+        <option value="hold">hold</option>
+      </select></label>
       <button type="button" class="manpower-analysis-btn" id="btn-risk-analysis" title="查看风险状态分布与分组统计">项目风险分析</button>
     </div>
     <div class="risk-table-wrap">
@@ -4597,10 +4645,61 @@
       return '（未填写项目与问题）';
     }
 
-    function buildRiskAnalysisStats() {
+    function readRiskFilterValues() {
+      var lvEl = document.getElementById('risk-filter-level');
+      var stEl = document.getElementById('risk-filter-status');
+      return {
+        level: lvEl ? String(lvEl.value || '').trim() : '',
+        status: stEl ? String(stEl.value || '').trim().toLowerCase() : ''
+      };
+    }
+
+    function riskFiltersActive() {
+      var f = readRiskFilterValues();
+      return !!(f.level || f.status);
+    }
+
+    function riskRowMatchesFilters(row) {
+      if (!row) return false;
+      var f = readRiskFilterValues();
+      if (f.level) {
+        var lv = row.level != null ? String(row.level).trim() : '';
+        if (lv !== f.level) return false;
+      }
+      if (f.status) {
+        var st = row.status != null ? String(row.status).trim().toLowerCase() : '';
+        if (st !== f.status) return false;
+      }
+      return true;
+    }
+
+    function getRiskFilteredRowsArray() {
+      var out = [];
+      if (!Array.isArray(riskRows)) return out;
+      for (var i = 0; i < riskRows.length; i++) {
+        if (riskRowMatchesFilters(riskRows[i])) out.push(riskRows[i]);
+      }
+      return out;
+    }
+
+    function initRiskFilterUi() {
+      var lv = document.getElementById('risk-filter-level');
+      var st = document.getElementById('risk-filter-status');
+      [lv, st].forEach(function (el) {
+        if (!el || el._pmRiskFilterWired) return;
+        el._pmRiskFilterWired = true;
+        el.addEventListener('change', function () {
+          renderRiskTable();
+        });
+      });
+    }
+
+    function buildRiskAnalysisStats(rowsOpt) {
+      var rows = rowsOpt != null ? rowsOpt : riskRows;
+      if (!Array.isArray(rows)) rows = [];
       var statusMap = {};
       var groupMap = {};
-      riskRows.forEach(function (row) {
+      rows.forEach(function (row) {
         var st = row.status != null ? String(row.status).trim() : '';
         if (!st) st = '（未填状态）';
         statusMap[st] = (statusMap[st] || 0) + 1;
@@ -4791,22 +4890,26 @@
       destroyRiskAnalysisCharts();
       lastRiskAnalysisStats = null;
 
+      var filteredRows = getRiskFilteredRowsArray();
+
       if (noteEl) {
-        noteEl.textContent = '基于当前列表共 ' + riskRows.length + ' 条风险记录（含未保存的编辑内容）。';
+        noteEl.textContent = '基于当前列表共 ' + filteredRows.length + ' 条风险记录（含未保存的编辑内容）。';
       }
 
       var sections = body.querySelectorAll('.manpower-analysis-section');
 
-      if (riskRows.length === 0) {
+      if (filteredRows.length === 0) {
         if (emptyEl) {
           emptyEl.hidden = false;
-          emptyEl.textContent = '暂无风险记录，无法生成分析。';
+          emptyEl.textContent = riskFiltersActive()
+            ? '当前筛选条件下无匹配记录，无法生成分析；请选择「全部」或调整筛选后重试。'
+            : '暂无风险记录，无法生成分析。';
         }
         sections.forEach(function (sec) { sec.style.display = 'none'; });
       } else {
         if (emptyEl) emptyEl.hidden = true;
         sections.forEach(function (sec) { sec.style.display = ''; });
-        lastRiskAnalysisStats = buildRiskAnalysisStats();
+        lastRiskAnalysisStats = buildRiskAnalysisStats(filteredRows);
         renderRiskAnalysisStatusPie(lastRiskAnalysisStats);
         renderRiskAnalysisGroupBar(lastRiskAnalysisStats);
       }
@@ -5169,19 +5272,15 @@
     function syncRiskRowsFromDom() {
       const tb = document.getElementById('risk-table-body');
       if (!tb || riskRows.length === 0) return;
-      const trList = tb.querySelectorAll('tr');
-      let i = 0;
-      trList.forEach(function (tr) {
-        const tds = tr.querySelectorAll('td');
-        if (tds.length < 10) return;
-        if (!riskRows[i]) return;
+      tb.querySelectorAll('tr[data-risk-row-index]').forEach(function (tr) {
+        var i = parseInt(tr.getAttribute('data-risk-row-index'), 10);
+        if (isNaN(i) || !riskRows[i]) return;
         RISK_FIELD_ORDER.forEach(function (key) {
           const el = tr.querySelector('[data-risk-field="' + key + '"]');
           if (el && 'value' in el) {
             riskRows[i][key] = el.value;
           }
         });
-        i++;
       });
     }
 
@@ -5789,12 +5888,30 @@
         updateRiskTableFooterStats();
         return;
       }
-      riskRows.forEach(function (row, idx) {
+      var filteredIndices = [];
+      for (var fi = 0; fi < riskRows.length; fi++) {
+        if (riskRowMatchesFilters(riskRows[fi])) filteredIndices.push(fi);
+      }
+      if (filteredIndices.length === 0) {
         const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 12;
+        td.className = 'center-cell';
+        td.style.padding = '24px';
+        td.textContent = '当前筛选条件下无匹配记录，请调整级别或状态下拉，或选择「全部」。';
+        tr.appendChild(td);
+        tb.appendChild(tr);
+        updateRiskTableFooterStats();
+        return;
+      }
+      filteredIndices.forEach(function (idx, visPos) {
+        const row = riskRows[idx];
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-risk-row-index', String(idx));
 
         const tdSeq = document.createElement('td');
         tdSeq.className = 'main seq';
-        tdSeq.textContent = String(idx + 1);
+        tdSeq.textContent = String(visPos + 1);
         tr.appendChild(tdSeq);
 
         function tdTextInput(field, cls) {
@@ -6046,8 +6163,20 @@
     function updateRiskTableFooterStats() {
       var el = document.getElementById('risk-table-footer-stats');
       if (!el) return;
-      var n = Array.isArray(riskRows) ? riskRows.length : 0;
-      el.textContent = '共 ' + n + ' 条记录';
+      var total = Array.isArray(riskRows) ? riskRows.length : 0;
+      if (total === 0) {
+        el.textContent = '共 0 条记录';
+        return;
+      }
+      var m = 0;
+      for (var ri = 0; ri < riskRows.length; ri++) {
+        if (riskRowMatchesFilters(riskRows[ri])) m++;
+      }
+      if (riskFiltersActive()) {
+        el.textContent = '共 ' + m + ' 条记录（全部 ' + total + ' 条）';
+      } else {
+        el.textContent = '共 ' + total + ' 条记录';
+      }
     }
 
     function renderPhaseThead() {
@@ -7452,6 +7581,7 @@
         initManpowerTimeUi();
         initPhaseTimeUi();
         initRiskAnalysisUi();
+        initRiskFilterUi();
         renderTable();
         renderRiskTable();
         renderPhaseTable();
@@ -7473,6 +7603,7 @@
           initManpowerTimeUi();
           initPhaseTimeUi();
           initRiskAnalysisUi();
+          initRiskFilterUi();
           renderTable();
           renderRiskTable();
           renderPhaseTable();
