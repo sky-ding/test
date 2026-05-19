@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ProjectGuard 前端界面优化对比图例</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --border: #dfe1e6;
+      --text: #1d1f23;
+      --text-secondary: #5a5c63;
+      --text-muted: #8a8d91;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 6px 12px rgba(0, 0, 0, 0.08);
+      --radius: 8px;
+      --radius-md: 10px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 60px;
+    }
+
+    header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p {
+      color: var(--text-secondary);
+      font-size: 16px;
+    }
+
+    .section {
+      background: var(--surface);
+      border-radius: var(--radius-md);
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow);
+    }
+
+    .section h2 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section h2 .icon {
+      font-size: 28px;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .comparison-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .comparison-card-header {
+      padding: 16px 20px;
+      font-weight: 600;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .comparison-card-header.before {
+      background: #fef3c7;
+      color: #92400e;
+      border-bottom: 1px solid #fcd34d;
+    }
+
+    .comparison-card-header.after {
+      background: #d1fae5;
+      color: #065f46;
+      border-bottom: 1px solid #6ee7b7;
+    }
+
+    .comparison-card-body {
+      padding: 24px;
+      background: #fafbfc;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ===== 色彩系统 ===== */
+    .color-palette {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .color-swatch {
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .color-swatch .hex {
+      display: block;
+      margin-top: 8px;
+      font-size: 11px;
+      opacity: 0.8;
+      font-family: monospace;
+    }
+
+    /* ===== 按钮样式 ===== */
+    .btn-demo {
+      display: inline-block;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: var(--radius);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: none;
+      font-family: inherit;
+    }
+
+    .btn-before {
+      background: #1677ff;
+      color: #fff;
+      border: 1px solid #1677ff;
+    }
+
+    .btn-after {
+      background: var(--primary-gradient);
+      color: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-after:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    /* ===== Tab 样式 ===== */
+    .tabs-demo {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px;
+      border-radius: var(--radius);
+    }
+
+    .tabs-before {
+      background: #f5f5f5;
+      border: 1px solid #d9d9d9;
+    }
+
+    .tabs-after {
+      background: #f9fafb;
+      border: 1px solid #eff0f3;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .tab-item {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-before {
+      background: transparent;
+      color: rgba(0, 0, 0, 0.65);
+    }
+
+    .tab-before.active {
+      background: #e6f4ff;
+      color: #1677ff;
+    }
+
+    .tab-after {
+      background: transparent;
+      color: var(--text-secondary);
+    }
+
+    .tab-after.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ===== 表格样式 ===== */
+    .table-demo {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .table-demo th,
+    .table-demo td {
+      padding: 10px 12px;
+      text-align: left;
+      border: 1px solid var(--border);
+    }
+
+    .table-before th {
+      background: linear-gradient(180deg, #f8f9fb 0%, #fafafa 100%);
+      color: rgba(0, 0, 0, 0.65);
+      font-size: 12px;
+    }
+
+    .table-after th {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .table-demo td {
+      background: #fff;
+      color: var(--text);
+    }
+
+    /* ===== 表单控件 ===== */
+    .input-demo {
+      padding: 10px 14px;
+      font-size: 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      font-family: inherit;
+      width: 200px;
+    }
+
+    .input-before {
+      background: #fff;
+      color: rgba(0, 0, 0, 0.88);
+    }
+
+    .input-after {
+      background: #fff;
+      color: var(--text);
+      transition: all 0.2s;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .input-after:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    /* ===== 阴影对比 ===== */
+    .shadow-demo {
+      width: 150px;
+      height: 100px;
+      background: #fff;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .shadow-before {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02);
+    }
+
+    .shadow-after {
+      box-shadow: var(--shadow);
+    }
+
+    /* ===== 标签 ===== */
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-right: 8px;
+    }
+
+    .badge-improved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .badge-legacy {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    /* ===== 动画演示 ===== */
+    @keyframes shine {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    .btn-animated {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-animated::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shine 3s infinite;
+    }
+
+    /* ===== 图例说明 ===== */
+    .legend {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: var(--radius);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .legend-dot.before {
+      background: #f59e0b;
+    }
+
+    .legend-dot.after {
+      background: #10b981;
+    }
+
+    /* ===== 响应式 ===== */
+    @media (max-width: 768px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .legend {
+        flex-direction: column;
+        gap: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎨 ProjectGuard 前端界面优化对比图例</h1>
+      <p>直观展示优化前后的视觉差异和改进点</p>
+    </header>
+
+    <div class="legend">
+      <div class="legend-item">
+        <span class="legend-dot before"></span>
+        <span>优化前（旧版设计）</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-dot after"></span>
+        <span>优化后（新版设计）</span>
+      </div>
+    </div>
+
+    <!-- ===== 色彩系统 ===== -->
+    <section class="section">
+      <h2><span class="icon">🎨</span> 色彩系统对比</h2>
+      
+      <div class="comparison-grid">
+        <div>
+          <h3 style="margin-bottom: 16px; font-size: 16px;">主色调</h3>
+          <div class="color-palette">
+            <div class="color-swatch" style="background: #1677ff; color: #fff;">
+              旧版主色
+              <span class="hex">#1677ff</span>
+            </div>
+            <div class="color-swatch" style="background: #2563eb; color: #fff;">
+              新版主色
+              <span class="hex">#2563eb</span>
+            </div>
+            <div class="color-swatch" style="background: linear-gradient(135deg, #2563eb, #3b82f6); color: #fff;">
+              渐变主色
+              <span class="hex">Gradient</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 style="margin-bottom: 16px; font-size: 16px;">功能色</h3>
+          <div class="color-palette">
+            <div class="color-swatch" style="background: #10b981; color: #fff;">
+              成功
+              <span class="hex">#10b981</span>
+            </div>
+            <div class="color-swatch" style="background: #f59e0b; color: #fff;">
+              警告
+              <span class="hex">#f59e0b</span>
+            </div>
+            <div class="color-swatch" style="background: #ef4444; color: #fff;">
+              错误
+              <span class="hex">#ef4444</span>
+            </div>
+            <div class="color-swatch" style="background: #06b6d4; color: #fff;">
+              信息
+              <span class="hex">#06b6d4</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 按钮样式 ===== -->
+    <section class="section">
+      <h2><span class="icon">🔘</span> 按钮样式对比</h2>
+      
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="comparison-card-header before">优化前</div>
+          <div class="comparison-card-body">
+            <button class="btn-demo btn-before">主要按钮</button>
+          </div>
+          <div style="padding: 16px; font-size: 13px; color: var(--text-muted);">
+            • 纯色背景<br>
+            • 有边框<br>
+            • 简单悬停效果<br>
+            • 无阴影
+          </div>
+        </div>
+
+        <div class="comparison-card">
+          <div class="comparison-card-header after">优化后</div>
+          <div class="comparison-card-body">
+            <button class="btn-demo btn-after btn-animated">主要按钮</button>
+          </div>
+          <div style="padding: 16px; font-size: 13px; color: var(--text-muted);">
+            • 渐变背景 ✨<br>
+            • 无边框设计<br>
+            • 光泽动画效果<br>
+            • 多层次阴影<br>
+            • 悬停上移效果
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Tab 样式 ===== -->
+    <section class="section">
+      <h2><span class="icon">📑</span> Tab 标签页对比</h2>
+      
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="comparison-card-header before">优化前</div>
+          <div class="comparison-card-body">
+            <div class="tabs-demo tabs-before">
+              <span class="tab-item tab-before active">项目阶段</span>
+              <span class="tab-item tab-before">人力登记</span>
+              <span class="tab-item tab-before">风险登记</span>
+            </div>
+          </div>
+          <div style="padding: 16px; font-size: 13px; color: var(--text-muted);">
+            • 浅色背景容器<br>
+            • 激活态浅蓝色背景<br>
+            • 蓝色文字<br>
+            • 无阴影
+          </div>
+        </div>
+
+        <div class="comparison-card">
+          <div class="comparison-card-header after">优化后</div>
+          <div class="comparison-card-body">
+            <div class="tabs-demo tabs-after">
+              <span class="tab-item tab-after active">项目阶段</span>
+              <span class="tab-item tab-after">人力登记</span>
+              <span class="tab-item tab-after">风险登记</span>
+            </div>
+          </div>
+          <div style="padding: 16px; font-size: 13px; color: var(--text-muted);">
+            • 更清新的背景<br>
+            • 激活态实心主题色 ✨<br>
+            • 白色文字<br>
+            • 微妙阴影<br>
+            • 底部装饰圆点
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 表格样式 ===== -->
+    <section class="section">
+      <h2><span class="icon">📊</span> 表格样式对比</h2>
+      
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="comparison-card-header before">优化前</div>
+          <div class="comparison-card-body" style="display: block; padding: 0;">
+            <table class="table-demo">
+              <thead>
+                <tr>
+                  <th class="table-before">项目集</th>
+                  <th class="table-before">项目名称</th>
+                  <th class="table-before">状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>项目集 A</td>
+                  <td>子项目 1</td>
+                  <td>进行中</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding: 16px; font-size: 13px; color: var(--text-muted);">
+            • 表头内边距 6px 10px<br>
+            • 表头字号 12px<br>
+            • 普通灰色文字<br>
+            • 简单背景渐变
+          </div>
+        </div>
+
+        <div class="comparison-card">
+          <div class="comparison-card-header after">优化后</div>
+          <div class="comparison-card-body" style="display: block; padding: 0;">
+            <table class="table-demo">
+              <thead>
+                <tr>
+                  <th class="table-after">项目集</th>
+                  <th class="table-after">项目名称</th>
+                  <th class="table-after">状态</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>项目集 A</td>
+                  <td>子项目 1</td>
+                  <td>进行中</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding: 16px; font-size: 13px; color: var(--text-muted);">
+            • 表头内边距 10px 12px ✨<br>
+            • 表头字号 13px<br>
+            • 次要文字色<br>
+            • 大写字母 + 字间距<br>
+            • 更清晰的渐变背景
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 表单控件 ===== -->
+    <section class="section">
+      <h2><span class="icon">📝</span> 表单控件对比</h2>
+      
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="comparison-card-header before">优化前</div>
+          <div class="comparison-card-body">
+            <input type="text" class="input-demo input-before" value="输入框内容" readonly>
+          </div>
+          <div style="padding: 16px; font-size: 13px; color: var(--text-muted);">
+            • 内边距 6px 8px<br>
+            • 圆角 6px<br>
+            • 简单边框<br>
+            • 无过渡动画
+          </div>
+        </div>
+
+        <div class="comparison-card">
+          <div class="comparison-card-header after">优化后</div>
+          <div class="comparison-card-body">
+            <input type="text" class="input-demo input-after" value="输入框内容" readonly>
+          </div>
+          <div style="padding: 16px; font-size: 13px; color: var(--text-muted);">
+            • 内边距 10px 14px ✨<br>
+            • 圆角 8px<br>
+            • 微妙阴影<br>
+            • 平滑过渡动画<br>
+            • 聚焦光环效果
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 阴影系统 ===== -->
+    <section class="section">
+      <h2><span class="icon">🌑</span> 阴影系统对比</h2>
+      
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="comparison-card-header before">优化前</div>
+          <div class="comparison-card-body">
+            <div class="shadow-demo shadow-before">旧版阴影</div>
+          </div>
+          <div style="padding: 16px; font-size: 13px; color: var(--text-muted);">
+            • 单一阴影级别<br>
+            • 较淡的阴影<br>
+            • 缺乏层次感
+          </div>
+        </div>
+
+        <div class="comparison-card">
+          <div class="comparison-card-header after">优化后</div>
+          <div class="comparison-card-body">
+            <div class="shadow-demo shadow-after">新版阴影</div>
+          </div>
+          <div style="padding: 16px; font-size: 13px; color: var(--text-muted);">
+            • 5 级阴影系统 ✨<br>
+            • xs / sm / md / lg / focus<br>
+            • 清晰的视觉层次<br>
+            • 更现代的设计感
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 间距系统 ===== -->
+    <section class="section">
+      <h2><span class="icon">📏</span> 间距系统对比</h2>
+      
+      <div style="margin-top: 20px;">
+        <h3 style="margin-bottom: 16px; font-size: 16px;">优化前</h3>
+        <div style="display: flex; gap: 8px; align-items: flex-end; margin-bottom: 24px;">
+          <div style="width: 60px; height: 30px; background: #fef3c7; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 4px;">8px</div>
+          <div style="width: 60px; height: 50px; background: #fcd34d; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 4px;">12px</div>
+          <div style="width: 60px; height: 70px; background: #fbbf24; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 4px;">16px</div>
+          <div style="width: 60px; height: 90px; background: #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 4px;">20px</div>
+          <div style="width: 60px; height: 110px; background: #d97706; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 4px;">24px</div>
+        </div>
+        
+        <h3 style="margin-bottom: 16px; font-size: 16px;">优化后（标准化）</h3>
+        <div style="display: flex; gap: 8px; align-items: flex-end;">
+          <div style="width: 60px; height: 20px; background: #d1fae5; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 4px;">4px</div>
+          <div style="width: 60px; height: 40px; background: #a7f3d0; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 4px;">8px</div>
+          <div style="width: 60px; height: 60px; background: #6ee7b7; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 4px;">12px</div>
+          <div style="width: 60px; height: 80px; background: #34d399; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 4px;">16px</div>
+          <div style="width: 60px; height: 100px; background: #10b981; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 4px;">20px</div>
+          <div style="width: 60px; height: 120px; background: #059669; display: flex; align-items: center; justify-content: center; font-size: 11px; border-radius: 4px;">24px</div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 24px; padding: 16px; background: #f0fdf4; border-radius: var(--radius); border-left: 4px solid var(--success);">
+        <strong>✨ 改进点：</strong> 新增 4px 最小间距单位，使用 CSS 变量系统统一管理，便于维护和调整
+      </div>
+    </section>
+
+    <!-- ===== 动画效果 ===== -->
+    <section class="section">
+      <h2><span class="icon">✨</span> 动画效果对比</h2>
+      
+      <div class="comparison-grid">
+        <div class="comparison-card">
+          <div class="comparison-card-header before">优化前</div>
+          <div class="comparison-card-body">
+            <button class="btn-demo btn-before" style="transition: background 0.2s;">简单过渡</button>
+          </div>
+          <div style="padding: 16px; font-size: 13px; color: var(--text-muted);">
+            • 简单 0.2s 过渡<br>
+            • 线性缓动<br>
+            • 仅颜色变化
+          </div>
+        </div>
+
+        <div class="comparison-card">
+          <div class="comparison-card-header after">优化后</div>
+          <div class="comparison-card-body">
+            <button class="btn-demo btn-after btn-animated" style="animation: shine 3s infinite;">完整动画系统</button>
+          </div>
+          <div style="padding: 16px; font-size: 13px; color: var(--text-muted);">
+            • 4 级动画时长 ✨<br>
+            • cubic-bezier 缓动<br>
+            • 多属性过渡<br>
+            • 光泽扫光效果<br>
+            • 位移动画
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 总结 ===== -->
+    <section class="section" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid var(--primary);">
+      <h2><span class="icon">📈</span> 优化成果总结</h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-top: 24px;">
+        <div style="padding: 20px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-sm);">
+          <div style="font-size: 32px; margin-bottom: 8px;">🎨</div>
+          <div style="font-size: 24px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">视觉吸引力</div>
+          <div style="color: var(--text-secondary);">现代化设计语言，更精致的视觉效果</div>
+        </div>
+
+        <div style="padding: 20px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-sm);">
+          <div style="font-size: 32px; margin-bottom: 8px;">🖱️</div>
+          <div style="font-size: 24px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">交互流畅度</div>
+          <div style="color: var(--text-secondary);">平滑的动画过渡，丰富的状态反馈</div>
+        </div>
+
+        <div style="padding: 20px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-sm);">
+          <div style="font-size: 32px; margin-bottom: 8px;">📖</div>
+          <div style="font-size: 24px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">可读性</div>
+          <div style="color: var(--text-secondary);">优化的对比度和字号层级</div>
+        </div>
+
+        <div style="padding: 20px; background: #fff; border-radius: var(--radius); box-shadow: var(--shadow-sm);">
+          <div style="font-size: 32px; margin-bottom: 8px;">🔧</div>
+          <div style="font-size: 24px; font-weight: 700; color: var(--primary); margin-bottom: 8px;">可维护性</div>
+          <div style="color: var(--text-secondary);">CSS 变量系统，易于调整和扩展</div>
+        </div>
+      </div>
+    </section>
+
+    <footer style="text-align: center; margin-top: 60px; padding-top: 32px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 14px;">
+      <p>ProjectGuard 前端界面优化对比图例</p>
+      <p style="margin-top: 8px;">优化日期：2026-05-19 | 版本：v2.0</p>
+    </footer>
+  </div>
+</body>
+</html>
