@@ -63,10 +63,16 @@ def test_risk_prompt_no_longer_points_to_settings_project_tree() -> None:
     assert "firstSubProjectMetaInTree()" in src
 
 
-def test_manpower_split_tables_sync_body_row_heights() -> None:
+def test_manpower_tables_use_sticky_pin_columns() -> None:
     src = _html()
 
-    assert "function syncSplitTbodyRowHeights(" in src
-    assert "syncSplitTbodyRowHeights('register-table-frozen', 'register-table')" in src
-    assert "syncSplitTbodyRowHeights('register-table-season-frozen', 'register-table-season')" in src
-    assert "syncSplitTbodyRowHeights('register-table-year-frozen', 'register-table-year')" in src
+    assert "function applyManpowerTableStickyPins(" in src
+    assert "appendManpowerTheadStructureCells(tr1, tr2)" in src
+    assert "applyStickyPinLeftFromDom(document.getElementById('register-table'))" in src
+    assert "register-table-frozen" not in src
+    assert "function ensureManpowerSplitScrollSync(" not in src
+    assert ":not(.pin-col-1):not(.pin-col-2):not(.pin-col-3)" in src
+    assert "#panel-manpower #register-table thead .pin-col-1" in src
+    assert "thead tr:nth-child(2) > th.pin-col-2" in src
+    assert "table.tHead.rows[1]" in src
+    assert "querySelector('colgroup')" in src
