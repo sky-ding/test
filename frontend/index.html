@@ -3120,8 +3120,14 @@
       return s;
     }
 
+    function formatManpowerValue(v) {
+      var n = Number(v);
+      if (isNaN(n)) return '0.00';
+      return n.toFixed(2);
+    }
+
     function formatManpowerRatio(numerator, denominator) {
-      if (!denominator || denominator <= 0) return '0%';
+      if (!denominator || denominator <= 0) return '0.0%';
       return ((numerator / denominator) * 100).toFixed(1) + '%';
     }
 
@@ -3367,7 +3373,7 @@
                     label: function (context) {
                       var num = Number(context.raw);
                       var pct = setSum > 0 ? ((num / setSum) * 100).toFixed(1) : '0.0';
-                      return context.label + ': ' + num + '（' + pct + '%）';
+                      return context.label + ': ' + formatManpowerValue(num) + '（' + pct + '%）';
                     }
                   }
                 }
@@ -3434,7 +3440,7 @@
                     label: function (context) {
                       var num = Number(context.raw);
                       var pct = subT > 0 ? ((num / subT) * 100).toFixed(1) : '0.0';
-                      return context.label + ': ' + num + '（' + pct + '%）';
+                      return context.label + ': ' + formatManpowerValue(num) + '（' + pct + '%）';
                     }
                   }
                 }
@@ -3474,7 +3480,7 @@
                   label: function (context) {
                     var num = Number(context.raw);
                     var pct = barTotal > 0 ? ((num / barTotal) * 100).toFixed(1) : '0.0';
-                    return '人力 ' + num + '（占当月全员合计 ' + pct + '%）';
+                    return '人力 ' + formatManpowerValue(num) + '（占当月全员合计 ' + pct + '%）';
                   }
                 }
               }
@@ -7218,18 +7224,18 @@
               if (!isNaN(vn)) rowTotal += vn;
               if (admin) {
                 tdC.innerHTML = `
-                <span id="v-${setIdx}-${projectSetIdx}-${projIdx}-${i}" ondblclick="editManpower(${setIdx},${projectSetIdx},${projIdx},${i})">${escapeHtml(String(v))}</span>
+                <span id="v-${setIdx}-${projectSetIdx}-${projIdx}-${i}" ondblclick="editManpower(${setIdx},${projectSetIdx},${projIdx},${i})">${escapeHtml(formatManpowerValue(v))}</span>
                 <div class="actions inline">
                   <button type="button" class="text-action" title="编辑" onclick="editManpower(${setIdx},${projectSetIdx},${projIdx},${i})">编辑</button>
                 </div>`;
               } else {
-                tdC.innerHTML = '<span>' + escapeHtml(String(v)) + '</span>';
+                tdC.innerHTML = '<span>' + escapeHtml(formatManpowerValue(v)) + '</span>';
               }
               tr.appendChild(tdC);
             }
             const tdSum = document.createElement('td');
             tdSum.className = 'center-cell col-sum';
-            tdSum.textContent = String(rowTotal);
+            tdSum.textContent = formatManpowerValue(rowTotal);
             tr.appendChild(tdSum);
             const tdRatio = document.createElement('td');
             tdRatio.className = 'center-cell col-ratio';
@@ -7276,12 +7282,12 @@
               tdC.className = 'center-cell col-mp manpower-readonly-cell';
               var v = sumQuarterDept(proj, y, manpowerSelQuarter, i);
               rowTotal += v;
-              tdC.textContent = String(v);
+              tdC.textContent = formatManpowerValue(v);
               tr.appendChild(tdC);
             }
             const tdSum = document.createElement('td');
             tdSum.className = 'center-cell col-sum manpower-readonly-cell';
-            tdSum.textContent = String(rowTotal);
+            tdSum.textContent = formatManpowerValue(rowTotal);
             tr.appendChild(tdSum);
             const tdRatio = document.createElement('td');
             tdRatio.className = 'center-cell col-ratio manpower-readonly-cell';
@@ -7329,12 +7335,12 @@
               tdC.className = 'center-cell col-mp manpower-readonly-cell';
               var v = sumYearDept(proj, y, i);
               rowTotal += v;
-              tdC.textContent = String(v);
+              tdC.textContent = formatManpowerValue(v);
               tr.appendChild(tdC);
             }
             const tdSum = document.createElement('td');
             tdSum.className = 'center-cell col-sum manpower-readonly-cell';
-            tdSum.textContent = String(rowTotal);
+            tdSum.textContent = formatManpowerValue(rowTotal);
             tr.appendChild(tdSum);
             const tdRatio = document.createElement('td');
             tdRatio.className = 'center-cell col-ratio manpower-readonly-cell';
@@ -7545,9 +7551,10 @@
       const el = document.getElementById(key);
       if (!el) return;
       const oldVal = data[setIdx].projectSets[projectSetIdx].subProjects[projIdx].manpower[col];
-      el.innerHTML = `<input type="number" class="input-p" id="input-${key}" min="0" max="99" value="${oldVal}" 
+      var displayVal = formatManpowerValue(oldVal);
+      el.innerHTML = `<input type="number" class="input-p" id="input-${key}" min="0" max="99" step="0.01" value="${displayVal}" 
         onblur="saveManpower(${setIdx},${projectSetIdx},${projIdx},${col}, this.value)"
-        onkeydown="if(event.key==='Enter'){this.blur()}else if(event.key==='Escape'){this.parentNode.innerHTML='${oldVal}' }"
+        onkeydown="if(event.key==='Enter'){this.blur()}else if(event.key==='Escape'){this.parentNode.innerHTML='${displayVal}' }"
       >`;
       document.getElementById(`input-${key}`).focus();
     }
@@ -7556,7 +7563,7 @@
       if (!requireAdminOrAlert()) return;
       const v = Number(val);
       if (!isNaN(v) && v>=0 && v<100) {
-        data[setIdx].projectSets[projectSetIdx].subProjects[projIdx].manpower[col] = v;
+        data[setIdx].projectSets[projectSetIdx].subProjects[projIdx].manpower[col] = Math.round(v * 100) / 100;
         renderTable();
       } else {
         alert('请输入0-99的人力人数');
