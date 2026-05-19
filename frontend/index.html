@@ -4725,9 +4725,24 @@
       }
     }
 
-    function pmLogout() {
-      pmFetch('/api/v1/auth/logout', { method: 'POST', body: '{}' }).catch(function () {});
-      window.location.href = 'login.html';
+    var pmLogoutInFlight = false;
+
+    async function pmLogout() {
+      if (pmLogoutInFlight) return;
+      pmLogoutInFlight = true;
+      var logoutBtns = document.querySelectorAll('.pm-logout-btn');
+      logoutBtns.forEach(function (b) {
+        if (!b._pmLogoutLabel) b._pmLogoutLabel = b.textContent;
+        b.disabled = true;
+        b.textContent = '退出中…';
+      });
+      try {
+        await pmFetch('/api/v1/auth/logout', { method: 'POST', body: '{}' });
+      } catch (e) {}
+      try {
+        sessionStorage.setItem('pm_logged_out', '1');
+      } catch (ssErr) {}
+      window.location.replace('login.html?logged_out=1');
     }
 
     async function applyMeFromServer() {
@@ -7628,6 +7643,7 @@
         }
       }
     }
+    bindPmLogoutButtons();
     pmBootstrap().catch(function (err) {
       console.warn('[PM-tool] pmBootstrap failed', err);
     });
