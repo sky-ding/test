@@ -32,11 +32,9 @@ python scripts/check_db.py
 python scripts/migrate_sqlite_to_mysql.py
 ```
 
-目标 MySQL 里若已有 `users`/`registry` 数据，脚本默认会拒绝覆盖；需使用 `--force`（**会清空** MySQL 侧这两张表后再导入）。
+目标 MySQL 里若已有 `users` 数据，脚本默认会拒绝覆盖；需使用 `--force`（**会清空** MySQL 侧 `users` 表后再导入）。
 
 6. **迁移后验证**：`python scripts/check_db.py`；`pytest tests/test_manpower_matrix_integration.py`（需已 `pip install -r requirements.txt`）；再用管理员在 `/docs` 中对 `GET /api/v1/programs/tree`、`phase-assessments`、`manpower-allocations`、`manpower-department-groups`、`manpower-columns`、`project-risks` 做一次冒烟。
-
-7. **（可选）** 若需将旧 `registry` JSON 迁入新表，可扩展 **`scripts/registry_json_to_sql.py`**；默认 2027 冷启动无需运行。
 
 未配置 `PM_MYSQL_*` 时仍回落 **本地 SQLite** `backend/data/app.db`，便于单人本机开发。
 
@@ -102,7 +100,7 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 python scripts/migrate_sqlite_to_mysql.py
 ```
 
-若目标库已有数据（例如先启动过应用并 seed 了 Sky），需加 `--force` 清空 `users` 与 `registry` 后再导入。
+若目标库已有数据（例如先启动过应用并 seed 了 Sky），需加 `--force` 清空 `users` 后再导入。
 
 ## MySQL 定期备份到本机
 
@@ -183,4 +181,4 @@ cd D:\Study\test01\test\backend
 | PATCH | `/api/v1/project-risks/{id}?year=` | 更新风险 |
 | DELETE | `/api/v1/project-risks/{id}?year=` | 删除风险 |
 
-数据：`users` 以及上述规范化表。`registry` 若历史库中存在可保留归档，但不再作为正式登记数据入口。未配置 MySQL 时为 `backend/data/app.db`（SQLite）；配置 `PM_MYSQL_*` 时使用 MySQL。CORS 来源可通过 `PM_CORS_ORIGINS`（逗号分隔）覆盖，参见 `app/config.py`。
+数据：`users` 以及上述规范化表。未配置 MySQL 时为 `backend/data/app.db`（SQLite）；配置 `PM_MYSQL_*` 时使用 MySQL。CORS 来源可通过 `PM_CORS_ORIGINS`（逗号分隔）覆盖，参见 `app/config.py`。

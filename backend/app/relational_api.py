@@ -6,7 +6,6 @@ import re
 from typing import TYPE_CHECKING
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
@@ -90,25 +89,3 @@ def get_sub_program_for_year(db: Session, sub_program_id: int, year: int) -> "Su
     if spg is None or spg.year != year:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="sub_program not found")
     return spg
-
-
-def assert_sub_program_belongs_program(sub_program: "SubProgram", program_id: int) -> None:
-    if sub_program.program_id != program_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="sub_program does not belong to this program",
-        )
-
-
-def assert_sub_project_belongs_sub_program(sub_project: "SubProject", sub_program_id: int) -> None:
-    if sub_project.sub_program_id != sub_program_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="sub_project does not belong to this sub_program",
-        )
-
-
-def program_ids_for_year(db: Session, year: int) -> list[int]:
-    from app.models_relational import Program
-
-    return list(db.scalars(select(Program.id).where(Program.year == year)).all())
