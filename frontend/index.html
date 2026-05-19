@@ -3122,12 +3122,14 @@
 
     function formatManpowerValue(v) {
       var n = Number(v);
-      if (isNaN(n)) return '0.00';
+      if (isNaN(n)) return '';
+      if (Math.abs(n) < 0.005) return '';
       return n.toFixed(2);
     }
 
     function formatManpowerRatio(numerator, denominator) {
-      if (!denominator || denominator <= 0) return '0.0%';
+      if (!numerator || numerator <= 0) return '';
+      if (!denominator || denominator <= 0) return '';
       return ((numerator / denominator) * 100).toFixed(1) + '%';
     }
 
