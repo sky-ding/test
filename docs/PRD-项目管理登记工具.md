@@ -80,7 +80,7 @@
 | 顶部 Tab | 项目阶段状态、部门项目人力登记、项目风险登记、设置。 |
 | 权限门禁 | `window.pmIsAdmin()` 由 **当前登录用户** 的 `role`（`admin` / `viewer`）驱动；多处 `requireAdminOrAlert()` 拦截写操作。 |
 | 保存粒度 | 人力、风险、阶段 **分按钮保存**。登录后分别调用关系型 API；写操作需 **管理员** 且携带有效会话。 |
-| 退出 | 导航栏与设置内 **退出登录**：通知服务端 `POST /api/v1/auth/logout`（不阻塞跳转），并进入 `login.html`。 |
+| 退出 | 导航栏与设置内 **退出登录**：先 `await` 完成 `POST /api/v1/auth/logout` 清除会话，再 `replace` 进入 `login.html?logged_out=1`（登录页在该参数下不自动跳回主页）。 |
 | 工程布局 | **`frontend/index.html`**、**`frontend/login.html`**；根目录 `README.md`、`package.json`、`docs/`。 |
 
 ### 3.2 项目阶段状态
