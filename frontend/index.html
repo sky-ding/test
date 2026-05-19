@@ -3133,6 +3133,105 @@
       return ((numerator / denominator) * 100).toFixed(1) + '%';
     }
 
+    function parseManpowerInput(val) {
+      if (val === '' || val == null) return { ok: true, value: 0 };
+      var v = Number(val);
+      if (isNaN(v) || v < 0 || v >= 100) return { ok: false };
+      return { ok: true, value: Math.round(v * 100) / 100 };
+    }
+
+    function computeManpowerMonthGrandTotal() {
+      var nCols = deptFlatCount();
+      var total = 0;
+      data.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (projectSet) {
+          getSubProjects(projectSet).forEach(function (proj) {
+            for (var i = 0; i < nCols; i++) {
+              var v = proj.manpower[i] != null ? Number(proj.manpower[i]) : 0;
+              if (!isNaN(v)) total += v;
+            }
+          });
+        });
+      });
+      return total;
+    }
+
+    function refreshManpowerMonthRowTotals() {
+      var nCols = deptFlatCount();
+      var monthGrandTotal = computeManpowerMonthGrandTotal();
+      var $body = document.getElementById('table-body');
+      if (!$body) return;
+      $body.querySelectorAll('tr[data-mp-set]').forEach(function (tr) {
+        var setIdx = parseInt(tr.getAttribute('data-mp-set'), 10);
+        var projectSetIdx = parseInt(tr.getAttribute('data-mp-project-set'), 10);
+        var projIdx = parseInt(tr.getAttribute('data-mp-proj'), 10);
+        var proj = data[setIdx].projectSets[projectSetIdx].subProjects[projIdx];
+        var rowTotal = 0;
+        for (var i = 0; i < nCols; i++) {
+          var v = proj.manpower[i] != null ? Number(proj.manpower[i]) : 0;
+          if (!isNaN(v)) rowTotal += v;
+        }
+        var tdSum = tr.querySelector('td.col-sum');
+        var tdRatio = tr.querySelector('td.col-ratio');
+        if (tdSum) tdSum.textContent = formatManpowerValue(rowTotal);
+        if (tdRatio) tdRatio.textContent = formatManpowerRatio(rowTotal, monthGrandTotal);
+      });
+    }
+
+    function syncManpowerCellsFromDom() {
+      if (manpowerSubView !== 'month') return;
+      var $body = document.getElementById('table-body');
+      if (!$body) return;
+      $body.querySelectorAll('tr[data-mp-set]').forEach(function (tr) {
+        var setIdx = parseInt(tr.getAttribute('data-mp-set'), 10);
+        var projectSetIdx = parseInt(tr.getAttribute('data-mp-project-set'), 10);
+        var projIdx = parseInt(tr.getAttribute('data-mp-proj'), 10);
+        tr.querySelectorAll('input.input-p[data-mp-col]').forEach(function (inp) {
+          var col = parseInt(inp.getAttribute('data-mp-col'), 10);
+          var parsed = parseManpowerInput(inp.value);
+          if (parsed.ok) {
+            data[setIdx].projectSets[projectSetIdx].subProjects[projIdx].manpower[col] = parsed.value;
+          }
+        });
+      });
+    }
+
+    function appendManpowerEditableCell(tdC, setIdx, projectSetIdx, projIdx, col, v) {
+      var inp = document.createElement('input');
+      inp.type = 'number';
+      inp.className = 'input-p';
+      inp.min = '0';
+      inp.max = '99';
+      inp.step = '0.01';
+      inp.setAttribute('data-mp-col', String(col));
+      inp.value = formatManpowerValue(v);
+      inp.addEventListener('change', function () {
+        updateManpowerCell(setIdx, projectSetIdx, projIdx, col, inp.value, inp);
+      });
+      inp.addEventListener('blur', function () {
+        var parsed = parseManpowerInput(inp.value);
+        if (parsed.ok) inp.value = formatManpowerValue(parsed.value);
+      });
+      tdC.appendChild(inp);
+    }
+
+    function updateManpowerCell(setIdx, projectSetIdx, projIdx, col, val, inputEl) {
+      if (!requireManpowerMonthViewForStructure()) return;
+      if (!canEditPanel('manpower')) return;
+      var parsed = parseManpowerInput(val);
+      if (!parsed.ok) {
+        alert('请输入0-99的人力人数');
+        if (inputEl) {
+          inputEl.value = formatManpowerValue(
+            data[setIdx].projectSets[projectSetIdx].subProjects[projIdx].manpower[col]
+          );
+        }
+        return;
+      }
+      data[setIdx].projectSets[projectSetIdx].subProjects[projIdx].manpower[col] = parsed.value;
+      refreshManpowerMonthRowTotals();
+    }
+
     function requireManpowerMonthViewForStructure() {
       if (manpowerSubView !== 'month') {
         alert('请在「月度」页面中修改部门结构或人力单元格。');
@@ -5674,6 +5773,7 @@
 
     async function saveManpowerData() {
       if (!requireAdminOrAlert()) return;
+      syncManpowerCellsFromDom();
       if (!pmUsesRelationalRegistry) {
         alert('当前未使用服务器项目树，无法保存人力。请登录后重试。');
         return;
@@ -7206,6 +7306,9 @@
         getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
           getSubProjects(projectSet).forEach(function (proj, projIdx) {
             const tr = document.createElement('tr');
+            tr.setAttribute('data-mp-set', String(setIdx));
+            tr.setAttribute('data-mp-project-set', String(projectSetIdx));
+            tr.setAttribute('data-mp-proj', String(projIdx));
             const trF = $bodyF ? document.createElement('tr') : null;
             if (setIdx % 2 === 1) {
               tr.classList.add('manpower-set-stripe-b');
@@ -7225,11 +7328,7 @@
               var vn = Number(v);
               if (!isNaN(vn)) rowTotal += vn;
               if (admin) {
-                tdC.innerHTML = `
-                <span id="v-${setIdx}-${projectSetIdx}-${projIdx}-${i}" ondblclick="editManpower(${setIdx},${projectSetIdx},${projIdx},${i})">${escapeHtml(formatManpowerValue(v))}</span>
-                <div class="actions inline">
-                  <button type="button" class="text-action" title="编辑" onclick="editManpower(${setIdx},${projectSetIdx},${projIdx},${i})">编辑</button>
-                </div>`;
+                appendManpowerEditableCell(tdC, setIdx, projectSetIdx, projIdx, i, v);
               } else {
                 tdC.innerHTML = '<span>' + escapeHtml(formatManpowerValue(v)) + '</span>';
               }
@@ -7541,34 +7640,6 @@
         projectSet.subProjects.push(newProj);
         fixPhaseInData(phaseData);
         renderPhaseTable();
-        renderTable();
-      }
-    }
-
-    // 编辑人力格子
-    function editManpower(setIdx, projectSetIdx, projIdx, col) {
-      if (!requireManpowerMonthViewForStructure()) return;
-      if (!requireAdminOrAlert()) return;
-      const key = `v-${setIdx}-${projectSetIdx}-${projIdx}-${col}`;
-      const el = document.getElementById(key);
-      if (!el) return;
-      const oldVal = data[setIdx].projectSets[projectSetIdx].subProjects[projIdx].manpower[col];
-      var displayVal = formatManpowerValue(oldVal);
-      el.innerHTML = `<input type="number" class="input-p" id="input-${key}" min="0" max="99" step="0.01" value="${displayVal}" 
-        onblur="saveManpower(${setIdx},${projectSetIdx},${projIdx},${col}, this.value)"
-        onkeydown="if(event.key==='Enter'){this.blur()}else if(event.key==='Escape'){this.parentNode.innerHTML='${displayVal}' }"
-      >`;
-      document.getElementById(`input-${key}`).focus();
-    }
-    function saveManpower(setIdx, projectSetIdx, projIdx, col, val) {
-      if (!requireManpowerMonthViewForStructure()) return;
-      if (!requireAdminOrAlert()) return;
-      const v = Number(val);
-      if (!isNaN(v) && v>=0 && v<100) {
-        data[setIdx].projectSets[projectSetIdx].subProjects[projIdx].manpower[col] = Math.round(v * 100) / 100;
-        renderTable();
-      } else {
-        alert('请输入0-99的人力人数');
         renderTable();
       }
     }
