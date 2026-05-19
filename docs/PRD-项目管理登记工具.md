@@ -158,7 +158,7 @@ flowchart TD
 ### 4.2.1 阶段表保存（管理员）
 
 1. 在「项目阶段状态」编辑文字或结构后，点击 **「保存」**。  
-2. 默认写入浏览器 **`PM-tool-phase-v1`**；若前端已对接后端，可同时或改为 **`PUT /api/v1/phase`**。
+2. 登录后点击「保存」提交到 **`PUT /api/v1/phase-assessments?year=`**（body 含 `sub_project_id`、`period` 及各阶段字段）；未登录时回退写入浏览器 **`PM-tool-phase-v1`**。
 
 ### 4.3 人力月度编辑
 
@@ -171,7 +171,7 @@ flowchart TD
 
 1. 管理员「+ 新增风险」生成一行（含默认登记时间等）。  
 2. 填写各字段；表头点击切换排序键与方向。  
-3. 「保存」前从 DOM 同步回 `riskRows`，再写入 `PM-tool-risk-v1`（若已对接后端，可同时或改为 `PUT /api/v1/risk`）。
+3. 「保存」前从 DOM 同步回 `riskRows`；登录后通过 **`POST` / `PATCH` / `DELETE /api/v1/project-risks`** 与服务器同步；未登录时写入 `PM-tool-risk-v1`。
 
 ### 4.5 登录、角色与退出
 
