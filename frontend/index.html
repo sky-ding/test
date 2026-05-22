@@ -1727,6 +1727,16 @@
       min-width: 0;
       padding: 3px 6px;
       font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    table#risk-table td.risk-cell-project .risk-select {
+      min-width: 0;
+      max-width: 100%;
+      padding: 3px 6px;
+      font-size: 12px;
     }
 
     /* 长文本列：承接其它紧凑列省下的宽度 */
@@ -4591,6 +4601,36 @@
       return map;
     }
 
+    /** 风险表「项目」列：完整路径仅用于 title/排序，单元格展示最后一级子项目名 */
+    function formatRiskProjectLabel(path) {
+      if (path == null) return '';
+      var s = String(path).trim();
+      if (!s) return '';
+      var sep = ' / ';
+      var i = s.lastIndexOf(sep);
+      if (i >= 0) return s.slice(i + sep.length).trim();
+      return s;
+    }
+
+    function buildRiskProjectOptions() {
+      var opts = [];
+      if (!Array.isArray(phaseData)) return opts;
+      phaseData.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (ps) {
+          getSubProjects(ps).forEach(function (p) {
+            if (!p._subProjectId) return;
+            var full = (set.name || '') + ' / ' + (ps.name || '') + ' / ' + (p.name || '');
+            opts.push({
+              id: String(p._subProjectId),
+              full: full,
+              short: formatRiskProjectLabel(full) || (p.name || '')
+            });
+          });
+        });
+      });
+      return opts;
+    }
+
     function firstSubProjectIdInTree() {
       if (!Array.isArray(phaseData)) return null;
       for (var si = 0; si < phaseData.length; si++) {
@@ -5040,7 +5080,7 @@
     }
 
     function riskRowGroupKey(row) {
-      var proj = row && row.project != null ? String(row.project).trim() : '';
+      var proj = row && row.project != null ? formatRiskProjectLabel(String(row.project).trim()) : '';
       if (proj) return proj.length > 48 ? proj.slice(0, 48) + '…' : proj;
       var d = row && row.issue != null ? String(row.issue).trim() : '';
       if (d) {
@@ -5683,9 +5723,15 @@
         if (isNaN(i) || !riskRows[i]) return;
         RISK_FIELD_ORDER.forEach(function (key) {
           const el = tr.querySelector('[data-risk-field="' + key + '"]');
-          if (el && 'value' in el) {
-            riskRows[i][key] = el.value;
+          if (!el || !('value' in el)) return;
+          if (key === 'project' && el.tagName === 'SELECT') {
+            var sid = el.value;
+            riskRows[i]._subProjectId = sid || undefined;
+            var nameMap = subProjectNameMapFromTree();
+            riskRows[i].project = sid ? (nameMap[sid] || '') : '';
+            return;
           }
+          riskRows[i][key] = el.value;
         });
       });
     }
@@ -6307,6 +6353,7 @@
         updateRiskTableFooterStats();
         return;
       }
+      var riskProjectOptions = buildRiskProjectOptions();
       filteredIndices.forEach(function (idx, visPos) {
         const row = riskRows[idx];
         const tr = document.createElement('tr');
@@ -6399,9 +6446,50 @@
           return td;
         }
 
+        function tdProject() {
+          const td = document.createElement('td');
+          td.className = 'risk-cell risk-cell-project';
+          var fullPath = row.project || '';
+          var sid = row._subProjectId != null ? String(row._subProjectId) : '';
+          if (allowEdit) {
+            const sel = document.createElement('select');
+            sel.className = 'risk-select';
+            sel.setAttribute('data-risk-field', 'project');
+            var o0 = document.createElement('option');
+            o0.value = '';
+            o0.textContent = '请选择';
+            sel.appendChild(o0);
+            riskProjectOptions.forEach(function (opt) {
+              var o = document.createElement('option');
+              o.value = opt.id;
+              o.textContent = opt.short;
+              o.title = opt.full;
+              if (sid === opt.id) o.selected = true;
+              sel.appendChild(o);
+            });
+            sel.addEventListener('change', function () {
+              if (!allowEdit) return;
+              var id = sel.value;
+              row._subProjectId = id || undefined;
+              var nameMap = subProjectNameMapFromTree();
+              row.project = id ? (nameMap[id] || '') : '';
+            });
+            td.appendChild(sel);
+          } else {
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'risk-input';
+            inp.readOnly = true;
+            inp.value = formatRiskProjectLabel(fullPath);
+            inp.title = fullPath;
+            td.appendChild(inp);
+          }
+          return td;
+        }
+
         tr.appendChild(tdSelect('category', [['进度', '进度'], ['质量', '质量'], ['范围', '范围'], ['成本', '成本']], 'risk-cell-tag'));
         tr.appendChild(tdSelect('source', [['资源', '资源'], ['技术', '技术']], 'risk-cell-tag'));
-        tr.appendChild(tdTextInput('project', 'risk-cell-project'));
+        tr.appendChild(tdProject());
 
         const tdIssue = document.createElement('td');
         tdIssue.className = 'risk-cell w-wide risk-cell-textwide';
