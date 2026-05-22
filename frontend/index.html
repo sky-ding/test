@@ -76,6 +76,16 @@
       --space-lg: 16px;
       --space-xl: 20px;
       --space-2xl: 24px;
+
+      /* 紧凑布局（阶段/人力/风险面板） */
+      --spacing-page-y: 8px;
+      --spacing-page-x: 16px;
+      --spacing-section: 6px;
+      --spacing-toolbar-y: 4px;
+      --spacing-toolbar-x: 8px;
+      --spacing-cell: 4px;
+      --phase-field-min-h: 48px;
+      --control-height: 30px;
       
       /* 动画系统 */
       --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -162,7 +172,7 @@
       width: 100%;
       height: 100vh;
       height: 100dvh;
-      padding: var(--space-md) var(--space-xl) var(--space-lg);
+      padding: var(--spacing-page-y) var(--spacing-page-x) var(--space-md);
       display: flex;
       flex-direction: column;
       align-items: stretch;
@@ -188,11 +198,11 @@
       flex-direction: row;
       align-items: center; /* 垂直居中 */
       justify-content: flex-start;
-      gap: var(--space-lg);
+      gap: var(--space-sm);
       padding: 0 var(--space-md);
       height: var(--nav-vh-eighth);
       min-height: var(--nav-vh-eighth);
-      margin: 0 0 var(--space-md);
+      margin: 0 0 var(--spacing-section);
       flex-shrink: 0;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
@@ -321,7 +331,7 @@
       overflow: auto;
       position: relative;
       isolation: isolate;
-      margin-bottom: var(--space-md);
+      margin-bottom: var(--space-xs);
       border: 1px solid var(--border-light);
       border-radius: var(--radius-md);
       background: var(--surface);
@@ -336,12 +346,16 @@
     #panel-phase .table-shell,
     #panel-manpower .table-shell,
     #panel-risk .risk-table-wrap {
-      flex: 1;
+      flex: 0 1 auto;
+      height: fit-content;
+      max-height: 100%;
       min-height: 0;
     }
 
     #panel-risk .risk-table-wrap .table-shell {
-      flex: 1;
+      flex: 0 1 auto;
+      height: fit-content;
+      max-height: 100%;
       min-height: 0;
     }
 
@@ -994,7 +1008,7 @@
     }
 
     #phase-table thead th.phase-field-th {
-      padding: 6px 8px;
+      padding: 4px 6px;
       font-size: 12px;
       line-height: 1.35;
       font-weight: 600;
@@ -1004,7 +1018,7 @@
 
     #phase-table td.phase-field-cell {
       vertical-align: top;
-      padding: 6px;
+      padding: var(--spacing-cell);
       background: #fff;
       min-width: 100px;
     }
@@ -1012,14 +1026,14 @@
     #phase-table textarea.phase-field-input {
       display: block;
       width: 100%;
-      min-height: 72px;
+      min-height: var(--phase-field-min-h);
       max-width: 100%;
-      padding: 8px;
+      padding: 6px;
       border: 1px solid var(--border-light);
       border-radius: var(--radius-sm);
       font-family: inherit;
       font-size: 13px;
-      line-height: 1.45;
+      line-height: 1.35;
       resize: none;
       overflow-y: auto;
       -ms-overflow-style: none;
@@ -1049,14 +1063,14 @@
     #phase-table select.phase-field-select {
       display: block;
       width: 100%;
-      min-height: 36px;
+      min-height: var(--control-height);
       max-width: 100%;
-      padding: 6px 8px;
+      padding: 4px 8px;
       border: 1px solid var(--border-light);
       border-radius: var(--radius-sm);
       font-family: inherit;
       font-size: 13px;
-      line-height: 1.45;
+      line-height: 1.35;
       box-sizing: border-box;
       background: #fff;
       color: var(--text);
@@ -1237,7 +1251,7 @@
     }
 
     .actions {
-      margin-top: 6px;
+      margin-top: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -1452,9 +1466,9 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 10px 14px;
-      margin-bottom: var(--space-md);
-      padding: 12px 14px;
+      gap: var(--space-xs) var(--space-sm);
+      margin-bottom: var(--spacing-section);
+      padding: var(--spacing-toolbar-y) var(--spacing-toolbar-x);
       min-height: 0;
       flex-shrink: 0;
       box-sizing: border-box;
@@ -1474,7 +1488,7 @@
       color: var(--text-secondary);
       display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: var(--space-xs);
       font-weight: var(--font-medium);
     }
 
@@ -1577,16 +1591,16 @@
     .panel-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 8px;
       align-items: center;
       justify-content: center;
-      margin: 12px 0 0;
+      margin: 8px 0 0;
       flex-shrink: 0;
     }
 
     .btn-add {
       font-size: var(--text-sm);
-      padding: 10px 20px;
+      padding: 7px 18px;
       border-radius: var(--radius);
       background: var(--accent-gradient);
       color: #fff;
@@ -1635,7 +1649,7 @@
 
     .btn-save-panel {
       font-size: var(--text-sm);
-      padding: 10px 20px;
+      padding: 7px 18px;
       border-radius: var(--radius);
       background: var(--surface);
       color: var(--text-secondary);
@@ -2394,7 +2408,7 @@
       th, td { padding: 6px; }
       .tabs-sticky {
         gap: 8px;
-        margin-bottom: 8px;
+        margin-bottom: var(--spacing-section);
       }
       .app-brand img { max-width: min(260px, 55vw); }
     }
@@ -6678,7 +6692,7 @@
                 ta.className = 'phase-field-input';
                 ta.value = slice[key] || '';
                 ta.readOnly = !admin;
-                ta.rows = 3;
+                ta.rows = 2;
                 if (admin) {
                   ta.addEventListener('input', function () {
                     slice[key] = ta.value;
