@@ -1739,6 +1739,76 @@
       font-size: 12px;
     }
 
+    table#risk-table td.risk-cell-project {
+      overflow: visible;
+    }
+
+    .risk-project-combobox {
+      position: relative;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .risk-project-combobox .risk-input {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .risk-project-suggest {
+      display: none;
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 2px);
+      z-index: 120;
+      max-height: 220px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid var(--border, #d9d9d9);
+      border-radius: 6px;
+      box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.12));
+    }
+
+    .risk-project-suggest.open {
+      display: block;
+    }
+
+    .risk-project-suggest-item {
+      display: block;
+      width: 100%;
+      padding: 6px 8px;
+      border: none;
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--text, #1f1f1f);
+    }
+
+    .risk-project-suggest-item:hover,
+    .risk-project-suggest-item.active {
+      background: rgba(22, 119, 255, 0.08);
+    }
+
+    .risk-project-suggest-item .risk-project-suggest-full {
+      display: block;
+      margin-top: 2px;
+      font-size: 11px;
+      color: var(--text-muted, #8c8c8c);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .risk-project-suggest-empty {
+      padding: 8px;
+      font-size: 11px;
+      color: var(--text-muted, #8c8c8c);
+      line-height: 1.4;
+    }
+
     /* 长文本列：承接其它紧凑列省下的宽度 */
     table#risk-table th.risk-th-textwide,
     table#risk-table td.risk-cell-textwide {
@@ -4632,6 +4702,243 @@
       return opts;
     }
 
+    function filterRiskProjectOptions(query, options, limit) {
+      var list = Array.isArray(options) ? options : [];
+      var max = limit != null ? limit : 12;
+      var q = String(query || '').trim().toLowerCase();
+      if (!q) return list.slice(0, max);
+      var scored = [];
+      list.forEach(function (opt) {
+        var short = (opt.short || '').toLowerCase();
+        var full = (opt.full || '').toLowerCase();
+        if (short.indexOf(q) < 0 && full.indexOf(q) < 0) return;
+        var score = 0;
+        if (short === q) score += 100;
+        else if (short.indexOf(q) === 0) score += 50;
+        else if (short.indexOf(q) >= 0) score += 30;
+        if (full.indexOf(q) === 0) score += 20;
+        else if (full.indexOf(q) >= 0) score += 10;
+        scored.push({ opt: opt, score: score });
+      });
+      scored.sort(function (a, b) {
+        return b.score - a.score || String(a.opt.short).localeCompare(String(b.opt.short), 'zh-CN');
+      });
+      return scored.slice(0, max).map(function (x) { return x.opt; });
+    }
+
+    function resolveRiskProjectBinding(text) {
+      var raw = String(text || '').trim();
+      if (!raw) return { id: null, full: '', short: '', custom: false };
+      var opts = buildRiskProjectOptions();
+      var lower = raw.toLowerCase();
+      function pickOne(arr) {
+        if (!arr.length) return null;
+        return arr.length === 1 ? arr[0] : arr[0];
+      }
+      var byShort = opts.filter(function (o) {
+        return String(o.short || '').toLowerCase() === lower;
+      });
+      var hit = pickOne(byShort);
+      if (hit) {
+        return { id: hit.id, full: hit.full, short: hit.short, custom: false };
+      }
+      var byFull = opts.filter(function (o) {
+        return String(o.full || '').toLowerCase() === lower;
+      });
+      hit = pickOne(byFull);
+      if (hit) {
+        return { id: hit.id, full: hit.full, short: hit.short, custom: false };
+      }
+      return { id: null, full: raw, short: raw, custom: true };
+    }
+
+    function resolveRiskProjectBindingLoose(text) {
+      var strict = resolveRiskProjectBinding(text);
+      if (strict.id) return strict;
+      var raw = String(text || '').trim();
+      if (!raw) return strict;
+      var opts = buildRiskProjectOptions();
+      var q = raw.toLowerCase();
+      var hits = opts.filter(function (o) {
+        var short = String(o.short || '').toLowerCase();
+        var full = String(o.full || '').toLowerCase();
+        return short.indexOf(q) >= 0 || full.indexOf(q) >= 0;
+      });
+      if (hits.length === 1) {
+        return { id: hits[0].id, full: hits[0].full, short: hits[0].short, custom: false };
+      }
+      return strict;
+    }
+
+    function riskProjectDisplayValue(row) {
+      if (!row) return '';
+      var text = row.project != null ? String(row.project).trim() : '';
+      if (!text) return '';
+      if (row._subProjectId) return formatRiskProjectLabel(text) || text;
+      return text;
+    }
+
+    function commitRiskProjectValue(row, text) {
+      if (!row) return;
+      var binding = resolveRiskProjectBinding(text);
+      if (binding.id) {
+        row._subProjectId = binding.id;
+        row.project = binding.full;
+        row._projectCustom = false;
+        return;
+      }
+      var trimmed = String(text || '').trim();
+      if (trimmed) {
+        row._subProjectId = undefined;
+        row.project = trimmed;
+        row._projectCustom = true;
+        return;
+      }
+      row._subProjectId = undefined;
+      row.project = '';
+      row._projectCustom = false;
+    }
+
+    function closeAllRiskProjectSuggestPanels(exceptWrap) {
+      document.querySelectorAll('.risk-project-suggest.open').forEach(function (panel) {
+        if (exceptWrap && exceptWrap.contains(panel)) return;
+        panel.classList.remove('open');
+        panel.innerHTML = '';
+      });
+    }
+
+    function renderRiskProjectSuggestPanel(panel, matches, query) {
+      if (!panel) return;
+      panel.innerHTML = '';
+      if (!matches.length) {
+        var empty = document.createElement('div');
+        empty.className = 'risk-project-suggest-empty';
+        empty.textContent = query
+          ? '未匹配到已有项目，可直接使用当前输入作为项目名。'
+          : '输入关键字搜索项目，或手填项目名。';
+        panel.appendChild(empty);
+        panel.classList.add('open');
+        return;
+      }
+      matches.forEach(function (opt, idx) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'risk-project-suggest-item' + (idx === 0 ? ' active' : '');
+        btn.setAttribute('data-project-id', opt.id);
+        btn.setAttribute('data-project-full', opt.full);
+        btn.setAttribute('data-project-short', opt.short);
+        btn.innerHTML =
+          '<span class="risk-project-suggest-short">' + escapeHtml(opt.short) + '</span>' +
+          (opt.full && opt.full !== opt.short
+            ? '<span class="risk-project-suggest-full" title="' + escapeHtml(opt.full) + '">' + escapeHtml(opt.full) + '</span>'
+            : '');
+        panel.appendChild(btn);
+      });
+      panel.classList.add('open');
+    }
+
+    function wireRiskProjectCombobox(wrap, row, rowIndex, options) {
+      if (!wrap || !row) return;
+      var inp = wrap.querySelector('input[data-risk-field="project"]');
+      var panel = wrap.querySelector('.risk-project-suggest');
+      if (!inp || !panel) return;
+      if (!window._riskProjectSuggestDocWired) {
+        window._riskProjectSuggestDocWired = true;
+        document.addEventListener('mousedown', function (e) {
+          if (!e.target.closest('.risk-project-combobox')) closeAllRiskProjectSuggestPanels();
+        });
+      }
+
+      function applySelection(opt) {
+        if (!opt) return;
+        row._subProjectId = opt.id;
+        row.project = opt.full;
+        row._projectCustom = false;
+        inp.value = opt.short;
+        inp.title = opt.full;
+        panel.classList.remove('open');
+        panel.innerHTML = '';
+      }
+
+      function refreshSuggest() {
+        var q = inp.value;
+        var matches = filterRiskProjectOptions(q, options, 12);
+        renderRiskProjectSuggestPanel(panel, matches, String(q || '').trim());
+      }
+
+      inp.addEventListener('focus', function () {
+        closeAllRiskProjectSuggestPanels(wrap);
+        refreshSuggest();
+      });
+
+      inp.addEventListener('input', function () {
+        refreshSuggest();
+      });
+
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          panel.classList.remove('open');
+          return;
+        }
+        if (e.key === 'Enter') {
+          var first = panel.querySelector('.risk-project-suggest-item');
+          if (first && panel.classList.contains('open')) {
+            e.preventDefault();
+            applySelection({
+              id: first.getAttribute('data-project-id'),
+              full: first.getAttribute('data-project-full'),
+              short: first.getAttribute('data-project-short')
+            });
+          } else {
+            commitRiskProjectValue(row, inp.value);
+            panel.classList.remove('open');
+          }
+          return;
+        }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          var items = panel.querySelectorAll('.risk-project-suggest-item');
+          if (!items.length) return;
+          e.preventDefault();
+          var activeIx = -1;
+          items.forEach(function (el, i) {
+            if (el.classList.contains('active')) activeIx = i;
+          });
+          if (activeIx < 0) activeIx = 0;
+          else if (e.key === 'ArrowDown') activeIx = Math.min(items.length - 1, activeIx + 1);
+          else activeIx = Math.max(0, activeIx - 1);
+          items.forEach(function (el, i) {
+            el.classList.toggle('active', i === activeIx);
+          });
+          if (items[activeIx]) items[activeIx].scrollIntoView({ block: 'nearest' });
+        }
+      });
+
+      inp.addEventListener('change', function () {
+        commitRiskProjectValue(row, inp.value);
+      });
+
+      inp.addEventListener('blur', function () {
+        window.setTimeout(function () {
+          commitRiskProjectValue(row, inp.value);
+          panel.classList.remove('open');
+        }, 120);
+      });
+
+      panel.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+      });
+
+      panel.addEventListener('click', function (e) {
+        var btn = e.target.closest('.risk-project-suggest-item');
+        if (!btn) return;
+        applySelection({
+          id: btn.getAttribute('data-project-id'),
+          full: btn.getAttribute('data-project-full'),
+          short: btn.getAttribute('data-project-short')
+        });
+      });
+    }
+
     function firstSubProjectIdInTree() {
       if (!Array.isArray(phaseData)) return null;
       for (var si = 0; si < phaseData.length; si++) {
@@ -5725,12 +6032,18 @@
         RISK_FIELD_ORDER.forEach(function (key) {
           const el = tr.querySelector('[data-risk-field="' + key + '"]');
           if (!el || !('value' in el)) return;
-          if (key === 'project' && el.tagName === 'SELECT') {
-            var sid = el.value;
-            riskRows[i]._subProjectId = sid || undefined;
-            var nameMap = subProjectNameMapFromTree();
-            riskRows[i].project = sid ? (nameMap[sid] || '') : '';
-            return;
+          if (key === 'project') {
+            if (el.closest('.risk-project-combobox')) {
+              commitRiskProjectValue(riskRows[i], el.value);
+              return;
+            }
+            if (el.tagName === 'SELECT') {
+              var sid = el.value;
+              riskRows[i]._subProjectId = sid || undefined;
+              var nameMap = subProjectNameMapFromTree();
+              riskRows[i].project = sid ? (nameMap[sid] || '') : '';
+              return;
+            }
           }
           riskRows[i][key] = el.value;
         });
@@ -6016,14 +6329,30 @@
         }
         for (var i = 0; i < riskRows.length; i++) {
           var row = riskRows[i];
-          var meta = row._subProjectId ? null : firstSubProjectMetaInTree();
-          var sid = row._subProjectId || (meta && meta.id);
-          if (!sid) {
-            alert('请先在项目阶段状态或部门项目人力登记页创建项目树，保存成功后再登记风险。');
-            return;
+          if (!row._subProjectId && row.project) {
+            var binding = resolveRiskProjectBindingLoose(row.project);
+            if (binding.id) {
+              row._subProjectId = binding.id;
+              row.project = binding.full;
+              row._projectCustom = false;
+            }
           }
-          row._subProjectId = sid;
-          if (meta && !row.project) row.project = meta.label;
+          var sid = row._subProjectId;
+          if (!sid) {
+            var projectLabel = row.project != null ? String(row.project).trim() : '';
+            if (projectLabel) {
+              alert('项目「' + projectLabel + '」未在项目清单中找到，请从搜索建议中选择已有项目，或在「项目阶段状态」页创建该项目后再保存。');
+              return;
+            }
+            var meta = firstSubProjectMetaInTree();
+            sid = meta && meta.id;
+            if (!sid) {
+              alert('请先在项目阶段状态或部门项目人力登记页创建项目树，保存成功后再登记风险。');
+              return;
+            }
+            row._subProjectId = sid;
+            if (!row.project) row.project = meta.label;
+          }
           var patchBody = {
             sub_project_id: sid,
             risk_category: row.category,
@@ -6453,38 +6782,32 @@
           const td = document.createElement('td');
           td.className = 'risk-cell risk-cell-project';
           var fullPath = row.project || '';
-          var sid = row._subProjectId != null ? String(row._subProjectId) : '';
+          var displayValue = riskProjectDisplayValue(row);
           if (allowEdit) {
-            const sel = document.createElement('select');
-            sel.className = 'risk-select';
-            sel.setAttribute('data-risk-field', 'project');
-            var o0 = document.createElement('option');
-            o0.value = '';
-            o0.textContent = '请选择';
-            sel.appendChild(o0);
-            riskProjectOptions.forEach(function (opt) {
-              var o = document.createElement('option');
-              o.value = opt.id;
-              o.textContent = opt.short;
-              o.title = opt.full;
-              if (sid === opt.id) o.selected = true;
-              sel.appendChild(o);
-            });
-            sel.addEventListener('change', function () {
-              if (!allowEdit) return;
-              var id = sel.value;
-              row._subProjectId = id || undefined;
-              var nameMap = subProjectNameMapFromTree();
-              row.project = id ? (nameMap[id] || '') : '';
-            });
-            td.appendChild(sel);
+            const wrap = document.createElement('div');
+            wrap.className = 'risk-project-combobox';
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'risk-input';
+            inp.setAttribute('data-risk-field', 'project');
+            inp.setAttribute('autocomplete', 'off');
+            inp.setAttribute('placeholder', '输入关键字搜索或手填');
+            inp.value = displayValue;
+            inp.title = fullPath || displayValue;
+            const panel = document.createElement('div');
+            panel.className = 'risk-project-suggest';
+            panel.setAttribute('role', 'listbox');
+            wrap.appendChild(inp);
+            wrap.appendChild(panel);
+            wireRiskProjectCombobox(wrap, row, idx, riskProjectOptions);
+            td.appendChild(wrap);
           } else {
             const inp = document.createElement('input');
             inp.type = 'text';
             inp.className = 'risk-input';
             inp.readOnly = true;
-            inp.value = formatRiskProjectLabel(fullPath);
-            inp.title = fullPath;
+            inp.value = displayValue;
+            inp.title = fullPath || displayValue;
             td.appendChild(inp);
           }
           return td;
