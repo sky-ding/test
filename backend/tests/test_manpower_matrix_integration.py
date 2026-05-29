@@ -312,3 +312,49 @@ def test_business_routes_reject_missing_or_wrong_year_sub_project(client) -> Non
         },
     )
     assert missing_risk.status_code == 404
+
+
+def test_patch_project_risk_updates_sub_project_id(client) -> None:
+    y = 2038
+    ids = _create_project_tree(
+        client,
+        y=y,
+        program_name="RiskMoveProg",
+        sub_program_name="RiskMoveSet",
+        sub_project_name="个性化提效",
+    )
+    tree2 = client.post(
+        f"/api/v1/programs/sub-programs/{ids['sub_program_id']}/sub-projects?year={y}",
+        json={"name": "GPU精细化管理"},
+    )
+    assert tree2.status_code == 201, tree2.text
+    other_sub_project_id = (
+        tree2.json()["programs"][0]["sub_programs"][0]["sub_projects"][-1]["id"]
+    )
+
+    created = client.post(
+        f"/api/v1/project-risks?year={y}",
+        json={
+            "sub_project_id": ids["sub_project_id"],
+            "risk_category": "进度",
+            "risk_source": "资源",
+            "issue": "基架团队优先投入 AI 项目",
+            "owner": "李维进",
+            "status": "close",
+        },
+    )
+    assert created.status_code == 201, created.text
+    risk_id = created.json()["id"]
+    assert created.json()["sub_project_id"] == ids["sub_project_id"]
+
+    patched = client.patch(
+        f"/api/v1/project-risks/{risk_id}?year={y}",
+        json={"sub_project_id": other_sub_project_id},
+    )
+    assert patched.status_code == 200, patched.text
+    assert patched.json()["sub_project_id"] == other_sub_project_id
+
+    listed = client.get(f"/api/v1/project-risks?year={y}")
+    assert listed.status_code == 200, listed.text
+    row = next(r for r in listed.json() if r["id"] == risk_id)
+    assert row["sub_project_id"] == other_sub_project_id

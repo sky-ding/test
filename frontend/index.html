@@ -1896,6 +1896,7 @@
 
     .risk-select.risk-color-resource { background: #e6fffb; color: #006d75; border-color: #b5f5ec; }
     .risk-select.risk-color-tech { background: #f6ffed; color: #237804; border-color: #d9f7be; }
+    .risk-select.risk-color-compliance { background: #f9f0ff; color: #531dab; border-color: #d3adf7; }
 
     .risk-select.risk-color-high { background: #fff1f0; color: #a8071a; border-color: #ffccc7; }
     .risk-select.risk-color-mid { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
@@ -6024,6 +6025,7 @@
           row._subProjectId = sid;
           if (meta && !row.project) row.project = meta.label;
           var patchBody = {
+            sub_project_id: sid,
             risk_category: row.category,
             risk_source: row.source,
             issue: row.issue,
@@ -6393,6 +6395,7 @@
           if (field === 'source') {
             if (v === '资源') return 'risk-color-resource';
             if (v === '技术') return 'risk-color-tech';
+            if (v === '合规') return 'risk-color-compliance';
             return '';
           }
           if (field === 'level') {
@@ -6414,7 +6417,7 @@
           if (!el) return;
           el.classList.remove(
             'risk-color-progress', 'risk-color-quality', 'risk-color-scope', 'risk-color-cost',
-            'risk-color-resource', 'risk-color-tech',
+            'risk-color-resource', 'risk-color-tech', 'risk-color-compliance',
             'risk-color-high', 'risk-color-mid', 'risk-color-low',
             'risk-color-open', 'risk-color-hold', 'risk-color-close'
           );
@@ -6488,7 +6491,7 @@
         }
 
         tr.appendChild(tdSelect('category', [['进度', '进度'], ['质量', '质量'], ['范围', '范围'], ['成本', '成本']], 'risk-cell-tag'));
-        tr.appendChild(tdSelect('source', [['资源', '资源'], ['技术', '技术']], 'risk-cell-tag'));
+        tr.appendChild(tdSelect('source', [['资源', '资源'], ['技术', '技术'], ['合规', '合规']], 'risk-cell-tag'));
         tr.appendChild(tdProject());
 
         const tdIssue = document.createElement('td');

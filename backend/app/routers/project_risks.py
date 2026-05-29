@@ -96,6 +96,9 @@ def patch_project_risk(
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="risk not found")
     assert_sub_project_year(db, row.sub_project_id, y)
+    if body.sub_project_id is not None:
+        assert_sub_project_year(db, body.sub_project_id, y)
+        row.sub_project_id = body.sub_project_id
     if body.risk_category is not None:
         row.risk_category = body.risk_category.strip()
     if body.risk_source is not None:
