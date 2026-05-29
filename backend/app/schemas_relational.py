@@ -280,6 +280,7 @@ class ProjectRiskCreate(BaseModel):
 class ProjectRiskPatch(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
+    sub_project_id: int | None = None
     risk_category: str | None = Field(default=None, max_length=50)
     risk_source: str | None = Field(default=None, max_length=50)
     description: str | None = None
