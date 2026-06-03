@@ -16,8 +16,10 @@ from app.schemas_relational import (
     ProgramPatch,
     ProgramTreeResponse,
     SubProgramCreate,
+    SubProgramNode,
     SubProgramPatch,
     SubProjectCreate,
+    SubProjectNode,
     SubProjectPatch,
 )
 
@@ -127,14 +129,27 @@ def delete_program(
     db.commit()
 
 
-@router.post("/{program_id}/sub-programs", response_model=ProgramTreeResponse, status_code=status.HTTP_201_CREATED)
+def _sub_program_node(sp: SubProgram, *, sub_projects: list[SubProjectNode] | None = None) -> SubProgramNode:
+    return SubProgramNode(
+        id=sp.id,
+        name=sp.name,
+        sort_order=sp.sort_order,
+        sub_projects=sub_projects if sub_projects is not None else [],
+    )
+
+
+def _sub_project_node(sj: SubProject) -> SubProjectNode:
+    return SubProjectNode.model_validate(sj)
+
+
+@router.post("/{program_id}/sub-programs", response_model=SubProgramNode, status_code=status.HTTP_201_CREATED)
 def create_sub_program(
     _admin: AdminUser,
     program_id: int,
     body: SubProgramCreate,
     year: int = Query(..., ge=2000, le=2100),
     db: Session = Depends(get_db),
-) -> ProgramTreeResponse:
+) -> SubProgramNode:
     _ = _admin
     y = parse_year(year)
     prog = get_program_for_year(db, program_id, y)
@@ -150,17 +165,18 @@ def create_sub_program(
     sp = SubProgram(program_id=prog.id, year=y, name=body.name.strip(), sort_order=body.sort_order)
     db.add(sp)
     db.commit()
-    return _build_program_tree(db, y)
+    db.refresh(sp)
+    return _sub_program_node(sp)
 
 
-@router.patch("/sub-programs/{sub_program_id}", response_model=ProgramTreeResponse)
+@router.patch("/sub-programs/{sub_program_id}", response_model=SubProgramNode)
 def patch_sub_program(
     _admin: AdminUser,
     sub_program_id: int,
     body: SubProgramPatch,
     year: int = Query(..., ge=2000, le=2100),
     db: Session = Depends(get_db),
-) -> ProgramTreeResponse:
+) -> SubProgramNode:
     _ = _admin
     y = parse_year(year)
     sp = get_sub_program_for_year(db, sub_program_id, y)
@@ -180,27 +196,27 @@ def patch_sub_program(
     if body.sort_order is not None:
         sp.sort_order = body.sort_order
     db.commit()
-    return _build_program_tree(db, y)
+    db.refresh(sp)
+    return _sub_program_node(sp)
 
 
-@router.delete("/sub-programs/{sub_program_id}", response_model=ProgramTreeResponse)
+@router.delete("/sub-programs/{sub_program_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_sub_program(
     _admin: AdminUser,
     sub_program_id: int,
     year: int = Query(..., ge=2000, le=2100),
     db: Session = Depends(get_db),
-) -> ProgramTreeResponse:
+) -> None:
     _ = _admin
     y = parse_year(year)
     sp = get_sub_program_for_year(db, sub_program_id, y)
     db.delete(sp)
     db.commit()
-    return _build_program_tree(db, y)
 
 
 @router.post(
     "/sub-programs/{sub_program_id}/sub-projects",
-    response_model=ProgramTreeResponse,
+    response_model=SubProjectNode,
     status_code=status.HTTP_201_CREATED,
 )
 def create_sub_project(
@@ -209,7 +225,7 @@ def create_sub_project(
     body: SubProjectCreate,
     year: int = Query(..., ge=2000, le=2100),
     db: Session = Depends(get_db),
-) -> ProgramTreeResponse:
+) -> SubProjectNode:
     _ = _admin
     y = parse_year(year)
     spg = get_sub_program_for_year(db, sub_program_id, y)
@@ -231,17 +247,18 @@ def create_sub_project(
     )
     db.add(sj)
     db.commit()
-    return _build_program_tree(db, y)
+    db.refresh(sj)
+    return _sub_project_node(sj)
 
 
-@router.patch("/sub-projects/{sub_project_id}", response_model=ProgramTreeResponse)
+@router.patch("/sub-projects/{sub_project_id}", response_model=SubProjectNode)
 def patch_sub_project(
     _admin: AdminUser,
     sub_project_id: int,
     body: SubProjectPatch,
     year: int = Query(..., ge=2000, le=2100),
     db: Session = Depends(get_db),
-) -> ProgramTreeResponse:
+) -> SubProjectNode:
     _ = _admin
     y = parse_year(year)
     sj = db.get(SubProject, sub_project_id)
@@ -265,16 +282,17 @@ def patch_sub_project(
     if body.sort_order is not None:
         sj.sort_order = body.sort_order
     db.commit()
-    return _build_program_tree(db, y)
+    db.refresh(sj)
+    return _sub_project_node(sj)
 
 
-@router.delete("/sub-projects/{sub_project_id}", response_model=ProgramTreeResponse)
+@router.delete("/sub-projects/{sub_project_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_sub_project(
     _admin: AdminUser,
     sub_project_id: int,
     year: int = Query(..., ge=2000, le=2100),
     db: Session = Depends(get_db),
-) -> ProgramTreeResponse:
+) -> None:
     _ = _admin
     y = parse_year(year)
     sj = db.get(SubProject, sub_project_id)
@@ -282,4 +300,3 @@ def delete_sub_project(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="sub_project not found")
     db.delete(sj)
     db.commit()
-    return _build_program_tree(db, y)

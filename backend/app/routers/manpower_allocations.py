@@ -98,6 +98,7 @@ def replace_manpower_for_period(
     _ = _admin
     y = parse_year(year)
     p = assert_period_matches_year(period, y)
+    pending: list[tuple[int, int, Decimal]] = []
     for item in body.cells:
         assert_sub_project_year(db, item.sub_project_id, y)
         col = db.get(ManpowerColumn, item.column_id)
@@ -106,24 +107,30 @@ def replace_manpower_for_period(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid column_id {item.column_id} for year {y}",
             )
-        row = db.scalar(
-            select(ManpowerCell).where(
-                ManpowerCell.sub_project_id == item.sub_project_id,
-                ManpowerCell.period == p,
-                ManpowerCell.column_id == item.column_id,
-            )
-        )
-        alloc = Decimal(item.allocation).quantize(Decimal("0.01"))
-        if row is None:
-            db.add(
-                ManpowerCell(
-                    sub_project_id=item.sub_project_id,
-                    period=p,
-                    column_id=item.column_id,
-                    allocation=alloc,
+        pending.append((item.sub_project_id, item.column_id, Decimal(item.allocation).quantize(Decimal("0.01"))))
+
+    try:
+        for sub_project_id, column_id, alloc in pending:
+            row = db.scalar(
+                select(ManpowerCell).where(
+                    ManpowerCell.sub_project_id == sub_project_id,
+                    ManpowerCell.period == p,
+                    ManpowerCell.column_id == column_id,
                 )
             )
-        else:
-            row.allocation = alloc
-    db.commit()
+            if row is None:
+                db.add(
+                    ManpowerCell(
+                        sub_project_id=sub_project_id,
+                        period=p,
+                        column_id=column_id,
+                        allocation=alloc,
+                    )
+                )
+            else:
+                row.allocation = alloc
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
     return build_manpower_matrix_response(db, y, p)

@@ -73,16 +73,14 @@ def _create_project_tree(
         json={"name": sub_program_name},
     )
     assert r2.status_code == 201, r2.text
-    tree = r2.json()
-    sub_program_id = tree["programs"][0]["sub_programs"][0]["id"]
+    sub_program_id = r2.json()["id"]
 
     r3 = client.post(
         f"/api/v1/programs/sub-programs/{sub_program_id}/sub-projects?year={y}",
         json={"name": sub_project_name},
     )
     assert r3.status_code == 201, r3.text
-    tree3 = r3.json()
-    sub_project_id = tree3["programs"][0]["sub_programs"][0]["sub_projects"][0]["id"]
+    sub_project_id = r3.json()["id"]
     return {
         "program_id": program_id,
         "sub_program_id": sub_program_id,
@@ -328,9 +326,7 @@ def test_patch_project_risk_updates_sub_project_id(client) -> None:
         json={"name": "GPU精细化管理"},
     )
     assert tree2.status_code == 201, tree2.text
-    other_sub_project_id = (
-        tree2.json()["programs"][0]["sub_programs"][0]["sub_projects"][-1]["id"]
-    )
+    other_sub_project_id = tree2.json()["id"]
 
     created = client.post(
         f"/api/v1/project-risks?year={y}",
