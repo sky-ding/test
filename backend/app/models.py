@@ -25,6 +25,3 @@ class User(Base):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
-
-
-from app import models_relational  # noqa: E402, F401 — register relational tables on Base.metadata

@@ -20,7 +20,7 @@ from sqlalchemy.pool import StaticPool
 
 @pytest.fixture
 def client(monkeypatch: pytest.MonkeyPatch):
-    import app.models  # noqa: F401 — 注册 ORM
+    import app.models_relational  # noqa: F401 — register relational ORM tables
     from app.models import Base
 
     engine = create_engine(

@@ -27,6 +27,7 @@ from sqlalchemy import create_engine, func, select, text  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
 from app.config import DATA_DIR, settings  # noqa: E402
+import app.models_relational  # noqa: E402, F401 — register relational tables for create_all
 from app.models import Base, User  # noqa: E402
 
 
