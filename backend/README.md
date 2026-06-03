@@ -19,22 +19,15 @@ pip install -r requirements.txt
 
 1. 在 MySQL 中**预先创建**数据库（字符集建议 **utf8mb4**），并授予应用账号建表/读写权限。  
 2. 复制 **[.env.example](.env.example)** 为 `backend/.env`，填写 **`PM_MYSQL_HOST` / `PM_MYSQL_USER` / `PM_MYSQL_DATABASE`**（及密码、端口等）；**所有实例**使用**相同**的 `PM_MYSQL_*` 与 **`PM_SESSION_SECRET`**（否则 Cookie 会话在实例间无效）。  
-3. 启动应用会自动 `create_all` 建表（含 `programs` / `sub_programs` / `sub_projects` / `phase_assessments` / `manpower_department_groups` / `manpower_columns` / `manpower_cells` / `project_risks` / `users`）；MySQL 亦可由 DBA 执行 **[migrations/001_relational_schema.sql](migrations/001_relational_schema.sql)** 与 **[migrations/002_manpower_matrix.sql](migrations/002_manpower_matrix.sql)**。如部署库仍有旧行存表，确认无旧数据后执行 **[migrations/003_drop_legacy_manpower_allocations.sql](migrations/003_drop_legacy_manpower_allocations.sql)**。首次启动会 seed 内置用户（若库中尚无同名账号）。  
+3. 启动应用会自动 `create_all` 建表（含 `programs` / `sub_programs` / `sub_projects` / `phase_assessments` / `manpower_department_groups` / `manpower_columns` / `manpower_cells` / `project_risks` / `users`）；MySQL 亦可由 DBA 执行 **[migrations/001_relational_schema.sql](migrations/001_relational_schema.sql)**。首次启动会 seed 内置用户（若库中尚无同名账号）。  
 4. 连接与登记数据冒烟：
 
 ```bash
 python scripts/check_db.py
+pytest tests/test_manpower_matrix_integration.py
 ```
 
-5. **从现有 SQLite 迁移**（本机已有 `data/app.db` 且已配置 `PM_MYSQL_*`）：
-
-```bash
-python scripts/migrate_sqlite_to_mysql.py
-```
-
-目标 MySQL 里若已有 `users` 数据，脚本默认会拒绝覆盖；需使用 `--force`（**会清空** MySQL 侧 `users` 表后再导入）。
-
-6. **迁移后验证**：`python scripts/check_db.py`；`pytest tests/test_manpower_matrix_integration.py`（需已 `pip install -r requirements.txt`）；再用管理员在 `/docs` 中对 `GET /api/v1/programs/tree`、`phase-assessments`、`manpower-allocations`、`manpower-department-groups`、`manpower-columns`、`project-risks` 做一次冒烟。
+再用管理员在 `/docs` 中对 `GET /api/v1/programs/tree`、`phase-assessments`、`manpower-allocations`、`manpower-department-groups`、`manpower-columns`、`project-risks` 做一次冒烟。
 
 未配置 `PM_MYSQL_*` 时仍回落 **本地 SQLite** `backend/data/app.db`，便于单人本机开发。
 
@@ -93,14 +86,6 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8001
 | `PM_MYSQL_PASSWORD` | 密码（可含特殊字符，已做 URL 编码） |
 | `PM_MYSQL_DATABASE` | 库名（须已创建，字符集建议 `utf8mb4`） |
 | `PM_MYSQL_CHARSET` | 默认 `utf8mb4` |
-
-从现有 SQLite 迁到 MySQL（在 `backend` 目录、已配置上述变量）：
-
-```bash
-python scripts/migrate_sqlite_to_mysql.py
-```
-
-若目标库已有数据（例如先启动过应用并 seed 了 Sky），需加 `--force` 清空 `users` 后再导入。
 
 ## MySQL 定期备份到本机
 

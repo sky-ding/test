@@ -5020,12 +5020,10 @@
         method: 'POST',
         body: JSON.stringify({ year: pmDataYear, name: programName, sort_order: sortOrder || 0 })
       });
-      var tree = await pmJsonRequest(
+      var subProgram = await pmJsonRequest(
         '/api/v1/programs/' + encodeURIComponent(String(program.id)) + '/sub-programs?' + encodeYearQuery(),
         { method: 'POST', body: JSON.stringify({ name: '默认子项目集', sort_order: 0 }) }
       );
-      var progNode = findProgramNodeById(tree, program.id);
-      var subProgram = findLastSubProgramNode(progNode);
       if (!subProgram || !subProgram.id) throw new Error('sub_program not created');
       await pmJsonRequest(
         '/api/v1/programs/sub-programs/' + encodeURIComponent(String(subProgram.id)) + '/sub-projects?' + encodeYearQuery(),
@@ -5034,12 +5032,10 @@
     }
 
     async function createRelationalSubProgramWithDefaultLeaf(programId, subProgramName, sortOrder) {
-      var tree = await pmJsonRequest(
+      var subProgram = await pmJsonRequest(
         '/api/v1/programs/' + encodeURIComponent(String(programId)) + '/sub-programs?' + encodeYearQuery(),
         { method: 'POST', body: JSON.stringify({ name: subProgramName, sort_order: sortOrder || 0 }) }
       );
-      var progNode = findProgramNodeById(tree, programId);
-      var subProgram = findLastSubProgramNode(progNode);
       if (!subProgram || !subProgram.id) throw new Error('sub_program not created');
       await pmJsonRequest(
         '/api/v1/programs/sub-programs/' + encodeURIComponent(String(subProgram.id)) + '/sub-projects?' + encodeYearQuery(),

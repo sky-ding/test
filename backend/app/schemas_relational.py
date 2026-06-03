@@ -7,6 +7,7 @@ from decimal import Decimal
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from typing_extensions import Self
 
 
 # --- 项目树 ---
@@ -123,19 +124,22 @@ class PhaseAssessmentUpsert(BaseModel):
     nextNote: str | None = None
 
     @model_validator(mode="after")
-    def map_legacy_keys(self) -> PhaseAssessmentUpsert:
+    def map_legacy_keys(self) -> Self:
+        updates: dict[str, object] = {}
         if self.delivery_target is None and self.goal is not None:
-            object.__setattr__(self, "delivery_target", self.goal)
+            updates["delivery_target"] = self.goal
         if self.actual_delivery is None and self.deliver is not None:
-            object.__setattr__(self, "actual_delivery", self.deliver)
+            updates["actual_delivery"] = self.deliver
         if self.on_track is None and self.planMatch is not None:
-            object.__setattr__(self, "on_track", self.planMatch)
+            updates["on_track"] = self.planMatch
         if self.execution_analysis is None and self.highlight is not None:
-            object.__setattr__(self, "execution_analysis", self.highlight)
+            updates["execution_analysis"] = self.highlight
         if self.problem_analysis is None and self.weakness is not None:
-            object.__setattr__(self, "problem_analysis", self.weakness)
+            updates["problem_analysis"] = self.weakness
         if self.improvement_plan is None and self.nextNote is not None:
-            object.__setattr__(self, "improvement_plan", self.nextNote)
+            updates["improvement_plan"] = self.nextNote
+        if updates:
+            return self.model_copy(update=updates)
         return self
 
 
@@ -213,6 +217,100 @@ class ManpowerColumnPatch(BaseModel):
 # --- 风险 ---
 
 
+def _parse_risk_close_time(close_time: str | None) -> date | None:
+    if not close_time:
+        return None
+    s = close_time.strip()[:10]
+    if len(s) < 10 or s[4] != "-" or s[7] != "-":
+        return None
+    try:
+        return date(int(s[:4]), int(s[5:7]), int(s[8:10]))
+    except ValueError:
+        return None
+
+
+def _project_risk_alias_updates(
+    *,
+    description: str | None,
+    issue: str | None,
+    assignee: str | None,
+    owner: str | None,
+    resolution_date: date | None,
+    close_time: str | None,
+    patch: bool,
+) -> dict[str, object]:
+    updates: dict[str, object] = {}
+    if patch:
+        if description is None and issue is not None:
+            updates["description"] = issue
+        if assignee is None and owner is not None:
+            updates["assignee"] = owner
+    else:
+        desc = (description or "").strip()
+        if not desc and issue is not None:
+            updates["description"] = (issue or "").strip()
+        asn = (assignee or "").strip()
+        if not asn and owner is not None:
+            updates["assignee"] = (owner or "").strip()
+    if resolution_date is None and close_time:
+        parsed = _parse_risk_close_time(close_time)
+        if parsed is not None:
+            updates["resolution_date"] = parsed
+    return updates
+
+
+class _ProjectRiskAliasBody(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    description: str | None = None
+    assignee: str | None = Field(default=None, max_length=100)
+    resolution_date: date | None = None
+    issue: str | None = None
+    owner: str | None = None
+    closeTime: str | None = None
+
+    @model_validator(mode="after")
+    def coerce_issue_owner(self) -> Self:
+        updates = _project_risk_alias_updates(
+            description=self.description,
+            issue=self.issue,
+            assignee=self.assignee,
+            owner=self.owner,
+            resolution_date=self.resolution_date,
+            close_time=self.closeTime,
+            patch=False,
+        )
+        if updates:
+            return self.model_copy(update=updates)
+        return self
+
+
+class _ProjectRiskPatchAliasBody(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    description: str | None = None
+    assignee: str | None = Field(default=None, max_length=100)
+    resolution_date: date | None = None
+    issue: str | None = None
+    owner: str | None = None
+    closeTime: str | None = None
+
+    @model_validator(mode="after")
+    def coerce_issue_owner(self) -> Self:
+        updates = _project_risk_alias_updates(
+            description=self.description,
+            issue=self.issue,
+            assignee=self.assignee,
+            owner=self.owner,
+            resolution_date=self.resolution_date,
+            close_time=self.closeTime,
+            patch=True,
+        )
+        if updates:
+            return self.model_copy(update=updates)
+        return self
+
+
 class ProjectRiskOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -229,47 +327,16 @@ class ProjectRiskOut(BaseModel):
     closed_at: datetime | None = None
 
 
-class ProjectRiskCreate(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
+class ProjectRiskCreate(_ProjectRiskAliasBody):
     sub_project_id: int
     risk_category: str = Field(max_length=50)
     risk_source: str = Field(max_length=50)
-    description: str | None = None
     solution: str | None = None
     level: str = Field(default="中", max_length=10)
-    assignee: str | None = Field(default=None, max_length=100)
-    resolution_date: date | None = None
     status: str = Field(default="Open", max_length=20)
-    issue: str | None = None
-    owner: str | None = None
-    closeTime: str | None = None
 
     @model_validator(mode="after")
-    def coerce_issue_owner(self) -> ProjectRiskCreate:
-        desc = (self.description or "").strip()
-        if not desc and self.issue is not None:
-            desc = (self.issue or "").strip()
-            object.__setattr__(self, "description", desc)
-        assignee = (self.assignee or "").strip()
-        if not assignee and self.owner is not None:
-            assignee = (self.owner or "").strip()
-            object.__setattr__(self, "assignee", assignee)
-        if self.resolution_date is None and self.closeTime:
-            s = (self.closeTime or "").strip()[:10]
-            if len(s) >= 10 and s[4] == "-" and s[7] == "-":
-                try:
-                    object.__setattr__(
-                        self,
-                        "resolution_date",
-                        date(int(s[:4]), int(s[5:7]), int(s[8:10])),
-                    )
-                except ValueError:
-                    pass
-        return self
-
-    @model_validator(mode="after")
-    def require_text(self) -> ProjectRiskCreate:
+    def require_text(self) -> Self:
         if not (self.description or "").strip():
             raise ValueError("description or issue is required")
         if not (self.assignee or "").strip():
@@ -277,37 +344,10 @@ class ProjectRiskCreate(BaseModel):
         return self
 
 
-class ProjectRiskPatch(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
+class ProjectRiskPatch(_ProjectRiskPatchAliasBody):
     sub_project_id: int | None = None
     risk_category: str | None = Field(default=None, max_length=50)
     risk_source: str | None = Field(default=None, max_length=50)
-    description: str | None = None
     solution: str | None = None
     level: str | None = Field(default=None, max_length=10)
-    assignee: str | None = Field(default=None, max_length=100)
-    resolution_date: date | None = None
     status: str | None = Field(default=None, max_length=20)
-    issue: str | None = None
-    owner: str | None = None
-    closeTime: str | None = None
-
-    @model_validator(mode="after")
-    def coerce_issue_owner(self) -> ProjectRiskPatch:
-        if self.description is None and self.issue is not None:
-            object.__setattr__(self, "description", self.issue)
-        if self.assignee is None and self.owner is not None:
-            object.__setattr__(self, "assignee", self.owner)
-        if self.resolution_date is None and self.closeTime is not None:
-            s = (self.closeTime or "").strip()[:10]
-            if len(s) >= 10 and s[4] == "-" and s[7] == "-":
-                try:
-                    object.__setattr__(
-                        self,
-                        "resolution_date",
-                        date(int(s[:4]), int(s[5:7]), int(s[8:10])),
-                    )
-                except ValueError:
-                    pass
-        return self
