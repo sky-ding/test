@@ -84,7 +84,31 @@ class SubProjectCreate(BaseModel):
 class SubProjectPatch(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     status: str | None = Field(default=None, max_length=20)
+    description: str | None = None
+    key_goal: str | None = Field(default=None, max_length=200)
+    automation_rate_goal: str | None = Field(default=None, max_length=50)
+    planned_start_date: date | None = None
+    planned_end_date: date | None = None
+    actual_start_date: date | None = None
+    actual_end_date: date | None = None
     sort_order: int | None = None
+
+
+class SubProjectDetailOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    sub_program_id: int
+    name: str
+    status: str = "active"
+    sort_order: int = 0
+    description: str | None = None
+    key_goal: str | None = None
+    automation_rate_goal: str | None = None
+    planned_start_date: date | None = None
+    planned_end_date: date | None = None
+    actual_start_date: date | None = None
+    actual_end_date: date | None = None
 
 
 # --- 阶段 ---
@@ -351,3 +375,215 @@ class ProjectRiskPatch(_ProjectRiskPatchAliasBody):
     solution: str | None = None
     level: str | None = Field(default=None, max_length=10)
     status: str | None = Field(default=None, max_length=20)
+
+
+class ProjectRiskDetailOut(ProjectRiskOut):
+    created_at: datetime
+
+
+# --- 项目信息（聚合读写） ---
+
+_PROJECT_STATUSES = frozenset({"active", "archived"})
+_MILESTONE_STATUSES = frozenset({"pending", "in-progress", "completed", "overdue"})
+_TASK_PHASES = frozenset({"需求与设计", "开发实施", "测试验证", "部署上线"})
+_PARTICIPATION = frozenset({"核心成员", "兼职参与", "外部协作"})
+
+
+class MilestoneOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    planned_date: date
+    status: str
+    description: str | None = None
+    sort_order: int = 0
+
+
+class MilestoneIn(BaseModel):
+    id: int | None = None
+    name: str = Field(min_length=1, max_length=200)
+    planned_date: date
+    status: str = Field(max_length=20)
+    description: str | None = None
+    sort_order: int = Field(ge=0)
+
+    @field_validator("status")
+    @classmethod
+    def valid_status(cls, v: str) -> str:
+        s = v.strip()
+        if s not in _MILESTONE_STATUSES:
+            raise ValueError("invalid milestone status")
+        return s
+
+
+class TaskOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    phase: str
+    assignee: str | None = None
+    start_date: date
+    end_date: date
+    progress: int = 0
+    sort_order: int = 0
+
+
+class TaskIn(BaseModel):
+    id: int | None = None
+    name: str = Field(min_length=1, max_length=200)
+    phase: str = Field(max_length=50)
+    assignee: str | None = Field(default=None, max_length=100)
+    start_date: date
+    end_date: date
+    progress: int = Field(default=0, ge=0, le=100)
+    sort_order: int = Field(ge=0)
+
+    @field_validator("phase")
+    @classmethod
+    def valid_phase(cls, v: str) -> str:
+        s = v.strip()
+        if s not in _TASK_PHASES:
+            raise ValueError("invalid task phase")
+        return s
+
+    @model_validator(mode="after")
+    def end_after_start(self) -> Self:
+        if self.end_date < self.start_date:
+            raise ValueError("end_date must be on or after start_date")
+        return self
+
+
+class TeamMemberOut(BaseModel):
+    id: int
+    name: str
+    team_column_id: int
+    team_column_name: str
+    role: str
+    participation: str
+    remark: str | None = None
+    sort_order: int = 0
+
+
+class TeamMemberIn(BaseModel):
+    id: int | None = None
+    name: str = Field(min_length=1, max_length=100)
+    team_column_id: int = Field(ge=1)
+    role: str = Field(min_length=1, max_length=50)
+    participation: str = Field(max_length=20)
+    remark: str | None = None
+    sort_order: int = Field(ge=0)
+
+    @field_validator("participation")
+    @classmethod
+    def valid_participation(cls, v: str) -> str:
+        s = v.strip()
+        if s not in _PARTICIPATION:
+            raise ValueError("invalid participation")
+        return s
+
+
+class ProjectInfoRiskIn(BaseModel):
+    id: int | None = None
+    risk_category: str = Field(max_length=50)
+    risk_source: str = Field(max_length=50)
+    description: str = Field(min_length=1)
+    solution: str | None = None
+    level: str = Field(max_length=10)
+    assignee: str = Field(min_length=1, max_length=100)
+    resolution_date: date | None = None
+    status: str = Field(max_length=20)
+
+    @field_validator("status")
+    @classmethod
+    def normalize_status(cls, v: str) -> str:
+        s = v.strip()
+        if s.lower() in ("close", "closed", "关闭"):
+            return "Close"
+        if s.lower() in ("open", "开放"):
+            return "Open"
+        if s in ("Open", "Close"):
+            return s
+        raise ValueError("status must be Open or Close")
+
+
+class ProjectInfoManpowerCellIn(BaseModel):
+    column_id: int = Field(ge=1)
+    allocation: Decimal = Field(default=Decimal("0.00"), ge=Decimal("0"), le=Decimal("9999.99"))
+
+    @field_validator("allocation")
+    @classmethod
+    def two_decimals(cls, v: Decimal) -> Decimal:
+        return v.quantize(Decimal("0.01"))
+
+
+class ProjectInfoManpowerIn(BaseModel):
+    period: str = Field(min_length=7, max_length=7)
+    cells: list[ProjectInfoManpowerCellIn] = Field(default_factory=list)
+
+
+class ProjectInfoManpowerOut(BaseModel):
+    period: str
+    dept_groups: list[ManpowerMatrixGroupOut]
+    cells: list[ManpowerMatrixCellOut]
+
+
+class ProjectInfoBreadcrumb(BaseModel):
+    program_id: int
+    program_name: str
+    sub_program_id: int
+    sub_program_name: str
+    sub_project_id: int
+    sub_project_name: str
+
+
+class ProjectInfoSubProjectIn(BaseModel):
+    name: str = Field(min_length=2, max_length=200)
+    status: str = Field(max_length=20)
+    description: str | None = None
+    key_goal: str | None = Field(default=None, max_length=200)
+    automation_rate_goal: str | None = Field(default=None, max_length=50)
+    planned_start_date: date
+    planned_end_date: date
+    actual_start_date: date | None = None
+    actual_end_date: date | None = None
+
+    @field_validator("status")
+    @classmethod
+    def valid_status(cls, v: str) -> str:
+        s = v.strip()
+        if s not in _PROJECT_STATUSES:
+            raise ValueError("status must be active or archived")
+        return s
+
+    @model_validator(mode="after")
+    def end_after_start(self) -> Self:
+        if self.planned_end_date < self.planned_start_date:
+            raise ValueError("planned_end_date must be on or after planned_start_date")
+        return self
+
+
+class ProjectInfoPutBody(BaseModel):
+    sub_project: ProjectInfoSubProjectIn
+    milestones: list[MilestoneIn] = Field(default_factory=list)
+    deleted_milestone_ids: list[int] = Field(default_factory=list)
+    tasks: list[TaskIn] = Field(default_factory=list)
+    deleted_task_ids: list[int] = Field(default_factory=list)
+    team_members: list[TeamMemberIn] = Field(default_factory=list)
+    deleted_team_member_ids: list[int] = Field(default_factory=list)
+    risks: list[ProjectInfoRiskIn] = Field(default_factory=list)
+    deleted_risk_ids: list[int] = Field(default_factory=list)
+    manpower: ProjectInfoManpowerIn
+
+
+class ProjectInfoGetResponse(BaseModel):
+    year: int
+    period: str
+    sub_project: SubProjectDetailOut
+    milestones: list[MilestoneOut]
+    tasks: list[TaskOut]
+    team_members: list[TeamMemberOut]
+    risks: list[ProjectRiskDetailOut]
+    manpower: ProjectInfoManpowerOut
+    breadcrumb: ProjectInfoBreadcrumb

@@ -1,0 +1,248 @@
+/* 项目信息模块 */
+#panel-project-info {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 8px 88px;
+}
+
+#panel-project-info .pi-hidden { display: none !important; }
+
+#panel-project-info .pi-year-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #e8f0fe, #f0f4ff);
+  border: 1px solid #1E6FFF;
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+
+#panel-project-info .pi-year-bar label { font-weight: 600; font-size: 14px; }
+
+#panel-project-info .pi-selectors {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+#panel-project-info .pi-selectors label { font-weight: 600; font-size: 14px; }
+
+#panel-project-info select,
+#panel-project-info input[type="text"],
+#panel-project-info input[type="date"],
+#panel-project-info input[type="number"],
+#panel-project-info textarea {
+  border: 1px solid #E8EAED;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+#panel-project-info .pi-card {
+  background: #fff;
+  border: 1px solid #E8EAED;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+
+#panel-project-info .pi-card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#panel-project-info .pi-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+#panel-project-info .pi-stat {
+  background: #fff;
+  border: 1px solid #E8EAED;
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+#panel-project-info .pi-stat-lbl { font-size: 12px; color: #9aa0a6; margin-bottom: 6px; }
+#panel-project-info .pi-stat-val { font-size: 26px; font-weight: 800; }
+#panel-project-info .pi-stat-sub { font-size: 12px; color: #5f6368; margin-top: 6px; }
+
+#panel-project-info .pi-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0;
+}
+
+#panel-project-info .pi-meta-col { padding: 4px 8px; }
+#panel-project-info .pi-meta-col + .pi-meta-col { border-left: 1px solid #E8EAED; }
+#panel-project-info .pi-meta-row { display: flex; margin-bottom: 10px; font-size: 13px; }
+#panel-project-info .pi-meta-k { color: #9aa0a6; width: 88px; flex-shrink: 0; }
+#panel-project-info .pi-meta-v { font-weight: 500; flex: 1; }
+
+#panel-project-info .pi-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+#panel-project-info .pi-tag-active { background: #E6F4EA; color: #34a853; }
+#panel-project-info .pi-tag-archived { background: #F1F3F4; color: #5f6368; }
+
+#panel-project-info .pi-ms-tl {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+
+#panel-project-info .pi-ms-item {
+  flex: 1;
+  min-width: 100px;
+  text-align: center;
+  font-size: 12px;
+}
+
+#panel-project-info .pi-ms-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  margin: 0 auto 8px;
+  border: 2px solid #fff;
+}
+
+#panel-project-info .pi-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+#panel-project-info .pi-table th {
+  background: #F5F7FA;
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #6B7280;
+  border-bottom: 2px solid #E8EAED;
+  font-size: 12px;
+}
+
+#panel-project-info .pi-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+#panel-project-info .pi-table input,
+#panel-project-info .pi-table select,
+#panel-project-info .pi-table textarea {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+#panel-project-info .pi-table textarea { min-height: 52px; resize: vertical; }
+
+#panel-project-info .pi-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 20px;
+}
+
+#panel-project-info .pi-form-grid .pi-full { grid-column: 1 / -1; }
+
+#panel-project-info .pi-form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6B7280;
+  margin-bottom: 6px;
+}
+
+#panel-project-info .pi-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+#panel-project-info .pi-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #E8EAED;
+  background: #fff;
+  color: #5f6368;
+}
+
+#panel-project-info .pi-btn-primary {
+  background: #1E6FFF;
+  color: #fff;
+  border-color: #1E6FFF;
+}
+
+#panel-project-info .pi-btn:hover { border-color: #1E6FFF; color: #1E6FFF; }
+#panel-project-info .pi-btn-primary:hover { background: #1557b0; color: #fff; }
+
+#panel-project-info .pi-bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-top: 1px solid #E8EAED;
+  box-shadow: 0 -2px 8px rgba(0,0,0,.06);
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 90;
+}
+
+#panel-project-info .pi-drag { cursor: grab; color: #D1D5DB; user-select: none; }
+
+#panel-project-info .pi-group-row td {
+  background: #F5F7FA;
+  font-weight: 600;
+}
+
+#panel-project-info .pi-readonly-hint {
+  font-size: 12px;
+  color: #856400;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 12px;
+}
+
+#panel-manpower .panel-actions,
+#panel-risk .panel-actions { display: none !important; }
+
+#panel-manpower .manpower-toolbar::after,
+#panel-risk .manpower-toolbar::after {
+  content: '（只读展示，请前往「项目信息」页编辑）';
+  font-size: 12px;
+  color: #5f6368;
+  margin-left: 8px;
+}
+
+@media (max-width: 1100px) {
+  #panel-project-info .pi-cards { grid-template-columns: repeat(2, 1fr); }
+  #panel-project-info .pi-meta { grid-template-columns: 1fr; }
+  #panel-project-info .pi-meta-col + .pi-meta-col { border-left: none; border-top: 1px solid #E8EAED; padding-top: 12px; }
+}
