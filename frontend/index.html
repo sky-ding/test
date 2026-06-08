@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ProjectGuard · 项目管理登记</title>
+  <link rel="stylesheet" href="css/project-info.css">
   <style>
     :root {
       /* ===== 现代化设计系统 - 2026 优化版 ===== */
@@ -2614,6 +2615,7 @@
         <button type="button" class="tab active" role="tab" aria-selected="true" data-target="panel-phase">项目阶段状态</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-manpower">部门项目人力登记</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-risk">项目风险登记</button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-project-info">项目信息</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-settings">设置</button>
       </div>
     </div>
@@ -2730,6 +2732,34 @@
       <button type="button" class="btn-add" id="btn-risk-edit-toggle" title="进入编辑模式后可修改并保存">编辑</button>
       <button type="button" class="btn-add risk-edit-only" onclick="addRiskRow()">+ 新增风险</button>
       <button type="button" class="btn-save-panel risk-edit-only" onclick="saveRiskData()" title="将本页风险登记保存到服务器（需管理员）">保存</button>
+    </div>
+  </div>
+  <div id="panel-project-info" class="tab-panel" role="tabpanel" aria-label="项目信息">
+    <div class="pi-year-bar">
+      <label for="pi-year">当前年度</label>
+      <select id="pi-year" aria-label="项目信息年度">
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+        <option value="2026">2026</option>
+        <option value="2027">2027</option>
+      </select>
+    </div>
+    <div class="pi-selectors">
+      <label for="pi-sel-program">项目集</label>
+      <select id="pi-sel-program" aria-label="项目集"></select>
+      <label for="pi-sel-sub-program">子项目集</label>
+      <select id="pi-sel-sub-program" aria-label="子项目集"></select>
+      <label for="pi-sel-sub-project">子项目</label>
+      <select id="pi-sel-sub-project" aria-label="子项目"></select>
+    </div>
+    <div id="pi-summary"></div>
+    <div id="pi-edit" class="pi-hidden"></div>
+    <div id="pi-bottom-bar" class="pi-bottom-bar pi-hidden">
+      <div>
+        <button type="button" class="pi-btn" id="pi-btn-cancel">取消</button>
+        <span style="font-size:12px;color:#9aa0a6;margin-left:12px">未保存的更改将丢失</span>
+      </div>
+      <button type="button" class="pi-btn pi-btn-primary" id="pi-btn-save">保存</button>
     </div>
   </div>
   <div id="panel-settings" class="tab-panel" role="tabpanel" aria-label="设置">
@@ -2902,6 +2932,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" crossorigin="anonymous"></script>
+  <script src="js/project-info.js"></script>
   <script>
     // 基础数据结构
     let data = [
@@ -5263,6 +5295,8 @@
       }
       return fetch(pmApiUrl(path), Object.assign({}, opts, { credentials: 'include', headers: h }));
     }
+    window.pmFetch = pmFetch;
+    window.PM_API_BASE = PM_API_BASE;
 
     async function fetchAuthMe() {
       var authAbortTid = null;
@@ -8209,6 +8243,9 @@
           if (target === 'panel-phase') {
             renderPhaseTable();
           }
+          if (target === 'panel-project-info' && window.ProjectInfoModule) {
+            window.ProjectInfoModule.onTabShow();
+          }
         });
       })();
 
@@ -8278,6 +8315,9 @@
       }
     }
     bindPmLogoutButtons();
+    if (window.ProjectInfoModule && window.ProjectInfoModule.init) {
+      window.ProjectInfoModule.init();
+    }
     pmBootstrap().catch(function (err) {
       console.warn('[PM-tool] pmBootstrap failed', err);
     });
