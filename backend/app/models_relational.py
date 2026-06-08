@@ -77,13 +77,6 @@ class SubProject(Base):
     year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    key_goal: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    automation_rate_goal: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    planned_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    planned_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    actual_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    actual_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
@@ -96,13 +89,6 @@ class SubProject(Base):
         back_populates="sub_project", cascade="all, delete-orphan"
     )
     project_risks: Mapped[list[ProjectRisk]] = relationship(
-        back_populates="sub_project", cascade="all, delete-orphan"
-    )
-    milestones: Mapped[list[Milestone]] = relationship(
-        back_populates="sub_project", cascade="all, delete-orphan"
-    )
-    tasks: Mapped[list[Task]] = relationship(back_populates="sub_project", cascade="all, delete-orphan")
-    team_members: Mapped[list[TeamMember]] = relationship(
         back_populates="sub_project", cascade="all, delete-orphan"
     )
 
@@ -211,63 +197,3 @@ class ProjectRisk(Base):
     updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
 
     sub_project: Mapped[SubProject] = relationship(back_populates="project_risks")
-
-
-class Milestone(Base):
-    __tablename__ = "milestones"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    sub_project_id: Mapped[int] = mapped_column(
-        ForeignKey("sub_projects.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    planned_date: Mapped[date] = mapped_column(Date, nullable=False)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
-
-    sub_project: Mapped[SubProject] = relationship(back_populates="milestones")
-
-
-class Task(Base):
-    __tablename__ = "tasks"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    sub_project_id: Mapped[int] = mapped_column(
-        ForeignKey("sub_projects.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    phase: Mapped[str] = mapped_column(String(50), nullable=False)
-    assignee: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    start_date: Mapped[date] = mapped_column(Date, nullable=False)
-    end_date: Mapped[date] = mapped_column(Date, nullable=False)
-    progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
-
-    sub_project: Mapped[SubProject] = relationship(back_populates="tasks")
-
-
-class TeamMember(Base):
-    __tablename__ = "team_members"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    sub_project_id: Mapped[int] = mapped_column(
-        ForeignKey("sub_projects.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    team_column_id: Mapped[int] = mapped_column(
-        ForeignKey("manpower_columns.id", ondelete="RESTRICT"), nullable=False, index=True
-    )
-    role: Mapped[str] = mapped_column(String(50), nullable=False)
-    participation: Mapped[str] = mapped_column(String(20), nullable=False, default="核心成员")
-    remark: Mapped[str | None] = mapped_column(Text, nullable=True)
-    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
-
-    sub_project: Mapped[SubProject] = relationship(back_populates="team_members")
-    team_column: Mapped[ManpowerColumn] = relationship()

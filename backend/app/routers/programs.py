@@ -19,7 +19,6 @@ from app.schemas_relational import (
     SubProgramNode,
     SubProgramPatch,
     SubProjectCreate,
-    SubProjectDetailOut,
     SubProjectNode,
     SubProjectPatch,
 )
@@ -252,21 +251,6 @@ def create_sub_project(
     return _sub_project_node(sj)
 
 
-@router.get("/sub-projects/{sub_project_id}", response_model=SubProjectDetailOut)
-def get_sub_project(
-    _user: CurrentUser,
-    sub_project_id: int,
-    year: int = Query(..., ge=2000, le=2100),
-    db: Session = Depends(get_db),
-) -> SubProject:
-    _ = _user
-    y = parse_year(year)
-    sj = db.get(SubProject, sub_project_id)
-    if sj is None or sj.year != y:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="sub_project not found")
-    return sj
-
-
 @router.patch("/sub-projects/{sub_project_id}", response_model=SubProjectNode)
 def patch_sub_project(
     _admin: AdminUser,
@@ -295,20 +279,6 @@ def patch_sub_project(
         sj.name = name
     if body.status is not None:
         sj.status = body.status.strip() or sj.status
-    if body.description is not None:
-        sj.description = body.description.strip() or None
-    if body.key_goal is not None:
-        sj.key_goal = body.key_goal.strip() or None
-    if body.automation_rate_goal is not None:
-        sj.automation_rate_goal = body.automation_rate_goal.strip() or None
-    if body.planned_start_date is not None:
-        sj.planned_start_date = body.planned_start_date
-    if body.planned_end_date is not None:
-        sj.planned_end_date = body.planned_end_date
-    if body.actual_start_date is not None:
-        sj.actual_start_date = body.actual_start_date
-    if body.actual_end_date is not None:
-        sj.actual_end_date = body.actual_end_date
     if body.sort_order is not None:
         sj.sort_order = body.sort_order
     db.commit()

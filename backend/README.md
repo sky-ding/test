@@ -27,9 +27,7 @@ python scripts/check_db.py
 pytest tests/test_manpower_matrix_integration.py
 ```
 
-再用管理员在 `/docs` 中对 `GET /api/v1/programs/tree`、`phase-assessments`、`manpower-allocations`、`manpower-department-groups`、`manpower-columns`、`project-risks`、`project-info` 做一次冒烟。
-
-**项目信息模块**：生产库需执行 [migrations/004_project_info_module.sql](migrations/004_project_info_module.sql)（扩展 `sub_projects`，新增 `milestones` / `tasks` / `team_members`）。聚合 API：`GET/PUT /api/v1/project-info/{sub_project_id}?year=`。冒烟：`pytest tests/test_project_info_integration.py`。
+再用管理员在 `/docs` 中对 `GET /api/v1/programs/tree`、`phase-assessments`、`manpower-allocations`、`manpower-department-groups`、`manpower-columns`、`project-risks` 做一次冒烟。
 
 未配置 `PM_MYSQL_*` 时仍回落 **本地 SQLite** `backend/data/app.db`，便于单人本机开发。
 
