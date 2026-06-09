@@ -33,6 +33,10 @@
   flex-wrap: wrap;
 }
 
+#panel-project-info .pi-structure-tools[hidden] {
+  display: none !important;
+}
+
 #panel-project-info .pi-btn-danger {
   border-color: #fce8e6;
   color: #c5221f;
