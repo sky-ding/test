@@ -2503,29 +2503,43 @@
       .app-brand img { max-width: min(260px, 55vw); }
     }
 
-    .pm-work-year-bar {
+    .pm-year-select-wrap {
       display: flex;
       align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      max-width: 1280px;
-      margin: 0 auto 12px;
-      padding: 10px 16px;
-      background: linear-gradient(135deg, #e8f0fe, #f0f4ff);
-      border: 1px solid #1E6FFF;
-      border-radius: 10px;
-      font-size: 14px;
+      gap: 4px;
+      font-size: 13px;
+      color: var(--text-secondary);
     }
-    .pm-work-year-bar label { font-weight: 600; }
-    .pm-work-year-input {
-      width: 88px;
-      border: 1px solid #E8EAED;
-      border-radius: 8px;
-      padding: 6px 10px;
-      font-size: 14px;
+    .pm-year-select-wrap label {
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .pm-year-select {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      padding: 3px 24px 3px 8px;
+      font-size: 13px;
       font-family: inherit;
+      font-weight: 600;
+      color: var(--accent);
+      cursor: pointer;
+      line-height: 1.4;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235a5c63'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
     }
-    .pm-work-year-hint { color: #5f6368; font-size: 12px; }
+    .pm-year-select:hover {
+      border-color: var(--accent);
+    }
+    .pm-year-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
     .pm-year-readonly { font-weight: 600; color: #1E6FFF; }
 
     .tabs-sticky-actions {
@@ -2653,15 +2667,15 @@
       </div>
     </div>
     <div class="tabs-sticky-actions">
+      <div class="pm-year-select-wrap" title="阶段、人力、风险与项目信息均按此年度加载">
+        <label for="pm-work-year">年度</label>
+        <select class="pm-year-select" id="pm-work-year" aria-label="工作年度"></select>
+      </div>
       <span id="pm-nav-user-hint" class="pm-nav-user-hint" aria-live="polite"></span>
       <button type="button" class="pm-logout-btn" id="pm-btn-logout-nav" title="退出登录">退出</button>
     </div>
   </div>
-  <div class="pm-work-year-bar" id="pm-work-year-bar">
-    <label for="pm-work-year">工作年度</label>
-    <input type="number" class="pm-work-year-input" id="pm-work-year" min="2000" max="2099" step="1" aria-label="工作年度">
-    <span class="pm-work-year-hint">阶段、人力、风险与项目信息均按此年度加载</span>
-  </div>
+
   <div id="panel-phase" class="tab-panel active" role="tabpanel" aria-label="项目阶段状态">
     <div class="manpower-toolbar">
       <label>年度 <span class="pm-year-readonly" data-pm-year-display>—</span></label>
@@ -3180,7 +3194,17 @@
         el.textContent = String(pmDataYear);
       });
       var wy = document.getElementById('pm-work-year');
-      if (wy && document.activeElement !== wy) wy.value = String(pmDataYear);
+      if (wy && document.activeElement !== wy) {
+        wy.value = String(pmDataYear);
+        // 如果当前年份不在选项中，动态添加
+        if (!wy.querySelector('option[value="' + pmDataYear + '"]')) {
+          var opt = document.createElement('option');
+          opt.value = pmDataYear;
+          opt.textContent = pmDataYear;
+          wy.appendChild(opt);
+          wy.value = String(pmDataYear);
+        }
+      }
     }
     function pmApplyWorkYear(y, options) {
       var opts = options || {};
@@ -3205,7 +3229,13 @@
       var wy = document.getElementById('pm-work-year');
       if (!wy || wy._pmWorkYearWired) return;
       wy._pmWorkYearWired = true;
-      wy.value = String(pmDataYear);
+      // 填充年份选项（当前年 ±3）
+      var curYear = new Date().getFullYear();
+      var opts = '';
+      for (var y = curYear - 3; y <= curYear + 3; y++) {
+        opts += '<option value="' + y + '"' + (y === pmDataYear ? ' selected' : '') + '>' + y + '</option>';
+      }
+      wy.innerHTML = opts;
       wy.addEventListener('change', function () {
         var v = parseInt(wy.value, 10);
         if (isNaN(v) || v < 2000 || v > 2099) {
