@@ -1,8 +1,15 @@
 /* 项目信息模块 */
 #panel-project-info {
+  align-self: stretch;
+  width: 100%;
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 8px 88px;
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 #panel-project-info .pi-hidden { display: none !important; }
