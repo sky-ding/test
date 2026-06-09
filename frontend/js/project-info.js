@@ -1199,7 +1199,7 @@
     if (selJ) {
       selJ.addEventListener('change', function () {
         var prev = state.subProjectId;
-        applySelectionFromDom();
+        state.subProjectId = parseInt(selJ.value, 10);
         onProjectSelectionChange(function () {
           state.subProjectId = prev;
           syncTreeSelectors();
