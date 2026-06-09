@@ -2772,7 +2772,7 @@
         <label for="pi-sel-sub-project">子项目</label>
         <select id="pi-sel-sub-project" aria-label="子项目"></select>
       </div>
-      <div class="pi-structure-tools" id="pi-structure-tools" hidden>
+      <div class="pi-structure-tools" id="pi-structure-tools">
         <button type="button" class="pi-btn" id="pi-btn-add-program">+ 项目集</button>
         <button type="button" class="pi-btn" id="pi-btn-add-sub-program">+ 子项目集</button>
         <button type="button" class="pi-btn" id="pi-btn-add-sub-project">+ 子项目</button>
@@ -8285,6 +8285,9 @@
         updateSettingsPanelRoleUi();
         if (window.ProjectInfoModule && window.ProjectInfoModule.init) {
           window.ProjectInfoModule.init();
+        }
+        if (window.ProjectInfoModule && window.ProjectInfoModule.refreshAdminTools) {
+          window.ProjectInfoModule.refreshAdminTools();
         }
       } catch (initErr) {
         console.warn('[PM-tool] 初始化数据或渲染失败', initErr);

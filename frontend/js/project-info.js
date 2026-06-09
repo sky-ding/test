@@ -53,10 +53,6 @@
     return !!(global.pmIsAdmin && global.pmIsAdmin());
   }
 
-  function treeApi() {
-    return global.pmTreeApi || null;
-  }
-
   function afterTreeChanged(selectIds) {
     var reload = global.pmReloadRegistryAfterProjectTreeChange;
     var chain = reload ? reload() : Promise.resolve();
@@ -87,6 +83,130 @@
       h['Content-Type'] = 'application/json';
     }
     return fetch(piApi(path), Object.assign({}, opts, { credentials: 'include', headers: h }));
+  }
+
+  function encodeYearQuery() {
+    return 'year=' + encodeURIComponent(String(getWorkYear()));
+  }
+
+  function piJsonRequest(path, options) {
+    return piFetch(path, options || {}).then(function (r) {
+      if (r.status === 401) {
+        global.location.href = 'login.html';
+        throw new Error('unauthorized');
+      }
+      if (!r.ok) {
+        return r.json().catch(function () { return {}; }).then(function (err) {
+          var detail = err.detail != null ? err.detail : '请求失败';
+          throw new Error(detail + '（HTTP ' + r.status + '）');
+        });
+      }
+      if (r.status === 204) return null;
+      return r.json();
+    });
+  }
+
+  function createProgramWithDefaultLeaf(programName, sortOrder) {
+    var y = getWorkYear();
+    return piJsonRequest('/api/v1/programs', {
+      method: 'POST',
+      body: JSON.stringify({ year: y, name: programName, sort_order: sortOrder || 0 })
+    }).then(function (program) {
+      return piJsonRequest(
+        '/api/v1/programs/' + encodeURIComponent(String(program.id)) + '/sub-programs?' + encodeYearQuery(),
+        { method: 'POST', body: JSON.stringify({ name: '默认子项目集', sort_order: 0 }) }
+      ).then(function (subProgram) {
+        if (!subProgram || !subProgram.id) throw new Error('sub_program not created');
+        return piJsonRequest(
+          '/api/v1/programs/sub-programs/' + encodeURIComponent(String(subProgram.id)) + '/sub-projects?' + encodeYearQuery(),
+          { method: 'POST', body: JSON.stringify({ name: '新子项目', sort_order: 0 }) }
+        ).then(function (subProject) {
+          return {
+            programId: program.id,
+            subProgramId: subProgram.id,
+            subProjectId: subProject && subProject.id
+          };
+        });
+      });
+    });
+  }
+
+  function createSubProgramWithDefaultLeaf(programId, subProgramName, sortOrder) {
+    return piJsonRequest(
+      '/api/v1/programs/' + encodeURIComponent(String(programId)) + '/sub-programs?' + encodeYearQuery(),
+      { method: 'POST', body: JSON.stringify({ name: subProgramName, sort_order: sortOrder || 0 }) }
+    ).then(function (subProgram) {
+      if (!subProgram || !subProgram.id) throw new Error('sub_program not created');
+      return piJsonRequest(
+        '/api/v1/programs/sub-programs/' + encodeURIComponent(String(subProgram.id)) + '/sub-projects?' + encodeYearQuery(),
+        { method: 'POST', body: JSON.stringify({ name: '新子项目', sort_order: 0 }) }
+      ).then(function (subProject) {
+        return {
+          programId: programId,
+          subProgramId: subProgram.id,
+          subProjectId: subProject && subProject.id
+        };
+      });
+    });
+  }
+
+  function createSubProject(subProgramId, projectName, sortOrder) {
+    return piJsonRequest(
+      '/api/v1/programs/sub-programs/' + encodeURIComponent(String(subProgramId)) + '/sub-projects?' + encodeYearQuery(),
+      { method: 'POST', body: JSON.stringify({ name: projectName, sort_order: sortOrder || 0 }) }
+    ).then(function (subProject) {
+      return { subProjectId: subProject && subProject.id };
+    });
+  }
+
+  function patchProgram(programId, name) {
+    return piJsonRequest(
+      '/api/v1/programs/' + encodeURIComponent(String(programId)) + '?' + encodeYearQuery(),
+      { method: 'PATCH', body: JSON.stringify({ name: name }) }
+    );
+  }
+
+  function patchSubProgram(subProgramId, name) {
+    return piJsonRequest(
+      '/api/v1/programs/sub-programs/' + encodeURIComponent(String(subProgramId)) + '?' + encodeYearQuery(),
+      { method: 'PATCH', body: JSON.stringify({ name: name }) }
+    );
+  }
+
+  function patchSubProject(subProjectId, name) {
+    return piJsonRequest(
+      '/api/v1/programs/sub-projects/' + encodeURIComponent(String(subProjectId)) + '?' + encodeYearQuery(),
+      { method: 'PATCH', body: JSON.stringify({ name: name }) }
+    );
+  }
+
+  function deleteProgram(programId) {
+    return piJsonRequest(
+      '/api/v1/programs/' + encodeURIComponent(String(programId)) + '?' + encodeYearQuery(),
+      { method: 'DELETE' }
+    );
+  }
+
+  function deleteSubProgram(subProgramId) {
+    return piJsonRequest(
+      '/api/v1/programs/sub-programs/' + encodeURIComponent(String(subProgramId)) + '?' + encodeYearQuery(),
+      { method: 'DELETE' }
+    );
+  }
+
+  function deleteSubProject(subProjectId) {
+    return piJsonRequest(
+      '/api/v1/programs/sub-projects/' + encodeURIComponent(String(subProjectId)) + '?' + encodeYearQuery(),
+      { method: 'DELETE' }
+    );
+  }
+
+  function showTreeLoading() {
+    if (state.view === 'edit') return;
+    var box = document.getElementById('pi-empty-state');
+    if (!box) return;
+    box.classList.remove('pi-hidden');
+    box.innerHTML = '<div class="pi-empty-card"><p>正在加载项目列表…</p></div>';
   }
 
   function defaultPeriod(year) {
@@ -141,6 +261,7 @@
   function loadTree() {
     syncYearFromGlobal();
     state.treeLoadError = null;
+    showTreeLoading();
     return piFetch('/api/v1/programs/tree?year=' + state.year)
       .then(function (r) {
         if (!r.ok) throw new Error('加载项目树失败（HTTP ' + r.status + '）');
@@ -351,25 +472,18 @@
 
   function handleCreateFirstProgram() {
     if (!isAdmin()) return;
-    var api = treeApi();
-    if (!api || !api.createProgramWithDefaultLeaf) {
-      alert('项目树 API 未就绪，请刷新页面后重试。');
-      return;
-    }
     var name = prompt('输入新项目集名称：');
     if (!name || !String(name).trim()) return;
-    api.createProgramWithDefaultLeaf(String(name).trim(), 0)
+    createProgramWithDefaultLeaf(String(name).trim(), 0)
       .then(function (ids) { return afterTreeChanged(ids); })
       .catch(function (e) { alert((e && e.message) || '创建失败'); });
   }
 
   function handleAddProgram() {
     if (!isAdmin()) return;
-    var api = treeApi();
-    if (!api || !api.createProgramWithDefaultLeaf) return;
     var name = prompt('输入新项目集名称：');
     if (!name || !String(name).trim()) return;
-    api.createProgramWithDefaultLeaf(String(name).trim(), (state.tree || []).length)
+    createProgramWithDefaultLeaf(String(name).trim(), (state.tree || []).length)
       .then(function (ids) { return afterTreeChanged(ids); })
       .catch(function (e) { alert((e && e.message) || '创建失败'); });
   }
@@ -380,12 +494,10 @@
       alert('请先选择项目集。');
       return;
     }
-    var api = treeApi();
-    if (!api || !api.createSubProgramWithDefaultLeaf) return;
     var prog = (state.tree || []).find(function (p) { return p.id === state.programId; });
     var name = prompt('输入新子项目集名称：');
     if (!name || !String(name).trim()) return;
-    api.createSubProgramWithDefaultLeaf(state.programId, String(name).trim(), ((prog && prog.sub_programs) || []).length)
+    createSubProgramWithDefaultLeaf(state.programId, String(name).trim(), ((prog && prog.sub_programs) || []).length)
       .then(function (ids) { return afterTreeChanged(ids); })
       .catch(function (e) { alert((e && e.message) || '创建失败'); });
   }
@@ -396,13 +508,11 @@
       alert('请先选择子项目集。');
       return;
     }
-    var api = treeApi();
-    if (!api || !api.createSubProject) return;
     var prog = (state.tree || []).find(function (p) { return p.id === state.programId; });
     var spg = prog && (prog.sub_programs || []).find(function (s) { return s.id === state.subProgramId; });
     var name = prompt('输入新子项目名称：');
     if (!name || !String(name).trim()) return;
-    api.createSubProject(state.subProgramId, String(name).trim(), ((spg && spg.sub_projects) || []).length)
+    createSubProject(state.subProgramId, String(name).trim(), ((spg && spg.sub_projects) || []).length)
       .then(function (ids) {
         return afterTreeChanged({
           programId: state.programId,
@@ -415,8 +525,6 @@
 
   function handleRenameNode() {
     if (!isAdmin()) return;
-    var api = treeApi();
-    if (!api) return;
     var prog = (state.tree || []).find(function (p) { return p.id === state.programId; });
     var spg = prog && (prog.sub_programs || []).find(function (s) { return s.id === state.subProgramId; });
     var leaf = spg && (spg.sub_projects || []).find(function (j) { return j.id === state.subProjectId; });
@@ -435,18 +543,16 @@
     }
     var name = prompt('输入新名称：', currentName);
     if (name == null || !String(name).trim()) return;
-    var p = Promise.resolve();
-    if (target === 'program') p = api.patchProgram(prog.id, String(name).trim());
-    else if (target === 'sub_program') p = api.patchSubProgram(spg.id, String(name).trim());
-    else p = api.patchSubProject(leaf.id, String(name).trim());
+    var p;
+    if (target === 'program') p = patchProgram(prog.id, String(name).trim());
+    else if (target === 'sub_program') p = patchSubProgram(spg.id, String(name).trim());
+    else p = patchSubProject(leaf.id, String(name).trim());
     p.then(function () { return afterTreeChanged(); })
       .catch(function (e) { alert((e && e.message) || '重命名失败'); });
   }
 
   function handleDeleteNode() {
     if (!isAdmin()) return;
-    var api = treeApi();
-    if (!api) return;
     var prog = (state.tree || []).find(function (p) { return p.id === state.programId; });
     if (!prog) {
       alert('请先选择要删除的节点。');
@@ -469,16 +575,16 @@
       }
     }
     if (!confirm(msg)) return;
-    var p = Promise.resolve();
+    var p;
     if (state.subProjectId && leaf) {
-      if ((spg.sub_projects || []).length <= 1 && (prog.sub_programs || []).length <= 1) p = api.deleteProgram(prog.id);
-      else if ((spg.sub_projects || []).length <= 1) p = api.deleteSubProgram(spg.id);
-      else p = api.deleteSubProject(leaf.id);
+      if ((spg.sub_projects || []).length <= 1 && (prog.sub_programs || []).length <= 1) p = deleteProgram(prog.id);
+      else if ((spg.sub_projects || []).length <= 1) p = deleteSubProgram(spg.id);
+      else p = deleteSubProject(leaf.id);
     } else if (state.subProgramId && spg) {
-      if ((prog.sub_programs || []).length <= 1) p = api.deleteProgram(prog.id);
-      else p = api.deleteSubProgram(spg.id);
+      if ((prog.sub_programs || []).length <= 1) p = deleteProgram(prog.id);
+      else p = deleteSubProgram(spg.id);
     } else {
-      p = api.deleteProgram(prog.id);
+      p = deleteProgram(prog.id);
     }
     p.then(function () { return afterTreeChanged(); })
       .catch(function (e) { alert((e && e.message) || '删除失败'); });
@@ -1107,6 +1213,8 @@
   }
 
   function init() {
+    if (init._done) return;
+    init._done = true;
     syncYearFromGlobal();
     wireControls();
     updateAdminTools();
@@ -1134,6 +1242,13 @@
     init: init,
     onTabShow: onTabShow,
     onYearChanged: onYearChanged,
-    hasDirtyChanges: function () { return !!state.dirty; }
+    hasDirtyChanges: function () { return !!state.dirty; },
+    refreshAdminTools: updateAdminTools
   };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
 })(window);
