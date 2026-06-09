@@ -2260,6 +2260,14 @@
       overflow-y: auto;
     }
 
+    #panel-project-info {
+      align-self: stretch;
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
     .settings-layout {
       display: flex;
       gap: 24px;
@@ -2780,9 +2788,11 @@
         <button type="button" class="pi-btn pi-btn-danger" id="pi-btn-delete-node">删除</button>
       </div>
     </div>
-    <div id="pi-empty-state" class="pi-empty-state pi-hidden" aria-live="polite"></div>
-    <div id="pi-summary"></div>
-    <div id="pi-edit" class="pi-hidden"></div>
+    <div id="pi-body" class="pi-body">
+      <div id="pi-empty-state" class="pi-empty-state pi-hidden" aria-live="polite"></div>
+      <div id="pi-summary"></div>
+      <div id="pi-edit" class="pi-hidden"></div>
+    </div>
     <div id="pi-bottom-bar" class="pi-bottom-bar pi-hidden">
       <div>
         <button type="button" class="pi-btn" id="pi-btn-cancel">取消</button>
