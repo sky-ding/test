@@ -27,7 +27,9 @@ python scripts/check_db.py
 pytest tests/test_manpower_matrix_integration.py
 ```
 
-再用管理员在 `/docs` 中对 `GET /api/v1/programs/tree`、`phase-assessments`、`manpower-allocations`、`manpower-department-groups`、`manpower-columns`、`project-risks` 做一次冒烟。
+再用管理员在 `/docs` 中对 `GET /api/v1/programs/tree`、`phase-assessments`、`manpower-allocations`、`manpower-department-groups`、`manpower-columns`、`project-risks`、`project-info` 做一次冒烟。
+
+**项目信息模块（生产 MySQL）**：发版前由 DBA 执行 **[migrations/004_project_info_module.sql](migrations/004_project_info_module.sql)**（扩展 `sub_projects` 并新建 `milestones` / `tasks` / `team_members`）。`create_all` 不会给已有表加列，漏迁移会导致 `programs/tree` 等接口 500。
 
 未配置 `PM_MYSQL_*` 时仍回落 **本地 SQLite** `backend/data/app.db`，便于单人本机开发。
 
@@ -35,7 +37,7 @@ pytest tests/test_manpower_matrix_integration.py
 
 - **人力 / 阶段 / 风险** 已改为关系型表 + 按年 API；旧整包 `GET/PUT /api/v1/manpower|phase|risk` 已不再注册为正式业务接口。前端按 **数据年份** 请求 `GET /api/v1/programs/tree?year=`，并以 `sub_project_id` + `period`（yyyy-MM）读写业务表。  
 - 多实例部署时，各实例的 **`PM_MYSQL_*` 与 `PM_SESSION_SECRET` 必须一致**，且指向同一库。  
-- 页面表格为空：在**与线上一致**的 `backend/.env` 下执行 `python scripts/check_db.py`；若该年尚无项目树，请在「设置」中创建项目集或调用 `POST /api/v1/programs`。  
+- 页面表格为空：在**与线上一致**的 `backend/.env` 下执行 `python scripts/check_db.py`；若该年尚无项目树，请在「项目信息」页创建项目集（或调用 `POST /api/v1/programs`）。  
 - 人力表某年月全为 0：多为当前所选 **yyyy-MM** 在库中尚无 `manpower_cells` 数据；先确认该年已有 `manpower_department_groups` / `manpower_columns` 表头，再保存当月单元格。矩阵 API 见 `GET/PUT /api/v1/manpower-allocations`（[docs/项目管理登记系统数据库设计文档.md](../docs/项目管理登记系统数据库设计文档.md)）。
 
 ## 启动

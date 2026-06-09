@@ -15,6 +15,7 @@ from app.routers import (
     manpower_headers,
     phase_assessments,
     programs,
+    project_info,
     project_risks,
     users,
 )
@@ -62,6 +63,7 @@ app.include_router(manpower_allocations.router, prefix="/api/v1")
 app.include_router(manpower_headers.groups_router, prefix="/api/v1")
 app.include_router(manpower_headers.columns_router, prefix="/api/v1")
 app.include_router(project_risks.router, prefix="/api/v1")
+app.include_router(project_info.router, prefix="/api/v1")
 
 
 @app.get("/health")
