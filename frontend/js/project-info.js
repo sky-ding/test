@@ -621,6 +621,12 @@
         '<td>' + esc(r.status) + '</td></tr>';
     }).join('');
 
+    var taskRows = (d.tasks || []).map(function (t) {
+      return '<tr><td><strong>' + esc(t.name) + '</strong></td><td>' + esc(t.phase) + '</td>' +
+        '<td>' + esc(t.assignee || '—') + '</td><td>' + fmtDate(t.start_date) + '</td>' +
+        '<td>' + fmtDate(t.end_date) + '</td><td>' + (Number(t.progress) || 0) + '%</td></tr>';
+    }).join('');
+
     var teamRows = (d.team_members || []).map(function (t) {
       return '<tr><td><strong>' + esc(t.name) + '</strong></td><td>' + esc(t.team_column_name) +
         '</td><td>' + esc(t.role) + '</td><td>' + esc(t.participation) + '</td><td>' + esc(t.remark || '') + '</td></tr>';
@@ -655,6 +661,9 @@
       '<div class="pi-meta-col pi-meta-col--desc"><h4>项目描述</h4><p class="pi-meta-desc">' +
       esc(sp.description || '（暂无描述）') + '</p></div></div></div>' +
       '<div class="pi-card"><h3>里程碑</h3><div class="pi-ms-tl">' + (msHtml || '<span>暂无里程碑</span>') + '</div></div>' +
+      '<div class="pi-card"><h3>任务清单</h3><div class="pi-table-wrap"><table class="pi-table"><thead><tr>' +
+      '<th>名称</th><th>阶段</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th></tr></thead><tbody>' +
+      (taskRows || '<tr><td colspan="6">暂无任务</td></tr>') + '</tbody></table></div></div>' +
       '<div class="pi-card"><h3>风险管理</h3><div class="pi-table-wrap"><table class="pi-table"><thead><tr>' +
       '<th>类别</th><th>来源</th><th>说明</th><th>方案</th><th>等级</th><th>跟进人</th>' +
       '<th>登记时间</th><th>解除时间</th><th>状态</th></tr></thead><tbody>' +
