@@ -646,7 +646,7 @@
       '<div class="pi-meta-col pi-meta-col--basic"><h4>基本信息</h4><div class="pi-meta-fields">' +
       '<div class="pi-meta-row"><span class="pi-meta-k">项目名称</span><span class="pi-meta-v">' + esc(sp.name) + '</span></div>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">项目状态</span><span class="pi-meta-v">' + statusTag(sp.status) + '</span></div>' +
-      '<div class="pi-meta-row pi-meta-row--full"><span class="pi-meta-k">关键目标</span><span class="pi-meta-v">' + esc(sp.key_goal || '—') + '</span></div></div></div>' +
+      '<div class="pi-meta-row pi-meta-row--full"><span class="pi-meta-k">关键目标</span><span class="pi-meta-v pi-meta-v--multiline">' + esc(sp.key_goal || '—') + '</span></div></div></div>' +
       '<div class="pi-meta-col pi-meta-col--time"><h4>时间信息</h4>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">计划开始</span><span class="pi-meta-v">' + fmtDate(sp.planned_start_date) + '</span></div>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">计划结束</span><span class="pi-meta-v">' + fmtDate(sp.planned_end_date) + '</span></div>' +
@@ -731,13 +731,13 @@
 
     root.innerHTML =
       '<div class="pi-card"><h3>基本信息</h3><div class="pi-form-grid">' +
-      '<div class="pi-form-group"><label>项目名称 *</label><input type="text" id="pi-f-name" value="' + esc(sp.name) + '"></div>' +
-      '<div class="pi-form-group"><label>项目状态 *</label><select id="pi-f-status">' +
+      '<div class="pi-form-group pi-full"><label>项目名称 *</label><input type="text" id="pi-f-name" value="' + esc(sp.name) + '"></div>' +
+      '<div class="pi-form-group pi-form-group--compact"><label>项目状态 *</label><select id="pi-f-status">' +
       '<option value="active"' + (sp.status === 'active' ? ' selected' : '') + '>进行中</option>' +
       '<option value="archived"' + (sp.status === 'archived' ? ' selected' : '') + '>已归档</option></select></div>' +
-      '<div class="pi-form-group pi-full"><label>项目描述</label><textarea id="pi-f-desc" rows="3">' + esc(sp.description || '') + '</textarea></div>' +
-      '<div class="pi-form-group"><label>关键目标</label><input type="text" id="pi-f-goal" value="' + esc(sp.key_goal || '') + '"></div>' +
-      '<div class="pi-form-group"><label>自动化率目标</label><input type="text" id="pi-f-auto" value="' + esc(sp.automation_rate_goal || '') + '"></div></div></div>' +
+      '<div class="pi-form-group pi-full"><label>项目描述</label><textarea id="pi-f-desc" rows="4">' + esc(sp.description || '') + '</textarea></div>' +
+      '<div class="pi-form-group pi-full"><label>关键目标</label>' +
+      '<textarea id="pi-f-goal" rows="5" placeholder="每行可填写一个目标，支持多行登记">' + esc(sp.key_goal || '') + '</textarea></div></div></div>' +
       '<div class="pi-card"><h3>时间信息</h3><div class="pi-form-grid">' +
       '<div class="pi-form-group"><label>计划开始 *</label><input type="date" id="pi-f-ps" value="' + fmtDate(sp.planned_start_date) + '"></div>' +
       '<div class="pi-form-group"><label>计划结束 *</label><input type="date" id="pi-f-pe" value="' + fmtDate(sp.planned_end_date) + '"></div>' +
@@ -760,7 +760,6 @@
     bindEditInput('#pi-f-status', function (el) { e.sub_project.status = el.value; });
     bindEditInput('#pi-f-desc', function (el) { e.sub_project.description = el.value; });
     bindEditInput('#pi-f-goal', function (el) { e.sub_project.key_goal = el.value; });
-    bindEditInput('#pi-f-auto', function (el) { e.sub_project.automation_rate_goal = el.value; });
     bindEditInput('#pi-f-ps', function (el) { e.sub_project.planned_start_date = el.value || null; });
     bindEditInput('#pi-f-pe', function (el) { e.sub_project.planned_end_date = el.value || null; });
     bindEditInput('#pi-f-as', function (el) { e.sub_project.actual_start_date = el.value || null; });

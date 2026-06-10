@@ -85,7 +85,7 @@ class SubProjectPatch(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     status: str | None = Field(default=None, max_length=20)
     description: str | None = None
-    key_goal: str | None = Field(default=None, max_length=200)
+    key_goal: str | None = None
     automation_rate_goal: str | None = Field(default=None, max_length=50)
     planned_start_date: date | None = None
     planned_end_date: date | None = None
@@ -542,7 +542,7 @@ class ProjectInfoSubProjectIn(BaseModel):
     name: str = Field(min_length=2, max_length=200)
     status: str = Field(max_length=20)
     description: str | None = None
-    key_goal: str | None = Field(default=None, max_length=200)
+    key_goal: str | None = None
     automation_rate_goal: str | None = Field(default=None, max_length=50)
     planned_start_date: date
     planned_end_date: date
