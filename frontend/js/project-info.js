@@ -643,17 +643,17 @@
       '<div class="pi-stat"><div class="pi-stat-lbl">整体进度</div><div class="pi-stat-val">' + prog +
       '<span style="font-size:14px;font-weight:400">%</span></div></div></div>' +
       '<div class="pi-card"><h3>项目概要</h3><div class="pi-meta">' +
-      '<div class="pi-meta-col"><h4>基本信息</h4>' +
+      '<div class="pi-meta-col pi-meta-col--basic"><h4>基本信息</h4><div class="pi-meta-fields">' +
       '<div class="pi-meta-row"><span class="pi-meta-k">项目名称</span><span class="pi-meta-v">' + esc(sp.name) + '</span></div>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">项目状态</span><span class="pi-meta-v">' + statusTag(sp.status) + '</span></div>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">关键目标</span><span class="pi-meta-v">' + esc(sp.key_goal || '—') + '</span></div>' +
-      '<div class="pi-meta-row"><span class="pi-meta-k">自动化率</span><span class="pi-meta-v">' + esc(sp.automation_rate_goal || '—') + '</span></div></div>' +
-      '<div class="pi-meta-col"><h4>时间信息</h4>' +
+      '<div class="pi-meta-row"><span class="pi-meta-k">自动化率</span><span class="pi-meta-v">' + esc(sp.automation_rate_goal || '—') + '</span></div></div></div>' +
+      '<div class="pi-meta-col pi-meta-col--time"><h4>时间信息</h4>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">计划开始</span><span class="pi-meta-v">' + fmtDate(sp.planned_start_date) + '</span></div>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">计划结束</span><span class="pi-meta-v">' + fmtDate(sp.planned_end_date) + '</span></div>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">实际开始</span><span class="pi-meta-v">' + fmtDate(sp.actual_start_date) + '</span></div>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">实际结束</span><span class="pi-meta-v">' + fmtDate(sp.actual_end_date) + '</span></div></div>' +
-      '<div class="pi-meta-col"><h4>项目描述</h4><p style="font-size:13px;color:#5f6368;line-height:1.7">' +
+      '<div class="pi-meta-col pi-meta-col--desc"><h4>项目描述</h4><p class="pi-meta-desc">' +
       esc(sp.description || '（暂无描述）') + '</p></div></div></div>' +
       '<div class="pi-card"><h3>里程碑</h3><div class="pi-ms-tl">' + (msHtml || '<span>暂无里程碑</span>') + '</div></div>' +
       '<div class="pi-card"><h3>风险管理</h3><div class="pi-table-wrap"><table class="pi-table"><thead><tr>' +
