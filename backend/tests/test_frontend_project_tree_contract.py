@@ -55,12 +55,17 @@ def test_relational_project_tree_buttons_call_backend_helpers() -> None:
     assert "await reloadRegistryAfterProjectTreeChange();" in src
 
 
-def test_risk_prompt_no_longer_points_to_settings_project_tree() -> None:
+def test_risk_panel_is_readonly_and_points_to_project_info() -> None:
     src = _html()
 
     assert "请先在「设置」中为该年创建项目树" not in src
-    assert "请先在项目阶段状态或部门项目人力登记页创建项目树" in src
-    assert "firstSubProjectMetaInTree()" in src
+    assert "请前往「项目信息」页维护" in src
+    assert "只读展示，请前往「项目信息」页编辑" in Path(
+        __file__
+    ).resolve().parents[2].joinpath("frontend", "css", "project-info.css").read_text(encoding="utf-8")
+    assert "function saveRiskData" not in src
+    assert "btn-risk-edit-toggle" not in src
+    assert "risk-display-cell" in src
 
 
 def test_manpower_tables_use_sticky_pin_columns() -> None:
