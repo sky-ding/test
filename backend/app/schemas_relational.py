@@ -349,6 +349,7 @@ class ProjectRiskOut(BaseModel):
     resolution_date: date | None = None
     status: str
     closed_at: datetime | None = None
+    created_at: datetime
 
 
 class ProjectRiskCreate(_ProjectRiskAliasBody):

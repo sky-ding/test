@@ -399,8 +399,7 @@
   margin-top: 12px;
 }
 
-#panel-manpower .panel-actions,
-#panel-risk .panel-actions { display: none !important; }
+#panel-manpower .panel-actions { display: none !important; }
 
 #panel-manpower .manpower-toolbar::after,
 #panel-risk .manpower-toolbar::after {
