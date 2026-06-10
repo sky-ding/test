@@ -227,6 +227,19 @@
   vertical-align: middle;
 }
 
+#panel-project-info .pi-table-wrap {
+  overflow-x: auto;
+}
+
+#panel-project-info .pi-table td.pi-cell-text {
+  max-width: 220px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  vertical-align: top;
+  color: #5f6368;
+  line-height: 1.5;
+}
+
 #panel-project-info .pi-table input,
 #panel-project-info .pi-table select,
 #panel-project-info .pi-table textarea {
