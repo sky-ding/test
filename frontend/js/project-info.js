@@ -612,9 +612,13 @@
         '<div>' + esc(MILESTONE_LABELS[m.status] || m.status) + '</div></div>';
     }).join('');
 
-    var riskRows = (d.risks || []).slice(0, 6).map(function (r) {
-      return '<tr><td>' + esc(r.risk_category) + '</td><td>' + esc(r.risk_source) + '</td><td>' +
-        esc(r.level) + '</td><td>' + esc(r.assignee) + '</td><td>' + esc(r.status) + '</td></tr>';
+    var riskRows = (d.risks || []).map(function (r) {
+      return '<tr><td>' + esc(r.risk_category) + '</td><td>' + esc(r.risk_source) + '</td>' +
+        '<td class="pi-cell-text">' + esc(r.description || '—') + '</td>' +
+        '<td class="pi-cell-text">' + esc(r.solution || '—') + '</td>' +
+        '<td>' + esc(r.level) + '</td><td>' + esc(r.assignee) + '</td>' +
+        '<td>' + fmtDate(r.created_at) + '</td><td>' + fmtDate(r.resolution_date) + '</td>' +
+        '<td>' + esc(r.status) + '</td></tr>';
     }).join('');
 
     var teamRows = (d.team_members || []).map(function (t) {
@@ -652,8 +656,10 @@
       '<div class="pi-meta-col"><h4>项目描述</h4><p style="font-size:13px;color:#5f6368;line-height:1.7">' +
       esc(sp.description || '（暂无描述）') + '</p></div></div></div>' +
       '<div class="pi-card"><h3>里程碑</h3><div class="pi-ms-tl">' + (msHtml || '<span>暂无里程碑</span>') + '</div></div>' +
-      '<div class="pi-card"><h3>近期风险</h3><table class="pi-table"><thead><tr><th>类别</th><th>来源</th><th>等级</th><th>跟进人</th><th>状态</th></tr></thead><tbody>' +
-      (riskRows || '<tr><td colspan="5">暂无风险</td></tr>') + '</tbody></table></div>' +
+      '<div class="pi-card"><h3>风险管理</h3><div class="pi-table-wrap"><table class="pi-table"><thead><tr>' +
+      '<th>类别</th><th>来源</th><th>说明</th><th>方案</th><th>等级</th><th>跟进人</th>' +
+      '<th>登记时间</th><th>解除时间</th><th>状态</th></tr></thead><tbody>' +
+      (riskRows || '<tr><td colspan="9">暂无风险</td></tr>') + '</tbody></table></div></div>' +
       '<div class="pi-card"><h3>项目团队</h3><table class="pi-table"><thead><tr><th>姓名</th><th>所属团队</th><th>角色</th><th>参与方式</th><th>备注</th></tr></thead><tbody>' +
       (teamRows || '<tr><td colspan="5">暂无成员</td></tr>') + '</tbody></table></div>';
 
