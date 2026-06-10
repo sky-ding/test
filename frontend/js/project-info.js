@@ -646,8 +646,7 @@
       '<div class="pi-meta-col pi-meta-col--basic"><h4>基本信息</h4><div class="pi-meta-fields">' +
       '<div class="pi-meta-row"><span class="pi-meta-k">项目名称</span><span class="pi-meta-v">' + esc(sp.name) + '</span></div>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">项目状态</span><span class="pi-meta-v">' + statusTag(sp.status) + '</span></div>' +
-      '<div class="pi-meta-row"><span class="pi-meta-k">关键目标</span><span class="pi-meta-v">' + esc(sp.key_goal || '—') + '</span></div>' +
-      '<div class="pi-meta-row"><span class="pi-meta-k">自动化率</span><span class="pi-meta-v">' + esc(sp.automation_rate_goal || '—') + '</span></div></div></div>' +
+      '<div class="pi-meta-row pi-meta-row--full"><span class="pi-meta-k">关键目标</span><span class="pi-meta-v">' + esc(sp.key_goal || '—') + '</span></div></div></div>' +
       '<div class="pi-meta-col pi-meta-col--time"><h4>时间信息</h4>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">计划开始</span><span class="pi-meta-v">' + fmtDate(sp.planned_start_date) + '</span></div>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">计划结束</span><span class="pi-meta-v">' + fmtDate(sp.planned_end_date) + '</span></div>' +

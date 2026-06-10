@@ -163,7 +163,7 @@
 
 #panel-project-info .pi-meta {
   display: grid;
-  grid-template-columns: minmax(240px, 1.5fr) minmax(180px, 0.85fr) minmax(280px, 2fr);
+  grid-template-columns: minmax(280px, 3fr) minmax(140px, 1fr) minmax(140px, 1fr);
   gap: 0;
 }
 
@@ -193,6 +193,10 @@
 
 #panel-project-info .pi-meta-col--basic .pi-meta-row {
   margin-bottom: 0;
+}
+
+#panel-project-info .pi-meta-col--basic .pi-meta-row--full {
+  grid-column: 1 / -1;
 }
 
 #panel-project-info .pi-meta-col--time .pi-meta-k {
