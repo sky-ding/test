@@ -78,7 +78,7 @@ class SubProject(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    key_goal: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    key_goal: Mapped[str | None] = mapped_column(Text, nullable=True)
     automation_rate_goal: Mapped[str | None] = mapped_column(String(50), nullable=True)
     planned_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     planned_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
