@@ -1,6 +1,8 @@
-"""人力矩阵：按 year+period 返回表头与单元格（只读；写入请走项目信息 API）。"""
+"""人力矩阵：按 year+period 返回表头与单元格；按 period 批量 upsert cells。"""
 
 from __future__ import annotations
+
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -14,7 +16,7 @@ from app.models_relational import (
     ManpowerDepartmentGroup,
     SubProject,
 )
-from app.relational_api import assert_period_matches_year, parse_year
+from app.relational_api import assert_period_matches_year, assert_sub_project_year, parse_year
 from app.schemas_relational import (
     ManpowerMatrixCellOut,
     ManpowerMatrixColumnOut,
@@ -94,11 +96,41 @@ def replace_manpower_for_period(
     db: Session = Depends(get_db),
 ) -> ManpowerMatrixResponse:
     _ = _admin
-    _ = body
-    _ = year
-    _ = period
-    _ = db
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail="部门人力登记为只读汇总，请在「项目信息」页维护成员投入（人月）",
-    )
+    y = parse_year(year)
+    p = assert_period_matches_year(period, y)
+    pending: list[tuple[int, int, Decimal]] = []
+    for item in body.cells:
+        assert_sub_project_year(db, item.sub_project_id, y)
+        col = db.get(ManpowerColumn, item.column_id)
+        if col is None or int(col.year) != y:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid column_id {item.column_id} for year {y}",
+            )
+        pending.append((item.sub_project_id, item.column_id, Decimal(item.allocation).quantize(Decimal("0.01"))))
+
+    try:
+        for sub_project_id, column_id, alloc in pending:
+            row = db.scalar(
+                select(ManpowerCell).where(
+                    ManpowerCell.sub_project_id == sub_project_id,
+                    ManpowerCell.period == p,
+                    ManpowerCell.column_id == column_id,
+                )
+            )
+            if row is None:
+                db.add(
+                    ManpowerCell(
+                        sub_project_id=sub_project_id,
+                        period=p,
+                        column_id=column_id,
+                        allocation=alloc,
+                    )
+                )
+            else:
+                row.allocation = alloc
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    return build_manpower_matrix_response(db, y, p)

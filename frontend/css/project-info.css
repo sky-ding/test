@@ -18,12 +18,6 @@
   flex-shrink: 0;
 }
 
-#panel-project-info .pi-toolbar-row--locked .pi-selectors select:disabled,
-#panel-project-info .pi-toolbar-row--locked .pi-structure-tools button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
 #panel-project-info .pi-body {
   flex: 1 1 auto;
   min-height: 0;
@@ -151,8 +145,8 @@
 
 #panel-project-info .pi-cards {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
   margin-bottom: 20px;
 }
 
@@ -160,76 +154,24 @@
   background: #fff;
   border: 1px solid #E8EAED;
   border-radius: 12px;
-  padding: 16px 14px;
-  min-width: 0;
+  padding: 18px 20px;
 }
 
 #panel-project-info .pi-stat-lbl { font-size: 12px; color: #9aa0a6; margin-bottom: 6px; }
-#panel-project-info .pi-stat-val { font-size: 22px; font-weight: 800; line-height: 1.2; }
-#panel-project-info .pi-stat-sub { font-size: 11px; color: #5f6368; margin-top: 6px; line-height: 1.35; }
+#panel-project-info .pi-stat-val { font-size: 26px; font-weight: 800; }
+#panel-project-info .pi-stat-sub { font-size: 12px; color: #5f6368; margin-top: 6px; }
 
 #panel-project-info .pi-meta {
   display: grid;
-  grid-template-columns: minmax(280px, 3fr) minmax(140px, 1fr) minmax(140px, 1fr);
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 0;
 }
 
-#panel-project-info .pi-meta-col { padding: 4px 12px; }
+#panel-project-info .pi-meta-col { padding: 4px 8px; }
 #panel-project-info .pi-meta-col + .pi-meta-col { border-left: 1px solid #E8EAED; }
-
-#panel-project-info .pi-meta-col h4 {
-  margin: 0 0 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
-}
-
 #panel-project-info .pi-meta-row { display: flex; margin-bottom: 10px; font-size: 13px; }
 #panel-project-info .pi-meta-k { color: #9aa0a6; width: 88px; flex-shrink: 0; }
-#panel-project-info .pi-meta-v { font-weight: 500; flex: 1; min-width: 0; word-break: break-word; }
-
-#panel-project-info .pi-meta-v--multiline {
-  white-space: pre-wrap;
-  line-height: 1.6;
-}
-
-#panel-project-info .pi-meta-col--basic {
-  padding: 4px 16px 4px 8px;
-}
-
-#panel-project-info .pi-meta-col--basic .pi-meta-fields {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 16px;
-}
-
-#panel-project-info .pi-meta-col--basic .pi-meta-row {
-  margin-bottom: 0;
-}
-
-#panel-project-info .pi-meta-col--basic .pi-meta-row--full {
-  grid-column: 1 / -1;
-}
-
-#panel-project-info .pi-meta-col--time .pi-meta-k {
-  width: 72px;
-}
-
-#panel-project-info .pi-meta-col--desc {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
-}
-
-#panel-project-info .pi-meta-desc {
-  margin: 0;
-  flex: 1;
-  width: 100%;
-  font-size: 13px;
-  color: #5f6368;
-  line-height: 1.7;
-  word-break: break-word;
-}
+#panel-project-info .pi-meta-v { font-weight: 500; flex: 1; }
 
 #panel-project-info .pi-tag {
   display: inline-block;
@@ -269,38 +211,20 @@
   font-size: 13px;
 }
 
-#panel-project-info .pi-table th,
-#panel-project-info .pi-table td {
-  text-align: left;
-}
-
 #panel-project-info .pi-table th {
   background: #F5F7FA;
   padding: 10px 12px;
+  text-align: left;
   font-weight: 600;
   color: #6B7280;
   border-bottom: 2px solid #E8EAED;
   font-size: 12px;
-  vertical-align: middle;
 }
 
-#panel-project-info .pi-table tbody td {
+#panel-project-info .pi-table td {
   padding: 10px 12px;
   border-bottom: 1px solid #f0f0f0;
-  vertical-align: top;
-}
-
-#panel-project-info .pi-table-wrap {
-  overflow-x: auto;
-}
-
-#panel-project-info .pi-table td.pi-cell-text {
-  max-width: 220px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  vertical-align: top;
-  color: #5f6368;
-  line-height: 1.5;
+  vertical-align: middle;
 }
 
 #panel-project-info .pi-table input,
@@ -320,23 +244,6 @@
 }
 
 #panel-project-info .pi-form-grid .pi-full { grid-column: 1 / -1; }
-
-#panel-project-info .pi-form-group input,
-#panel-project-info .pi-form-group select,
-#panel-project-info .pi-form-group textarea {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-#panel-project-info .pi-form-group textarea {
-  min-height: 88px;
-  resize: vertical;
-  line-height: 1.5;
-}
-
-#panel-project-info .pi-form-group--compact {
-  max-width: 280px;
-}
 
 #panel-project-info .pi-form-group label {
   display: block;
@@ -396,31 +303,6 @@
   font-weight: 600;
 }
 
-#panel-project-info .pi-card-sub {
-  margin: -4px 0 12px;
-  font-size: 13px;
-  color: #5f6368;
-}
-
-#panel-project-info .pi-project-total {
-  margin-left: auto;
-  font-size: 13px;
-  font-weight: 600;
-  color: #1E6FFF;
-}
-
-#panel-project-info .pi-sat {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-#panel-project-info .pi-sat-low { background: #e6f4ea; color: #137333; }
-#panel-project-info .pi-sat-normal { background: #fef7e0; color: #b06000; }
-#panel-project-info .pi-sat-over { background: #fce8e6; color: #c5221f; }
-
 #panel-project-info .pi-readonly-hint {
   font-size: 12px;
   color: #856400;
@@ -431,25 +313,19 @@
   margin-top: 12px;
 }
 
-#panel-manpower .panel-actions { display: none !important; }
-#btn-manpower-edit-toggle { display: none !important; }
+#panel-manpower .panel-actions,
+#panel-risk .panel-actions { display: none !important; }
 
 #panel-manpower .manpower-toolbar::after,
 #panel-risk .manpower-toolbar::after {
-  content: '（只读汇总，请前往「项目信息」页维护成员投入，单位：人月）';
+  content: '（只读展示，请前往「项目信息」页编辑）';
   font-size: 12px;
   color: #5f6368;
   margin-left: 8px;
 }
 
 @media (max-width: 1100px) {
-  #panel-project-info .pi-cards {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px;
-  }
-  #panel-project-info .pi-stat { padding: 12px 8px; }
-  #panel-project-info .pi-stat-val { font-size: 18px; }
-  #panel-project-info .pi-stat-sub { font-size: 10px; }
+  #panel-project-info .pi-cards { grid-template-columns: repeat(2, 1fr); }
   #panel-project-info .pi-meta { grid-template-columns: 1fr; }
   #panel-project-info .pi-meta-col + .pi-meta-col { border-left: none; border-top: 1px solid #E8EAED; padding-top: 12px; }
 }

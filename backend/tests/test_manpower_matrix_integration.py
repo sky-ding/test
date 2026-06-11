@@ -92,54 +92,6 @@ def _create_sub_project(client) -> int:
     return _create_project_tree(client)["sub_project_id"]
 
 
-def _put_project_manpower(
-    client,
-    *,
-    sub_project_id: int,
-    column_id: int,
-    year: int,
-    period: str,
-    member_name: str = "成员甲",
-    allocation: str = "0.50",
-    project_name: str = "Leaf1",
-) -> None:
-    body = {
-        "sub_project": {
-            "name": project_name,
-            "status": "active",
-            "description": None,
-            "key_goal": None,
-            "automation_rate_goal": None,
-            "planned_start_date": f"{year}-01-01",
-            "planned_end_date": f"{year}-12-31",
-            "actual_start_date": None,
-            "actual_end_date": None,
-        },
-        "milestones": [],
-        "deleted_milestone_ids": [],
-        "tasks": [],
-        "deleted_task_ids": [],
-        "team_members": [
-            {
-                "id": None,
-                "name": member_name,
-                "team_column_id": column_id,
-                "role": "开发",
-                "participation": "核心成员",
-                "remark": None,
-                "sort_order": 0,
-                "monthly_allocation": allocation,
-            }
-        ],
-        "deleted_team_member_ids": [],
-        "risks": [],
-        "deleted_risk_ids": [],
-        "manpower": {"period": period},
-    }
-    resp = client.put(f"/api/v1/project-info/{sub_project_id}?year={year}", json=body)
-    assert resp.status_code == 200, resp.text
-
-
 def test_relational_project_phase_risk_user_and_manpower_matrix_flow(client) -> None:
     y = 2035
     sub_project_id = _create_sub_project(client)
@@ -180,21 +132,10 @@ def test_relational_project_phase_risk_user_and_manpower_matrix_flow(client) -> 
         f"/api/v1/manpower-allocations?year={y}&period={y}-01",
         json={"cells": [{"sub_project_id": sub_project_id, "column_id": column_id, "allocation": "9.00"}]},
     )
-    assert put.status_code == 403
-
-    _put_project_manpower(
-        client,
-        sub_project_id=sub_project_id,
-        column_id=column_id,
-        year=y,
-        period=f"{y}-01",
-        allocation="0.90",
-    )
-    mx = client.get(f"/api/v1/manpower-allocations?year={y}&period={y}-01")
-    assert mx.status_code == 200, mx.text
-    body = mx.json()
+    assert put.status_code == 200, put.text
+    body = put.json()
     assert len(body["cells"]) == 1
-    assert float(body["cells"][0]["allocation"]) == 0.9
+    assert float(body["cells"][0]["allocation"]) == 9.0
 
     legacy_shape = client.put(
         f"/api/v1/manpower-allocations?year={y}&sub_project_id={sub_project_id}&period={y}-01",
@@ -234,6 +175,7 @@ def test_relational_project_phase_risk_user_and_manpower_matrix_flow(client) -> 
 
     users = client.get("/api/v1/users")
     assert users.status_code == 200, users.text
+    assert len(users.json()) >= 1
 
 
 def test_project_tree_crud_persists_and_business_routes_use_created_sub_project(client) -> None:
@@ -294,20 +236,8 @@ def test_project_tree_crud_persists_and_business_routes_use_created_sub_project(
             ]
         },
     )
-    assert manpower.status_code == 403
-
-    _put_project_manpower(
-        client,
-        sub_project_id=ids["sub_project_id"],
-        column_id=column_id,
-        year=y,
-        period=f"{y}-05",
-        allocation="0.35",
-        project_name="商城容灾子项目-更新",
-    )
-    mx = client.get(f"/api/v1/manpower-allocations?year={y}&period={y}-05")
-    assert mx.status_code == 200, mx.text
-    assert mx.json()["cells"][0]["sub_project_id"] == ids["sub_project_id"]
+    assert manpower.status_code == 200, manpower.text
+    assert manpower.json()["cells"][0]["sub_project_id"] == ids["sub_project_id"]
 
     phase = client.put(
         f"/api/v1/phase-assessments?year={y}",
@@ -367,7 +297,7 @@ def test_business_routes_reject_missing_or_wrong_year_sub_project(client) -> Non
         f"/api/v1/manpower-allocations?year={y}&period={y}-01",
         json={"cells": [{"sub_project_id": 999999, "column_id": column_id, "allocation": "1"}]},
     )
-    assert missing_manpower.status_code == 403
+    assert missing_manpower.status_code == 404
 
     missing_risk = client.post(
         f"/api/v1/project-risks?year={y}",
