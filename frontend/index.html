@@ -41,14 +41,10 @@
       --info: #06b6d4; /* 信息 - 青色 */
       --info-soft: #cffafe;
       
-      /* 部门分组表头 — 与系统蓝灰风格一致的低饱和区分色 */
-      --dept-g0-bg: #eff6ff;
-      --dept-g1-bg: #f8fafc;
-      --dept-g2-bg: #eef2ff;
-      --dept-g3-bg: #f1f5f9;
-      --manpower-stripe-b-main: #f8fafc;
-      --manpower-stripe-b-sub: #f1f5f9;
-      --manpower-stripe-b-mp: #e2e8f0;
+      /* 人力表：交替项目集行底色（数据区按行，不按部门列） */
+      --manpower-set-row-bg: #f3f6fb;
+      --manpower-stripe-b-main: #f3f6fb;
+      --manpower-stripe-b-sub: #f3f6fb;
       
       /* 状态色系 */
       --header-bg: #f9fafb; /* 表头背景 */
@@ -821,28 +817,10 @@
       line-height: 1.2;
     }
 
-    #panel-manpower tbody tr.manpower-set-stripe-b td.main.pin-col-1,
-    #panel-manpower tbody tr.manpower-set-stripe-b td.main.col-set {
-      background: var(--manpower-stripe-b-main) !important;
-    }
-
-    #panel-manpower tbody tr.manpower-set-stripe-b td.sub.pin-col-2,
-    #panel-manpower tbody tr.manpower-set-stripe-b td.sub.pin-col-3,
-    #panel-manpower tbody tr.manpower-set-stripe-b td.sub.col-set,
-    #panel-manpower tbody tr.manpower-set-stripe-b td.sub.col-proj {
-      background: var(--manpower-stripe-b-sub) !important;
-    }
-
-    #panel-manpower #register-table tbody td.main.col-set,
-    #panel-manpower #register-table tbody td.sub.col-set,
-    #panel-manpower #register-table tbody td.sub.col-proj,
-    #panel-manpower #register-table-season tbody td.main.col-set,
-    #panel-manpower #register-table-season tbody td.sub.col-set,
-    #panel-manpower #register-table-season tbody td.sub.col-proj,
-    #panel-manpower #register-table-year tbody td.main.col-set,
-    #panel-manpower #register-table-year tbody td.sub.col-set,
-    #panel-manpower #register-table-year tbody td.sub.col-proj {
-      background: #fff !important;
+    #panel-manpower #register-table tbody tr:not(.manpower-set-stripe-b) td,
+    #panel-manpower #register-table-season tbody tr:not(.manpower-set-stripe-b) td,
+    #panel-manpower #register-table-year tbody tr:not(.manpower-set-stripe-b) td {
+      background: var(--surface) !important;
       font-size: 12px;
       color: var(--text);
     }
@@ -869,40 +847,36 @@
       background: rgba(22, 119, 255, 0.12);
     }
 
-    #register-table thead th.dept-g-0 {
-      background: var(--dept-g0-bg) !important;
+    .dept-g-0 { --dept-head: #93c5fd; --dept-cell: #eff6ff; --dept-cell-alt: #dbeafe; --dept-edge: #3b82f6; }
+    .dept-g-1 { --dept-head: #a5b4fc; --dept-cell: #eef2ff; --dept-cell-alt: #e0e7ff; --dept-edge: #6366f1; }
+    .dept-g-2 { --dept-head: #7dd3fc; --dept-cell: #f0f9ff; --dept-cell-alt: #e0f2fe; --dept-edge: #0284c7; }
+    .dept-g-3 { --dept-head: #cbd5e1; --dept-cell: #f8fafc; --dept-cell-alt: #f1f5f9; --dept-edge: #64748b; }
+
+    #panel-manpower #register-table thead th[class*="dept-g-"].main,
+    #panel-manpower #register-table-season thead th[class*="dept-g-"].main,
+    #panel-manpower #register-table-year thead th[class*="dept-g-"].main {
+      background: var(--dept-head) !important;
       color: var(--text);
     }
 
-    #register-table thead th.dept-g-0.sub {
-      color: var(--text-muted);
-    }
-
-    #register-table thead th.dept-g-1 {
-      background: var(--dept-g1-bg) !important;
+    #panel-manpower #register-table thead th[class*="dept-g-"].sub.col-mp,
+    #panel-manpower #register-table-season thead th[class*="dept-g-"].sub.col-mp,
+    #panel-manpower #register-table-year thead th[class*="dept-g-"].sub.col-mp {
+      background: var(--dept-cell) !important;
       color: var(--text);
     }
 
-    #register-table thead th.dept-g-1.sub {
+    #panel-manpower #register-table thead th[class*="dept-g-"].sub,
+    #panel-manpower #register-table-season thead th[class*="dept-g-"].sub,
+    #panel-manpower #register-table-year thead th[class*="dept-g-"].sub {
       color: var(--text-muted);
     }
 
-    #register-table thead th.dept-g-2 {
-      background: var(--dept-g2-bg) !important;
-      color: var(--text);
-    }
-
-    #register-table thead th.dept-g-2.sub {
-      color: var(--text-muted);
-    }
-
-    #register-table thead th.dept-g-3 {
-      background: var(--dept-g3-bg) !important;
-      color: var(--text);
-    }
-
-    #register-table thead th.dept-g-3.sub {
-      color: var(--text-muted);
+    /* 人力数据区：整行（含项目结构列 + 人力列 + 小计）按项目集同色 */
+    #panel-manpower #register-table tbody tr.manpower-set-stripe-b td,
+    #panel-manpower #register-table-season tbody tr.manpower-set-stripe-b td,
+    #panel-manpower #register-table-year tbody tr.manpower-set-stripe-b td {
+      background: var(--manpower-set-row-bg) !important;
     }
 
     #register-table thead th .cell-head-inline {
@@ -956,29 +930,8 @@
       background: var(--danger-soft);
     }
 
-    #register-table-season tbody tr.manpower-set-stripe-b td.main,
-    #register-table-year tbody tr.manpower-set-stripe-b td.main,
-    #phase-table tbody tr.manpower-set-stripe-b td.main {
-      background: var(--manpower-stripe-b-main) !important;
-    }
-
-    #register-table-season tbody tr.manpower-set-stripe-b td.sub,
-    #register-table-year tbody tr.manpower-set-stripe-b td.sub,
-    #phase-table tbody tr.manpower-set-stripe-b td.sub {
-      background: var(--manpower-stripe-b-sub) !important;
-    }
-
-    #register-table tbody tr.manpower-set-stripe-b td.center-cell.col-mp,
-    #register-table tbody tr.manpower-set-stripe-b td.center-cell.col-sum,
-    #register-table tbody tr.manpower-set-stripe-b td.center-cell.col-ratio,
-    #register-table-season tbody tr.manpower-set-stripe-b td.center-cell.col-mp,
-    #register-table-season tbody tr.manpower-set-stripe-b td.center-cell.col-sum,
-    #register-table-season tbody tr.manpower-set-stripe-b td.center-cell.col-ratio,
-    #register-table-year tbody tr.manpower-set-stripe-b td.center-cell.col-mp,
-    #register-table-year tbody tr.manpower-set-stripe-b td.center-cell.col-sum,
-    #register-table-year tbody tr.manpower-set-stripe-b td.center-cell.col-ratio,
     #phase-table tbody tr.manpower-set-stripe-b td.phase-field-cell {
-      background: var(--manpower-stripe-b-mp) !important;
+      background: var(--manpower-set-row-bg) !important;
     }
 
     #phase-table {
@@ -1199,50 +1152,6 @@
       text-align: left;
     }
 
-    #register-table-season thead th.dept-g-0,
-    #register-table-year thead th.dept-g-0 {
-      background: var(--dept-g0-bg) !important;
-      color: var(--text);
-    }
-
-    #register-table-season thead th.dept-g-0.sub,
-    #register-table-year thead th.dept-g-0.sub {
-      color: var(--text-muted);
-    }
-
-    #register-table-season thead th.dept-g-1,
-    #register-table-year thead th.dept-g-1 {
-      background: var(--dept-g1-bg) !important;
-      color: var(--text);
-    }
-
-    #register-table-season thead th.dept-g-1.sub,
-    #register-table-year thead th.dept-g-1.sub {
-      color: var(--text-muted);
-    }
-
-    #register-table-season thead th.dept-g-2,
-    #register-table-year thead th.dept-g-2 {
-      background: var(--dept-g2-bg) !important;
-      color: var(--text);
-    }
-
-    #register-table-season thead th.dept-g-2.sub,
-    #register-table-year thead th.dept-g-2.sub {
-      color: var(--text-muted);
-    }
-
-    #register-table-season thead th.dept-g-3,
-    #register-table-year thead th.dept-g-3 {
-      background: var(--dept-g3-bg) !important;
-      color: var(--text);
-    }
-
-    #register-table-season thead th.dept-g-3.sub,
-    #register-table-year thead th.dept-g-3.sub {
-      color: var(--text-muted);
-    }
-
     #register-table-season thead th.col-mp,
     #register-table-year thead th.col-mp {
       padding: 8px 4px;
@@ -1256,7 +1165,6 @@
     }
 
     td.center-cell {
-      background: #fafaf9;
       color: var(--text);
       position: relative;
     }
@@ -7025,7 +6933,7 @@
 
       deptGroups.forEach(function (g, gi) {
         const th = document.createElement('th');
-        th.className = 'main dept-g-' + (gi % 4);
+        th.className = 'main dept-g-' + (gi % 4) + ' dept-g-start';
         th.colSpan = g.depts.length;
         const wrap = document.createElement('div');
         wrap.className = 'cell-head-inline';
@@ -7074,7 +6982,7 @@
       deptGroups.forEach(function (g, gi) {
         g.depts.forEach(function (dname, di) {
           const th = document.createElement('th');
-          th.className = 'sub dept-g-' + (gi % 4) + ' col-mp';
+          th.className = 'sub dept-g-' + (gi % 4) + ' col-mp' + (di === 0 ? ' dept-g-start' : '');
           const wrap = document.createElement('div');
           wrap.className = 'cell-head-inline';
           const nm = document.createElement('span');
@@ -7123,7 +7031,7 @@
       appendManpowerTheadStructureCells(tr1, tr2);
       deptGroups.forEach(function (g, gi) {
         const th = document.createElement('th');
-        th.className = 'main dept-g-' + (gi % 4);
+        th.className = 'main dept-g-' + (gi % 4) + ' dept-g-start';
         th.colSpan = g.depts.length;
         th.textContent = g.name;
         tr1.appendChild(th);
@@ -7139,9 +7047,9 @@
       thRatio.textContent = '人力占比';
       tr1.appendChild(thRatio);
       deptGroups.forEach(function (g, gi) {
-        g.depts.forEach(function (dname) {
+        g.depts.forEach(function (dname, di) {
           const th = document.createElement('th');
-          th.className = 'sub dept-g-' + (gi % 4) + ' col-mp';
+          th.className = 'sub dept-g-' + (gi % 4) + ' col-mp' + (di === 0 ? ' dept-g-start' : '');
           th.textContent = dname;
           tr2.appendChild(th);
         });
@@ -7160,7 +7068,7 @@
       appendManpowerTheadStructureCells(tr1, tr2);
       deptGroups.forEach(function (g, gi) {
         const th = document.createElement('th');
-        th.className = 'main dept-g-' + (gi % 4);
+        th.className = 'main dept-g-' + (gi % 4) + ' dept-g-start';
         th.colSpan = g.depts.length;
         th.textContent = g.name;
         tr1.appendChild(th);
@@ -7176,9 +7084,9 @@
       thRatio.textContent = '人力占比';
       tr1.appendChild(thRatio);
       deptGroups.forEach(function (g, gi) {
-        g.depts.forEach(function (dname) {
+        g.depts.forEach(function (dname, di) {
           const th = document.createElement('th');
-          th.className = 'sub dept-g-' + (gi % 4) + ' col-mp';
+          th.className = 'sub dept-g-' + (gi % 4) + ' col-mp' + (di === 0 ? ' dept-g-start' : '');
           th.textContent = dname;
           tr2.appendChild(th);
         });
