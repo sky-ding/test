@@ -2820,6 +2820,7 @@
         <button type="button" class="pi-btn" id="pi-btn-rename-node">重命名</button>
         <button type="button" class="pi-btn pi-btn-danger" id="pi-btn-delete-node">删除</button>
       </div>
+      <span id="pi-edit-lock-hint" class="pi-edit-lock-hint" hidden>编辑中，请先保存或取消后再切换项目</span>
     </div>
     <div id="pi-body" class="pi-body">
       <div id="pi-empty-state" class="pi-empty-state pi-hidden" aria-live="polite"></div>
@@ -3258,6 +3259,11 @@
       wy.addEventListener('change', function () {
         var v = parseInt(wy.value, 10);
         if (isNaN(v) || v < 2000 || v > 2099) {
+          wy.value = String(pmDataYear);
+          return;
+        }
+        if (window.ProjectInfoModule && window.ProjectInfoModule.isEditing && window.ProjectInfoModule.isEditing()) {
+          alert('项目信息页正在编辑，请先保存或取消后再切换工作年度。');
           wy.value = String(pmDataYear);
           return;
         }

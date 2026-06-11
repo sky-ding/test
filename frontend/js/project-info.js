@@ -371,6 +371,7 @@
   }
 
   function loadProjectInfo() {
+    if (isEditing()) clearEditView();
     if (!state.subProjectId) {
       state.data = null;
       render();
@@ -483,6 +484,37 @@
     box.innerHTML = '';
   }
 
+  function isEditing() {
+    return state.view === 'edit';
+  }
+
+  function clearEditView() {
+    state.view = 'summary';
+    state.dirty = false;
+    state.edit = null;
+    destroySortables();
+    var bar = document.getElementById('pi-bottom-bar');
+    if (bar) bar.classList.add('pi-hidden');
+  }
+
+  function updateEditLockUi() {
+    var locked = isEditing();
+    var row = document.querySelector('#panel-project-info .pi-toolbar-row');
+    var hint = document.getElementById('pi-edit-lock-hint');
+    if (row) row.classList.toggle('pi-toolbar-row--locked', locked);
+    if (hint) hint.hidden = !locked;
+    ['pi-sel-program', 'pi-sel-sub-program', 'pi-sel-sub-project'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.disabled = locked;
+    });
+    var tools = document.getElementById('pi-structure-tools');
+    if (tools && !tools.hidden) {
+      tools.querySelectorAll('button').forEach(function (btn) {
+        btn.disabled = locked;
+      });
+    }
+  }
+
   function updateAdminTools() {
     var tools = document.getElementById('pi-structure-tools');
     if (!tools) return;
@@ -491,6 +523,7 @@
 
   function handleCreateFirstProgram() {
     if (!isAdmin()) return;
+    if (isEditing()) return;
     var name = prompt('输入新项目集名称：');
     if (!name || !String(name).trim()) return;
     createProgramWithDefaultLeaf(String(name).trim(), 0)
@@ -500,6 +533,7 @@
 
   function handleAddProgram() {
     if (!isAdmin()) return;
+    if (isEditing()) return;
     var name = prompt('输入新项目集名称：');
     if (!name || !String(name).trim()) return;
     createProgramWithDefaultLeaf(String(name).trim(), (state.tree || []).length)
@@ -509,6 +543,7 @@
 
   function handleAddSubProgram() {
     if (!isAdmin()) return;
+    if (isEditing()) return;
     if (!state.programId) {
       alert('请先选择项目集。');
       return;
@@ -523,6 +558,7 @@
 
   function handleAddSubProject() {
     if (!isAdmin()) return;
+    if (isEditing()) return;
     if (!state.subProgramId) {
       alert('请先选择子项目集。');
       return;
@@ -544,6 +580,7 @@
 
   function handleRenameNode() {
     if (!isAdmin()) return;
+    if (isEditing()) return;
     var prog = (state.tree || []).find(function (p) { return p.id === state.programId; });
     var spg = prog && (prog.sub_programs || []).find(function (s) { return s.id === state.subProgramId; });
     var leaf = spg && (spg.sub_projects || []).find(function (j) { return j.id === state.subProjectId; });
@@ -572,6 +609,7 @@
 
   function handleDeleteNode() {
     if (!isAdmin()) return;
+    if (isEditing()) return;
     var prog = (state.tree || []).find(function (p) { return p.id === state.programId; });
     if (!prog) {
       alert('请先选择要删除的节点。');
@@ -729,10 +767,7 @@
 
   function exitEditView() {
     if (state.dirty && !confirm('有未保存的更改，确定离开？')) return;
-    state.view = 'summary';
-    state.dirty = false;
-    state.edit = null;
-    destroySortables();
+    clearEditView();
     render();
   }
 
@@ -1175,10 +1210,7 @@
     }).then(function (data) {
       state.data = data;
       state.period = data.period;
-      state.view = 'summary';
-      state.dirty = false;
-      state.edit = null;
-      destroySortables();
+      clearEditView();
       render();
       alert('保存成功');
     }).catch(function (err) {
@@ -1202,6 +1234,7 @@
       destroySortables();
       renderSummary();
     }
+    updateEditLockUi();
   }
 
   function wireControls() {
@@ -1227,6 +1260,10 @@
       if (selJ && selJ.value) state.subProjectId = parseInt(selJ.value, 10);
     }
     function onProjectSelectionChange(revert) {
+      if (isEditing()) {
+        if (revert) revert();
+        return;
+      }
       if (state.dirty && !confirm('切换项目将丢失未保存更改，是否继续？')) {
         if (revert) revert();
         return;
@@ -1281,6 +1318,7 @@
     syncYearFromGlobal();
     wireControls();
     updateAdminTools();
+    updateEditLockUi();
     global.addEventListener('beforeunload', function (e) {
       if (state.dirty) {
         e.preventDefault();
@@ -1295,7 +1333,7 @@
   }
 
   function onYearChanged(y) {
-    if (state.dirty) state.dirty = false;
+    clearEditView();
     state.year = y;
     state.period = defaultPeriod(y);
     loadTree().then(loadProjectInfo);
@@ -1305,8 +1343,12 @@
     init: init,
     onTabShow: onTabShow,
     onYearChanged: onYearChanged,
+    isEditing: isEditing,
     hasDirtyChanges: function () { return !!state.dirty; },
-    refreshAdminTools: updateAdminTools
+    refreshAdminTools: function () {
+      updateAdminTools();
+      updateEditLockUi();
+    }
   };
 
   if (document.readyState === 'loading') {
