@@ -41,9 +41,11 @@
       --info: #06b6d4; /* 信息 - 青色 */
       --info-soft: #cffafe;
       
-      /* 部门 / 人力条纹 - 优化配色 */
-      --dept-tech-bg: #e0f2fe; /* 科技蓝 */
-      --dept-market-bg: #fef3c7; /* 市场黄 */
+      /* 部门分组表头 — 与系统蓝灰风格一致的低饱和区分色 */
+      --dept-g0-bg: #eff6ff;
+      --dept-g1-bg: #f8fafc;
+      --dept-g2-bg: #eef2ff;
+      --dept-g3-bg: #f1f5f9;
       --manpower-stripe-b-main: #f8fafc;
       --manpower-stripe-b-sub: #f1f5f9;
       --manpower-stripe-b-mp: #e2e8f0;
@@ -294,22 +296,25 @@
     }
 
     .tabs .tab.active {
-      background: var(--accent);
+      background: var(--accent-hover);
       color: #ffffff;
       font-weight: var(--font-semibold);
-      box-shadow: var(--shadow-sm);
+      box-shadow: none;
     }
-    
-    .tabs .tab.active::after {
-      content: '';
-      position: absolute;
-      bottom: -4px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: var(--accent);
+
+    #panel-phase .table-shell,
+    #panel-manpower .table-shell,
+    #panel-risk .risk-table-wrap .table-shell {
+      box-shadow: none;
+      border-color: var(--border-light);
+      border-radius: var(--radius-sm);
+      margin-bottom: 0;
+    }
+
+    #panel-phase .table-shell:hover,
+    #panel-manpower .table-shell:hover,
+    #panel-risk .risk-table-wrap .table-shell:hover {
+      box-shadow: none;
     }
 
     .tab-panel {
@@ -865,7 +870,7 @@
     }
 
     #register-table thead th.dept-g-0 {
-      background: var(--dept-tech-bg) !important;
+      background: var(--dept-g0-bg) !important;
       color: var(--text);
     }
 
@@ -874,7 +879,7 @@
     }
 
     #register-table thead th.dept-g-1 {
-      background: var(--dept-market-bg) !important;
+      background: var(--dept-g1-bg) !important;
       color: var(--text);
     }
 
@@ -882,12 +887,29 @@
       color: var(--text-muted);
     }
 
+    #register-table thead th.dept-g-2 {
+      background: var(--dept-g2-bg) !important;
+      color: var(--text);
+    }
+
+    #register-table thead th.dept-g-2.sub {
+      color: var(--text-muted);
+    }
+
+    #register-table thead th.dept-g-3 {
+      background: var(--dept-g3-bg) !important;
+      color: var(--text);
+    }
+
+    #register-table thead th.dept-g-3.sub {
+      color: var(--text-muted);
+    }
+
     #register-table thead th .cell-head-inline {
       padding: 2px 0;
     }
 
-    #register-table thead th.dept-g-0 .cell-head-inline .editable-text,
-    #register-table thead th.dept-g-1 .cell-head-inline .editable-text {
+    #register-table thead th[class*="dept-g-"] .cell-head-inline .editable-text {
       font-weight: 600;
       white-space: nowrap;
       text-align: center;
@@ -1179,7 +1201,7 @@
 
     #register-table-season thead th.dept-g-0,
     #register-table-year thead th.dept-g-0 {
-      background: var(--dept-tech-bg) !important;
+      background: var(--dept-g0-bg) !important;
       color: var(--text);
     }
 
@@ -1190,12 +1212,34 @@
 
     #register-table-season thead th.dept-g-1,
     #register-table-year thead th.dept-g-1 {
-      background: var(--dept-market-bg) !important;
+      background: var(--dept-g1-bg) !important;
       color: var(--text);
     }
 
     #register-table-season thead th.dept-g-1.sub,
     #register-table-year thead th.dept-g-1.sub {
+      color: var(--text-muted);
+    }
+
+    #register-table-season thead th.dept-g-2,
+    #register-table-year thead th.dept-g-2 {
+      background: var(--dept-g2-bg) !important;
+      color: var(--text);
+    }
+
+    #register-table-season thead th.dept-g-2.sub,
+    #register-table-year thead th.dept-g-2.sub {
+      color: var(--text-muted);
+    }
+
+    #register-table-season thead th.dept-g-3,
+    #register-table-year thead th.dept-g-3 {
+      background: var(--dept-g3-bg) !important;
+      color: var(--text);
+    }
+
+    #register-table-season thead th.dept-g-3.sub,
+    #register-table-year thead th.dept-g-3.sub {
       color: var(--text-muted);
     }
 
@@ -6981,7 +7025,7 @@
 
       deptGroups.forEach(function (g, gi) {
         const th = document.createElement('th');
-        th.className = 'main dept-g-' + (gi % 2);
+        th.className = 'main dept-g-' + (gi % 4);
         th.colSpan = g.depts.length;
         const wrap = document.createElement('div');
         wrap.className = 'cell-head-inline';
@@ -7030,7 +7074,7 @@
       deptGroups.forEach(function (g, gi) {
         g.depts.forEach(function (dname, di) {
           const th = document.createElement('th');
-          th.className = 'sub dept-g-' + (gi % 2) + ' col-mp';
+          th.className = 'sub dept-g-' + (gi % 4) + ' col-mp';
           const wrap = document.createElement('div');
           wrap.className = 'cell-head-inline';
           const nm = document.createElement('span');
@@ -7079,7 +7123,7 @@
       appendManpowerTheadStructureCells(tr1, tr2);
       deptGroups.forEach(function (g, gi) {
         const th = document.createElement('th');
-        th.className = 'main dept-g-' + (gi % 2);
+        th.className = 'main dept-g-' + (gi % 4);
         th.colSpan = g.depts.length;
         th.textContent = g.name;
         tr1.appendChild(th);
@@ -7097,7 +7141,7 @@
       deptGroups.forEach(function (g, gi) {
         g.depts.forEach(function (dname) {
           const th = document.createElement('th');
-          th.className = 'sub dept-g-' + (gi % 2) + ' col-mp';
+          th.className = 'sub dept-g-' + (gi % 4) + ' col-mp';
           th.textContent = dname;
           tr2.appendChild(th);
         });
@@ -7116,7 +7160,7 @@
       appendManpowerTheadStructureCells(tr1, tr2);
       deptGroups.forEach(function (g, gi) {
         const th = document.createElement('th');
-        th.className = 'main dept-g-' + (gi % 2);
+        th.className = 'main dept-g-' + (gi % 4);
         th.colSpan = g.depts.length;
         th.textContent = g.name;
         tr1.appendChild(th);
@@ -7134,7 +7178,7 @@
       deptGroups.forEach(function (g, gi) {
         g.depts.forEach(function (dname) {
           const th = document.createElement('th');
-          th.className = 'sub dept-g-' + (gi % 2) + ' col-mp';
+          th.className = 'sub dept-g-' + (gi % 4) + ' col-mp';
           th.textContent = dname;
           tr2.appendChild(th);
         });
