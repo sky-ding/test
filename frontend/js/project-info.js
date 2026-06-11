@@ -500,9 +500,7 @@
   function updateEditLockUi() {
     var locked = isEditing();
     var row = document.querySelector('#panel-project-info .pi-toolbar-row');
-    var hint = document.getElementById('pi-edit-lock-hint');
     if (row) row.classList.toggle('pi-toolbar-row--locked', locked);
-    if (hint) hint.hidden = !locked;
     ['pi-sel-program', 'pi-sel-sub-program', 'pi-sel-sub-project'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.disabled = locked;
