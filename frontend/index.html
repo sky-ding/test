@@ -5333,6 +5333,7 @@
 
     function setPanelEditMode(panel, editing) {
       if (!(window.pmIsAdmin && window.pmIsAdmin())) return;
+      if (panel === 'manpower') return;
       panelEditMode[panel] = !!editing;
       applyPermissionToAllUI();
       if (panel === 'manpower') renderTable();
@@ -5729,7 +5730,6 @@
         panelEditMode.phase = false;
       }
       var panelConfigs = [
-        { panel: 'manpower', toggleId: 'btn-manpower-edit-toggle', editSelector: '#panel-manpower .manpower-edit-only' },
         { panel: 'phase', toggleId: 'btn-phase-edit-toggle', editSelector: '#panel-phase .phase-edit-only' }
       ];
       panelConfigs.forEach(function (cfg) {
@@ -6196,62 +6196,7 @@
     }
 
     async function saveManpowerData() {
-      if (!requireAdminOrAlert()) return;
-      syncManpowerCellsFromDom();
-      if (!pmUsesRelationalRegistry) {
-        alert('当前未使用服务器项目树，无法保存人力。请登录后重试。');
-        return;
-      }
-      try {
-        var y = pmDataYear;
-        var walk = [];
-        data.forEach(function (set) {
-          getProgramProjectSets(set).forEach(function (ps) {
-            getSubProjects(ps).forEach(function (p) {
-              if (p._subProjectId) walk.push(p);
-            });
-          });
-        });
-        if (!pmManpowerUsesMatrixApi()) {
-          alert('请先维护人力部门表头后再保存。');
-          return;
-        }
-        var bucket = {};
-        for (var wi = 0; wi < walk.length; wi++) {
-          var p = walk[wi];
-          var mb = p.manpowerByMonth || {};
-          var keys = Object.keys(mb);
-          for (var ki = 0; ki < keys.length; ki++) {
-            var rawKey = keys[ki];
-            var periodKey = normalizeYmSlugKey(rawKey) || rawKey;
-            if (!periodKey || String(periodKey).slice(0, 4) !== String(y)) continue;
-            if (!bucket[periodKey]) bucket[periodKey] = [];
-            bucket[periodKey] = bucket[periodKey].concat(cellsFromProjectPeriod(p, rawKey));
-          }
-        }
-        var pPer = Object.keys(bucket);
-        for (var bj = 0; bj < pPer.length; bj++) {
-          var pk = pPer[bj];
-          var r2 = await pmFetch(
-            '/api/v1/manpower-allocations?year=' + y + '&period=' + encodeURIComponent(pk),
-            { method: 'PUT', body: JSON.stringify({ cells: bucket[pk] }) }
-          );
-          if (r2.status === 401) {
-            window.location.href = 'login.html';
-            return;
-          }
-          if (!r2.ok) {
-            var errM = await r2.json().catch(function () { return {}; });
-            alert((errM.detail != null ? errM.detail : '保存失败') + '（HTTP ' + r2.status + '）');
-            return;
-          }
-        }
-        pmSavePeriodPrefsForYear(y, phaseSelMonth, manpowerSelMonth);
-        showSaveToast('人力登记已保存到服务器');
-        setPanelEditMode('manpower', false);
-      } catch (e) {
-        alert('保存失败：无法连接服务器');
-      }
+      alert('部门人力登记为只读汇总，请在「项目信息」页维护成员投入（人月）。');
     }
 
     function syncPhaseFromDom() {
@@ -7418,15 +7363,11 @@
             var rowTotal = 0;
             for (let i = 0; i < nCols; ++i) {
               const tdC = document.createElement('td');
-              tdC.className = 'center-cell col-mp';
+              tdC.className = 'center-cell col-mp manpower-readonly-cell';
               const v = proj.manpower[i] != null ? proj.manpower[i] : 0;
               var vn = Number(v);
               if (!isNaN(vn)) rowTotal += vn;
-              if (admin) {
-                appendManpowerEditableCell(tdC, setIdx, projectSetIdx, projIdx, i, v);
-              } else {
-                tdC.innerHTML = '<span>' + escapeHtml(formatManpowerValue(v)) + '</span>';
-              }
+              tdC.innerHTML = '<span>' + escapeHtml(formatManpowerValue(v)) + '</span>';
               tr.appendChild(tdC);
             }
             const tdSum = document.createElement('td');

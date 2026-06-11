@@ -389,6 +389,31 @@
   font-weight: 600;
 }
 
+#panel-project-info .pi-card-sub {
+  margin: -4px 0 12px;
+  font-size: 13px;
+  color: #5f6368;
+}
+
+#panel-project-info .pi-project-total {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1E6FFF;
+}
+
+#panel-project-info .pi-sat {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+#panel-project-info .pi-sat-low { background: #e6f4ea; color: #137333; }
+#panel-project-info .pi-sat-normal { background: #fef7e0; color: #b06000; }
+#panel-project-info .pi-sat-over { background: #fce8e6; color: #c5221f; }
+
 #panel-project-info .pi-readonly-hint {
   font-size: 12px;
   color: #856400;
@@ -400,10 +425,11 @@
 }
 
 #panel-manpower .panel-actions { display: none !important; }
+#btn-manpower-edit-toggle { display: none !important; }
 
 #panel-manpower .manpower-toolbar::after,
 #panel-risk .manpower-toolbar::after {
-  content: '（只读展示，请前往「项目信息」页编辑）';
+  content: '（只读汇总，请前往「项目信息」页维护成员投入，单位：人月）';
   font-size: 12px;
   color: #5f6368;
   margin-left: 8px;

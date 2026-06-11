@@ -271,3 +271,24 @@ class TeamMember(Base):
 
     sub_project: Mapped[SubProject] = relationship(back_populates="team_members")
     team_column: Mapped[ManpowerColumn] = relationship()
+    allocations: Mapped[list[TeamMemberAllocation]] = relationship(
+        back_populates="team_member", cascade="all, delete-orphan"
+    )
+
+
+class TeamMemberAllocation(Base):
+    """项目成员在某年月的投入（人月）。"""
+
+    __tablename__ = "team_member_allocations"
+    __table_args__ = (UniqueConstraint("team_member_id", "period", name="uk_team_member_period"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    team_member_id: Mapped[int] = mapped_column(
+        ForeignKey("team_members.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    period: Mapped[str] = mapped_column(String(7), nullable=False, index=True)
+    allocation: Mapped[Decimal] = mapped_column(Numeric(6, 2), nullable=False, default=Decimal("0.00"))
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
+
+    team_member: Mapped[TeamMember] = relationship(back_populates="allocations")

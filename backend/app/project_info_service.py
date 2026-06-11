@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
+from app.manpower_saturation import PERSON_MONTHLY_CAPACITY, person_totals_by_name, saturation_level
 from app.models_relational import (
+    ManpowerCell,
     ManpowerColumn,
     Milestone,
     ProjectRisk,
@@ -16,11 +20,11 @@ from app.models_relational import (
     SubProject,
     Task,
     TeamMember,
+    TeamMemberAllocation,
 )
 from app.relational_api import assert_period_matches_year, parse_year
 from app.routers.manpower_allocations import build_manpower_matrix_response
 from app.schemas_relational import (
-    ManpowerMatrixCellOut,
     MilestoneOut,
     ProjectInfoBreadcrumb,
     ProjectInfoGetResponse,
@@ -43,13 +47,11 @@ def default_period_for_year(year: int) -> str:
 
 
 def _load_sub_project(db: Session, sub_project_id: int, year: int) -> SubProject:
-    sp = (
-        db.scalar(
-            select(SubProject)
-            .where(SubProject.id == sub_project_id, SubProject.year == year)
-            .options(
-                joinedload(SubProject.sub_program).joinedload(SubProgram.program),
-            )
+    sp = db.scalar(
+        select(SubProject)
+        .where(SubProject.id == sub_project_id, SubProject.year == year)
+        .options(
+            joinedload(SubProject.sub_program).joinedload(SubProgram.program),
         )
     )
     if sp is None:
@@ -70,7 +72,9 @@ def _breadcrumb(sp: SubProject) -> ProjectInfoBreadcrumb:
     )
 
 
-def _team_members_out(db: Session, sub_project_id: int) -> list[TeamMemberOut]:
+def _team_members_out(
+    db: Session, sub_project_id: int, *, year: int, period: str
+) -> list[TeamMemberOut]:
     rows = list(
         db.scalars(
             select(TeamMember)
@@ -79,23 +83,49 @@ def _team_members_out(db: Session, sub_project_id: int) -> list[TeamMemberOut]:
         ).all()
     )
     col_names: dict[int, str] = {}
+    alloc_by_member: dict[int, Decimal] = {}
     if rows:
         col_ids = {r.team_column_id for r in rows}
         cols = db.scalars(select(ManpowerColumn).where(ManpowerColumn.id.in_(col_ids))).all()
         col_names = {c.id: c.name for c in cols}
-    return [
-        TeamMemberOut(
-            id=r.id,
-            name=r.name,
-            team_column_id=r.team_column_id,
-            team_column_name=col_names.get(r.team_column_id, ""),
-            role=r.role,
-            participation=r.participation,
-            remark=r.remark,
-            sort_order=r.sort_order,
+        member_ids = [r.id for r in rows]
+        allocs = db.scalars(
+            select(TeamMemberAllocation).where(
+                TeamMemberAllocation.team_member_id.in_(member_ids),
+                TeamMemberAllocation.period == period,
+            )
+        ).all()
+        alloc_by_member = {a.team_member_id: a.allocation for a in allocs}
+
+    person_totals = person_totals_by_name(db, year=year, period=period)
+
+    result: list[TeamMemberOut] = []
+    for r in rows:
+        monthly = alloc_by_member.get(r.id, Decimal("0.00"))
+        person_total = person_totals.get(r.name.strip(), Decimal("0.00"))
+        rate = (person_total / PERSON_MONTHLY_CAPACITY).quantize(Decimal("0.0001"))
+        result.append(
+            TeamMemberOut(
+                id=r.id,
+                name=r.name,
+                team_column_id=r.team_column_id,
+                team_column_name=col_names.get(r.team_column_id, ""),
+                role=r.role,
+                participation=r.participation,
+                remark=r.remark,
+                sort_order=r.sort_order,
+                monthly_allocation=monthly,
+                person_total_allocation=person_total,
+                person_saturation_rate=rate,
+                person_saturation_level=saturation_level(rate),
+            )
         )
-        for r in rows
-    ]
+    return result
+
+
+def _project_monthly_total(members: list[TeamMemberOut]) -> Decimal:
+    total = sum((m.monthly_allocation for m in members), Decimal("0"))
+    return total.quantize(Decimal("0.01"))
 
 
 def build_project_info_response(
@@ -133,6 +163,7 @@ def build_project_info_response(
 
     matrix = build_manpower_matrix_response(db, y, p)
     cells = [c for c in matrix.cells if c.sub_project_id == sub_project_id]
+    team_members = _team_members_out(db, sub_project_id, year=y, period=p)
 
     return ProjectInfoGetResponse(
         year=y,
@@ -140,7 +171,7 @@ def build_project_info_response(
         sub_project=SubProjectDetailOut.model_validate(sp),
         milestones=[MilestoneOut.model_validate(m) for m in milestones],
         tasks=[TaskOut.model_validate(t) for t in tasks],
-        team_members=_team_members_out(db, sub_project_id),
+        team_members=team_members,
         risks=[ProjectRiskDetailOut.model_validate(r) for r in risks],
         manpower=ProjectInfoManpowerOut(
             period=p,
@@ -148,6 +179,7 @@ def build_project_info_response(
             cells=cells,
         ),
         breadcrumb=_breadcrumb(sp),
+        project_monthly_total=_project_monthly_total(team_members),
     )
 
 
@@ -184,6 +216,73 @@ def _apply_risk_status(row: ProjectRisk, status_value: str) -> None:
             row.closed_at = datetime.now(timezone.utc)
     else:
         row.closed_at = None
+
+
+def _upsert_member_allocation(
+    db: Session, *, team_member_id: int, period: str, allocation: Decimal
+) -> None:
+    alloc = allocation.quantize(Decimal("0.01"))
+    row = db.scalar(
+        select(TeamMemberAllocation).where(
+            TeamMemberAllocation.team_member_id == team_member_id,
+            TeamMemberAllocation.period == period,
+        )
+    )
+    if row is None:
+        db.add(
+            TeamMemberAllocation(
+                team_member_id=team_member_id,
+                period=period,
+                allocation=alloc,
+            )
+        )
+    else:
+        row.allocation = alloc
+
+
+def _rollup_manpower_cells(
+    db: Session,
+    *,
+    sub_project_id: int,
+    period: str,
+    members: list[tuple[TeamMember, Decimal]],
+) -> None:
+    by_column: dict[int, Decimal] = defaultdict(lambda: Decimal("0"))
+    for member, alloc in members:
+        by_column[member.team_column_id] += alloc
+
+    existing = list(
+        db.scalars(
+            select(ManpowerCell).where(
+                ManpowerCell.sub_project_id == sub_project_id,
+                ManpowerCell.period == period,
+            )
+        ).all()
+    )
+    touched_columns = set(by_column.keys()) | {c.column_id for c in existing}
+
+    for column_id in touched_columns:
+        alloc = by_column.get(column_id, Decimal("0")).quantize(Decimal("0.01"))
+        row = db.scalar(
+            select(ManpowerCell).where(
+                ManpowerCell.sub_project_id == sub_project_id,
+                ManpowerCell.period == period,
+                ManpowerCell.column_id == column_id,
+            )
+        )
+        if row is None:
+            if alloc == Decimal("0.00"):
+                continue
+            db.add(
+                ManpowerCell(
+                    sub_project_id=sub_project_id,
+                    period=period,
+                    column_id=column_id,
+                    allocation=alloc,
+                )
+            )
+        else:
+            row.allocation = alloc
 
 
 def save_project_info(
@@ -279,20 +378,22 @@ def save_project_info(
     for tid in body.deleted_team_member_ids:
         db.delete(db.get(TeamMember, tid))
 
+    saved_members: list[tuple[TeamMember, Decimal]] = []
     for item in body.team_members:
         _validate_column_year(db, item.team_column_id, y)
+        alloc = item.monthly_allocation.quantize(Decimal("0.01"))
         if item.id is None:
-            db.add(
-                TeamMember(
-                    sub_project_id=sub_project_id,
-                    name=item.name.strip(),
-                    team_column_id=item.team_column_id,
-                    role=item.role.strip(),
-                    participation=item.participation,
-                    remark=(item.remark or "").strip() or None,
-                    sort_order=item.sort_order,
-                )
+            row = TeamMember(
+                sub_project_id=sub_project_id,
+                name=item.name.strip(),
+                team_column_id=item.team_column_id,
+                role=item.role.strip(),
+                participation=item.participation,
+                remark=(item.remark or "").strip() or None,
+                sort_order=item.sort_order,
             )
+            db.add(row)
+            db.flush()
         else:
             row = db.get(TeamMember, item.id)
             if row is None or row.sub_project_id != sub_project_id:
@@ -303,6 +404,10 @@ def save_project_info(
             row.participation = item.participation
             row.remark = (item.remark or "").strip() or None
             row.sort_order = item.sort_order
+        _upsert_member_allocation(db, team_member_id=row.id, period=p, allocation=alloc)
+        saved_members.append((row, alloc))
+
+    _rollup_manpower_cells(db, sub_project_id=sub_project_id, period=p, members=saved_members)
 
     _assert_owned_ids(db, ProjectRisk, sub_project_id, body.deleted_risk_ids, "risk")
     for rid in body.deleted_risk_ids:
@@ -335,31 +440,6 @@ def save_project_info(
             row.assignee = item.assignee.strip()
             row.resolution_date = item.resolution_date
             _apply_risk_status(row, item.status)
-
-    from app.models_relational import ManpowerCell
-    from decimal import Decimal
-
-    for cell in body.manpower.cells:
-        _validate_column_year(db, cell.column_id, y)
-        alloc = Decimal(cell.allocation).quantize(Decimal("0.01"))
-        row = db.scalar(
-            select(ManpowerCell).where(
-                ManpowerCell.sub_project_id == sub_project_id,
-                ManpowerCell.period == p,
-                ManpowerCell.column_id == cell.column_id,
-            )
-        )
-        if row is None:
-            db.add(
-                ManpowerCell(
-                    sub_project_id=sub_project_id,
-                    period=p,
-                    column_id=cell.column_id,
-                    allocation=alloc,
-                )
-            )
-        else:
-            row.allocation = alloc
 
     db.flush()
     return build_project_info_response(db, sub_project_id=sub_project_id, year=y, period=p)
