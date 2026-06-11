@@ -602,8 +602,7 @@
     }
 
     #panel-risk .manpower-toolbar,
-    #panel-risk .risk-table-wrap,
-    #panel-risk .panel-actions {
+    #panel-risk .risk-table-wrap {
       width: 100%;
       box-sizing: border-box;
     }
@@ -1960,32 +1959,57 @@
       background: var(--accent-soft);
     }
 
-    .risk-select.risk-color-progress { background: #e7f5ff; color: #0b5aa2; border-color: #b6ddff; }
-    .risk-select.risk-color-quality { background: #f3f0ff; color: #4b3fb4; border-color: #d9d1ff; }
-    .risk-select.risk-color-scope { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
-    .risk-select.risk-color-cost { background: #fff1f0; color: #a8071a; border-color: #ffccc7; }
+    .risk-select.risk-color-progress,
+    .risk-tag.risk-color-progress { background: #e7f5ff; color: #0b5aa2; border-color: #b6ddff; }
+    .risk-select.risk-color-quality,
+    .risk-tag.risk-color-quality { background: #f3f0ff; color: #4b3fb4; border-color: #d9d1ff; }
+    .risk-select.risk-color-scope,
+    .risk-tag.risk-color-scope { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
+    .risk-select.risk-color-cost,
+    .risk-tag.risk-color-cost { background: #fff1f0; color: #a8071a; border-color: #ffccc7; }
 
-    .risk-select.risk-color-resource { background: #e6fffb; color: #006d75; border-color: #b5f5ec; }
-    .risk-select.risk-color-tech { background: #f6ffed; color: #237804; border-color: #d9f7be; }
-    .risk-select.risk-color-compliance { background: #f9f0ff; color: #531dab; border-color: #d3adf7; }
+    .risk-select.risk-color-resource,
+    .risk-tag.risk-color-resource { background: #e6fffb; color: #006d75; border-color: #b5f5ec; }
+    .risk-select.risk-color-tech,
+    .risk-tag.risk-color-tech { background: #f6ffed; color: #237804; border-color: #d9f7be; }
+    .risk-select.risk-color-compliance,
+    .risk-tag.risk-color-compliance { background: #f9f0ff; color: #531dab; border-color: #d3adf7; }
 
-    .risk-select.risk-color-high { background: #fff1f0; color: #a8071a; border-color: #ffccc7; }
-    .risk-select.risk-color-mid { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
-    .risk-select.risk-color-low { background: #f6ffed; color: #237804; border-color: #d9f7be; }
+    .risk-select.risk-color-high,
+    .risk-tag.risk-color-high { background: #fff1f0; color: #a8071a; border-color: #ffccc7; }
+    .risk-select.risk-color-mid,
+    .risk-tag.risk-color-mid { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
+    .risk-select.risk-color-low,
+    .risk-tag.risk-color-low { background: #f6ffed; color: #237804; border-color: #d9f7be; }
 
-    .risk-select.risk-color-open { background: #e6fffb; color: #006d75; border-color: #b5f5ec; }
-    .risk-select.risk-color-hold { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
-    .risk-select.risk-color-close { background: #f5f5f5; color: #595959; border-color: #d9d9d9; }
+    .risk-select.risk-color-open,
+    .risk-tag.risk-color-open { background: #e6fffb; color: #006d75; border-color: #b5f5ec; }
+    .risk-select.risk-color-hold,
+    .risk-tag.risk-color-hold { background: #fff7e6; color: #8a5b00; border-color: #ffd591; }
+    .risk-select.risk-color-close,
+    .risk-tag.risk-color-close { background: #f5f5f5; color: #595959; border-color: #d9d9d9; }
 
-    table#risk-table th.risk-th-action,
-    table#risk-table td.risk-cell-action {
-      width: 1%;
-      min-width: 64px;
-      max-width: 80px;
-      white-space: nowrap;
-      text-align: center;
-      vertical-align: middle;
-      padding: 6px 8px;
+    table#risk-table td.risk-display-cell {
+      text-align: left;
+      vertical-align: top;
+      line-height: 1.5;
+      color: var(--text);
+      padding: 10px 12px;
+    }
+
+    table#risk-table td.risk-display-multiline {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    table#risk-table .risk-tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.4;
     }
 
     table#risk-table .delete-btn,
@@ -2778,11 +2802,6 @@
       </div>
       <div class="table-footer-stats" id="risk-table-footer-stats" aria-live="polite"></div>
     </div>
-    <div class="panel-actions">
-      <button type="button" class="btn-add" id="btn-risk-edit-toggle" title="进入编辑模式后可修改并保存">编辑</button>
-      <button type="button" class="btn-add risk-edit-only" onclick="addRiskRow()">+ 新增风险</button>
-      <button type="button" class="btn-save-panel risk-edit-only" onclick="saveRiskData()" title="将本页风险登记保存到服务器（需管理员）">保存</button>
-    </div>
   </div>
   <div id="panel-project-info" class="tab-panel" role="tabpanel" aria-label="项目信息">
     <div class="pi-toolbar-row">
@@ -3239,6 +3258,11 @@
       wy.addEventListener('change', function () {
         var v = parseInt(wy.value, 10);
         if (isNaN(v) || v < 2000 || v > 2099) {
+          wy.value = String(pmDataYear);
+          return;
+        }
+        if (window.ProjectInfoModule && window.ProjectInfoModule.isEditing && window.ProjectInfoModule.isEditing()) {
+          alert('项目信息页正在编辑，请先保存或取消后再切换工作年度。');
           wy.value = String(pmDataYear);
           return;
         }
@@ -4885,167 +4909,6 @@
       return text;
     }
 
-    function commitRiskProjectValue(row, text) {
-      if (!row) return;
-      var binding = resolveRiskProjectBinding(text);
-      if (binding.id) {
-        row._subProjectId = binding.id;
-        row.project = binding.full;
-        row._projectCustom = false;
-        return;
-      }
-      var trimmed = String(text || '').trim();
-      if (trimmed) {
-        row._subProjectId = undefined;
-        row.project = trimmed;
-        row._projectCustom = true;
-        return;
-      }
-      row._subProjectId = undefined;
-      row.project = '';
-      row._projectCustom = false;
-    }
-
-    function closeAllRiskProjectSuggestPanels(exceptWrap) {
-      document.querySelectorAll('.risk-project-suggest.open').forEach(function (panel) {
-        if (exceptWrap && exceptWrap.contains(panel)) return;
-        panel.classList.remove('open');
-        panel.innerHTML = '';
-      });
-    }
-
-    function renderRiskProjectSuggestPanel(panel, matches, query) {
-      if (!panel) return;
-      panel.innerHTML = '';
-      if (!matches.length) {
-        var empty = document.createElement('div');
-        empty.className = 'risk-project-suggest-empty';
-        empty.textContent = query
-          ? '未匹配到已有项目，可直接使用当前输入作为项目名。'
-          : '输入关键字搜索项目，或手填项目名。';
-        panel.appendChild(empty);
-        panel.classList.add('open');
-        return;
-      }
-      matches.forEach(function (opt, idx) {
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'risk-project-suggest-item' + (idx === 0 ? ' active' : '');
-        btn.setAttribute('data-project-id', opt.id);
-        btn.setAttribute('data-project-full', opt.full);
-        btn.setAttribute('data-project-short', opt.short);
-        btn.innerHTML =
-          '<span class="risk-project-suggest-short">' + escapeHtml(opt.short) + '</span>' +
-          (opt.full && opt.full !== opt.short
-            ? '<span class="risk-project-suggest-full" title="' + escapeHtml(opt.full) + '">' + escapeHtml(opt.full) + '</span>'
-            : '');
-        panel.appendChild(btn);
-      });
-      panel.classList.add('open');
-    }
-
-    function wireRiskProjectCombobox(wrap, row, rowIndex, options) {
-      if (!wrap || !row) return;
-      var inp = wrap.querySelector('input[data-risk-field="project"]');
-      var panel = wrap.querySelector('.risk-project-suggest');
-      if (!inp || !panel) return;
-      if (!window._riskProjectSuggestDocWired) {
-        window._riskProjectSuggestDocWired = true;
-        document.addEventListener('mousedown', function (e) {
-          if (!e.target.closest('.risk-project-combobox')) closeAllRiskProjectSuggestPanels();
-        });
-      }
-
-      function applySelection(opt) {
-        if (!opt) return;
-        row._subProjectId = opt.id;
-        row.project = opt.full;
-        row._projectCustom = false;
-        inp.value = opt.short;
-        inp.title = opt.full;
-        panel.classList.remove('open');
-        panel.innerHTML = '';
-      }
-
-      function refreshSuggest() {
-        var q = inp.value;
-        var matches = filterRiskProjectOptions(q, options, 12);
-        renderRiskProjectSuggestPanel(panel, matches, String(q || '').trim());
-      }
-
-      inp.addEventListener('focus', function () {
-        closeAllRiskProjectSuggestPanels(wrap);
-        refreshSuggest();
-      });
-
-      inp.addEventListener('input', function () {
-        refreshSuggest();
-      });
-
-      inp.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-          panel.classList.remove('open');
-          return;
-        }
-        if (e.key === 'Enter') {
-          var first = panel.querySelector('.risk-project-suggest-item');
-          if (first && panel.classList.contains('open')) {
-            e.preventDefault();
-            applySelection({
-              id: first.getAttribute('data-project-id'),
-              full: first.getAttribute('data-project-full'),
-              short: first.getAttribute('data-project-short')
-            });
-          } else {
-            commitRiskProjectValue(row, inp.value);
-            panel.classList.remove('open');
-          }
-          return;
-        }
-        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-          var items = panel.querySelectorAll('.risk-project-suggest-item');
-          if (!items.length) return;
-          e.preventDefault();
-          var activeIx = -1;
-          items.forEach(function (el, i) {
-            if (el.classList.contains('active')) activeIx = i;
-          });
-          if (activeIx < 0) activeIx = 0;
-          else if (e.key === 'ArrowDown') activeIx = Math.min(items.length - 1, activeIx + 1);
-          else activeIx = Math.max(0, activeIx - 1);
-          items.forEach(function (el, i) {
-            el.classList.toggle('active', i === activeIx);
-          });
-          if (items[activeIx]) items[activeIx].scrollIntoView({ block: 'nearest' });
-        }
-      });
-
-      inp.addEventListener('change', function () {
-        commitRiskProjectValue(row, inp.value);
-      });
-
-      inp.addEventListener('blur', function () {
-        window.setTimeout(function () {
-          commitRiskProjectValue(row, inp.value);
-          panel.classList.remove('open');
-        }, 120);
-      });
-
-      panel.addEventListener('mousedown', function (e) {
-        e.preventDefault();
-      });
-
-      panel.addEventListener('click', function (e) {
-        var btn = e.target.closest('.risk-project-suggest-item');
-        if (!btn) return;
-        applySelection({
-          id: btn.getAttribute('data-project-id'),
-          full: btn.getAttribute('data-project-full'),
-          short: btn.getAttribute('data-project-short')
-        });
-      });
-    }
-
     function firstSubProjectIdInTree() {
       if (!Array.isArray(phaseData)) return null;
       for (var si = 0; si < phaseData.length; si++) {
@@ -5463,7 +5326,7 @@
     }
 
     let appUserRole = 'viewer';
-    const panelEditMode = { manpower: false, phase: false, risk: false };
+    const panelEditMode = { manpower: false, phase: false };
 
     function syncPmRoleGlobal() {
       window.pmIsAdmin = function () { return appUserRole === 'admin'; };
@@ -5475,18 +5338,17 @@
 
     function setPanelEditMode(panel, editing) {
       if (!(window.pmIsAdmin && window.pmIsAdmin())) return;
+      if (panel === 'manpower') return;
       panelEditMode[panel] = !!editing;
       applyPermissionToAllUI();
       if (panel === 'manpower') renderTable();
       else if (panel === 'phase') renderPhaseTable();
-      else if (panel === 'risk') renderRiskTable();
     }
 
     function wirePanelEditToggleButtons() {
       [
         { id: 'btn-manpower-edit-toggle', panel: 'manpower' },
-        { id: 'btn-phase-edit-toggle', panel: 'phase' },
-        { id: 'btn-risk-edit-toggle', panel: 'risk' }
+        { id: 'btn-phase-edit-toggle', panel: 'phase' }
       ].forEach(function (cfg) {
         var btn = document.getElementById(cfg.id);
         if (!btn || btn._pmEditWired) return;
@@ -5497,9 +5359,6 @@
         });
       });
     }
-
-    /** 与 renderRiskTable 中 [data-risk-field] 一致，供 syncRiskRowsFromDom 使用 */
-    const RISK_FIELD_ORDER = ['category', 'source', 'project', 'issue', 'solution', 'level', 'owner', 'regTime', 'closeTime', 'status'];
 
     let riskAnalysisCharts = [];
     let lastRiskAnalysisStats = null;
@@ -5763,7 +5622,6 @@
         alert('图表组件加载失败，请检查网络后刷新页面。');
         return;
       }
-      syncRiskRowsFromDom();
       var mask = document.getElementById('risk-analysis-mask');
       var noteEl = document.getElementById('risk-analysis-note');
       var emptyEl = document.getElementById('risk-analysis-empty');
@@ -5776,7 +5634,7 @@
       var filteredRows = getRiskFilteredRowsArray();
 
       if (noteEl) {
-        noteEl.textContent = '基于当前列表共 ' + filteredRows.length + ' 条风险记录（含未保存的编辑内容）。';
+        noteEl.textContent = '基于当前列表共 ' + filteredRows.length + ' 条风险记录。';
       }
 
       var sections = body.querySelectorAll('.manpower-analysis-section');
@@ -5875,12 +5733,9 @@
       if (!adm) {
         panelEditMode.manpower = false;
         panelEditMode.phase = false;
-        panelEditMode.risk = false;
       }
       var panelConfigs = [
-        { panel: 'manpower', toggleId: 'btn-manpower-edit-toggle', editSelector: '#panel-manpower .manpower-edit-only' },
-        { panel: 'phase', toggleId: 'btn-phase-edit-toggle', editSelector: '#panel-phase .phase-edit-only' },
-        { panel: 'risk', toggleId: 'btn-risk-edit-toggle', editSelector: '#panel-risk .risk-edit-only' }
+        { panel: 'phase', toggleId: 'btn-phase-edit-toggle', editSelector: '#panel-phase .phase-edit-only' }
       ];
       panelConfigs.forEach(function (cfg) {
         var toggleBtn = document.getElementById(cfg.toggleId);
@@ -6152,33 +6007,6 @@
       });
     }
 
-    function syncRiskRowsFromDom() {
-      const tb = document.getElementById('risk-table-body');
-      if (!tb || riskRows.length === 0) return;
-      tb.querySelectorAll('tr[data-risk-row-index]').forEach(function (tr) {
-        var i = parseInt(tr.getAttribute('data-risk-row-index'), 10);
-        if (isNaN(i) || !riskRows[i]) return;
-        RISK_FIELD_ORDER.forEach(function (key) {
-          const el = tr.querySelector('[data-risk-field="' + key + '"]');
-          if (!el || !('value' in el)) return;
-          if (key === 'project') {
-            if (el.closest('.risk-project-combobox')) {
-              commitRiskProjectValue(riskRows[i], el.value);
-              return;
-            }
-            if (el.tagName === 'SELECT') {
-              var sid = el.value;
-              riskRows[i]._subProjectId = sid || undefined;
-              var nameMap = subProjectNameMapFromTree();
-              riskRows[i].project = sid ? (nameMap[sid] || '') : '';
-              return;
-            }
-          }
-          riskRows[i][key] = el.value;
-        });
-      });
-    }
-
     function loadSavedData() {
       var phaseFromStorage = false;
       try {
@@ -6349,7 +6177,7 @@
             category: r.risk_category != null ? String(r.risk_category) : '',
             source: r.risk_source != null ? String(r.risk_source) : '',
             project: nameMap[r.sub_project_id] || '',
-            regTime: '',
+            regTime: r.created_at ? String(r.created_at).slice(0, 10) : '',
             issue: r.description != null ? String(r.description) : '',
             solution: r.solution != null ? String(r.solution) : '',
             level: r.level != null ? String(r.level) : '',
@@ -6373,163 +6201,7 @@
     }
 
     async function saveManpowerData() {
-      if (!requireAdminOrAlert()) return;
-      syncManpowerCellsFromDom();
-      if (!pmUsesRelationalRegistry) {
-        alert('当前未使用服务器项目树，无法保存人力。请登录后重试。');
-        return;
-      }
-      try {
-        var y = pmDataYear;
-        var walk = [];
-        data.forEach(function (set) {
-          getProgramProjectSets(set).forEach(function (ps) {
-            getSubProjects(ps).forEach(function (p) {
-              if (p._subProjectId) walk.push(p);
-            });
-          });
-        });
-        if (!pmManpowerUsesMatrixApi()) {
-          alert('请先维护人力部门表头后再保存。');
-          return;
-        }
-        var bucket = {};
-        for (var wi = 0; wi < walk.length; wi++) {
-          var p = walk[wi];
-          var mb = p.manpowerByMonth || {};
-          var keys = Object.keys(mb);
-          for (var ki = 0; ki < keys.length; ki++) {
-            var rawKey = keys[ki];
-            var periodKey = normalizeYmSlugKey(rawKey) || rawKey;
-            if (!periodKey || String(periodKey).slice(0, 4) !== String(y)) continue;
-            if (!bucket[periodKey]) bucket[periodKey] = [];
-            bucket[periodKey] = bucket[periodKey].concat(cellsFromProjectPeriod(p, rawKey));
-          }
-        }
-        var pPer = Object.keys(bucket);
-        for (var bj = 0; bj < pPer.length; bj++) {
-          var pk = pPer[bj];
-          var r2 = await pmFetch(
-            '/api/v1/manpower-allocations?year=' + y + '&period=' + encodeURIComponent(pk),
-            { method: 'PUT', body: JSON.stringify({ cells: bucket[pk] }) }
-          );
-          if (r2.status === 401) {
-            window.location.href = 'login.html';
-            return;
-          }
-          if (!r2.ok) {
-            var errM = await r2.json().catch(function () { return {}; });
-            alert((errM.detail != null ? errM.detail : '保存失败') + '（HTTP ' + r2.status + '）');
-            return;
-          }
-        }
-        pmSavePeriodPrefsForYear(y, phaseSelMonth, manpowerSelMonth);
-        showSaveToast('人力登记已保存到服务器');
-        setPanelEditMode('manpower', false);
-      } catch (e) {
-        alert('保存失败：无法连接服务器');
-      }
-    }
-
-    async function saveRiskData() {
-      if (!requireAdminOrAlert()) return;
-      syncRiskRowsFromDom();
-      if (!pmUsesRelationalRegistry) {
-        alert('当前未使用服务器项目树，无法保存风险。请登录后重试。');
-        return;
-      }
-      try {
-        var y = pmDataYear;
-        var curIds = new Set();
-        riskRows.forEach(function (r) {
-          if (r._riskId) curIds.add(r._riskId);
-        });
-        var delList = [];
-        pmLastLoadedRiskIds.forEach(function (id) {
-          if (!curIds.has(id)) delList.push(id);
-        });
-        for (var di = 0; di < delList.length; di++) {
-          var dr = await pmFetch('/api/v1/project-risks/' + delList[di] + '?year=' + y, { method: 'DELETE' });
-          if (dr.status === 401) {
-            window.location.href = 'login.html';
-            return;
-          }
-        }
-        for (var i = 0; i < riskRows.length; i++) {
-          var row = riskRows[i];
-          if (!row._subProjectId && row.project) {
-            var binding = resolveRiskProjectBindingLoose(row.project);
-            if (binding.id) {
-              row._subProjectId = binding.id;
-              row.project = binding.full;
-              row._projectCustom = false;
-            }
-          }
-          var sid = row._subProjectId;
-          if (!sid) {
-            var projectLabel = row.project != null ? String(row.project).trim() : '';
-            if (projectLabel) {
-              alert('项目「' + projectLabel + '」未在项目清单中找到，请从搜索建议中选择已有项目，或在「项目阶段状态」页创建该项目后再保存。');
-              return;
-            }
-            var meta = firstSubProjectMetaInTree();
-            sid = meta && meta.id;
-            if (!sid) {
-              alert('请先在项目阶段状态或部门项目人力登记页创建项目树，保存成功后再登记风险。');
-              return;
-            }
-            row._subProjectId = sid;
-            if (!row.project) row.project = meta.label;
-          }
-          var patchBody = {
-            sub_project_id: sid,
-            risk_category: row.category,
-            risk_source: row.source,
-            issue: row.issue,
-            solution: row.solution,
-            level: row.level,
-            owner: row.owner,
-            status: row.status,
-            closeTime: row.closeTime
-          };
-          if (row._riskId) {
-            var pr = await pmFetch('/api/v1/project-risks/' + row._riskId + '?year=' + y, {
-              method: 'PATCH',
-              body: JSON.stringify(patchBody)
-            });
-            if (pr.status === 401) {
-              window.location.href = 'login.html';
-              return;
-            }
-            if (!pr.ok) {
-              var err = await pr.json().catch(function () { return {}; });
-              alert((err.detail != null ? err.detail : '保存失败') + '（HTTP ' + pr.status + '）');
-              return;
-            }
-          } else {
-            var postBody = Object.assign({}, patchBody, { sub_project_id: sid });
-            var cr = await pmFetch('/api/v1/project-risks?year=' + y, {
-              method: 'POST',
-              body: JSON.stringify(postBody)
-            });
-            if (cr.status === 401) {
-              window.location.href = 'login.html';
-              return;
-            }
-            if (!cr.ok) {
-              var err2 = await cr.json().catch(function () { return {}; });
-              alert((err2.detail != null ? err2.detail : '保存失败') + '（HTTP ' + cr.status + '）');
-              return;
-            }
-          }
-        }
-        await loadRegistryData();
-        renderRiskTable();
-        showSaveToast('风险登记已保存到服务器');
-        setPanelEditMode('risk', false);
-      } catch (e) {
-        alert('保存失败：无法连接服务器');
-      }
+      alert('部门人力登记为只读汇总，请在「项目信息」页维护成员投入（人月）。');
     }
 
     function syncPhaseFromDom() {
@@ -6644,37 +6316,6 @@
       }, 2200);
     }
 
-    function formatRiskRegTime(d) {
-      const pad = function (n) { return String(n).padStart(2, '0'); };
-      return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-    }
-
-    function addRiskRow() {
-      if (!requireAdminOrAlert()) return;
-      var prev = riskRows.length ? riskRows[riskRows.length - 1] : null;
-      var meta = prev && prev._subProjectId ? null : firstSubProjectMetaInTree();
-      var sid = prev && prev._subProjectId ? prev._subProjectId : meta && meta.id;
-      var nameMap = subProjectNameMapFromTree();
-      riskRows.push({
-        category: '',
-        source: '',
-        project: sid ? (nameMap[sid] || (meta ? meta.label : '')) : '',
-        issue: '',
-        solution: '',
-        level: '',
-        owner: '',
-        regTime: '',
-        closeTime: '',
-        status: '',
-        _subProjectId: sid || undefined
-      });
-      renderRiskTable();
-    }
-
-    function updateRisk(idx, field, value) {
-      if (riskRows[idx]) riskRows[idx][field] = value;
-    }
-
     function compareRiskRowsByField(a, b, key) {
       var va = a[key] != null ? String(a[key]).trim() : '';
       var vb = b[key] != null ? String(b[key]).trim() : '';
@@ -6729,6 +6370,87 @@
       renderRiskTable();
     }
 
+    const RISK_TABLE_COL_COUNT = 11;
+
+    function riskSelectColorClass(field, value) {
+      var v = value != null ? String(value).trim().toLowerCase() : '';
+      if (!v) return '';
+      if (field === 'category') {
+        if (v === '进度') return 'risk-color-progress';
+        if (v === '质量') return 'risk-color-quality';
+        if (v === '范围') return 'risk-color-scope';
+        if (v === '成本') return 'risk-color-cost';
+        return '';
+      }
+      if (field === 'source') {
+        if (v === '资源') return 'risk-color-resource';
+        if (v === '技术') return 'risk-color-tech';
+        if (v === '合规') return 'risk-color-compliance';
+        if (v === '管理') return 'risk-color-compliance';
+        if (v === '外部') return 'risk-color-resource';
+        return '';
+      }
+      if (field === 'level') {
+        if (v === '高') return 'risk-color-high';
+        if (v === '中') return 'risk-color-mid';
+        if (v === '低') return 'risk-color-low';
+        return '';
+      }
+      if (field === 'status') {
+        if (v === 'open') return 'risk-color-open';
+        if (v === 'hold') return 'risk-color-hold';
+        if (v === 'close' || v === 'closed') return 'risk-color-close';
+        return '';
+      }
+      return '';
+    }
+
+    function applyRiskTagColor(el, field, value) {
+      if (!el) return;
+      el.classList.remove(
+        'risk-color-progress', 'risk-color-quality', 'risk-color-scope', 'risk-color-cost',
+        'risk-color-resource', 'risk-color-tech', 'risk-color-compliance',
+        'risk-color-high', 'risk-color-mid', 'risk-color-low',
+        'risk-color-open', 'risk-color-hold', 'risk-color-close'
+      );
+      var cls = riskSelectColorClass(field, value);
+      if (cls) el.classList.add(cls);
+    }
+
+    function formatRiskStatus(status) {
+      var v = status != null ? String(status).trim() : '';
+      if (!v) return '—';
+      var lower = v.toLowerCase();
+      if (lower === 'open') return 'Open';
+      if (lower === 'close' || lower === 'closed') return 'Close';
+      if (lower === 'hold') return 'Hold';
+      return v;
+    }
+
+    function riskDisplayText(value, extraClass, multiline) {
+      var td = document.createElement('td');
+      td.className = 'risk-display-cell' + (extraClass ? ' ' + extraClass : '') + (multiline ? ' risk-display-multiline' : '');
+      var text = value != null ? String(value).trim() : '';
+      td.textContent = text || '—';
+      return td;
+    }
+
+    function riskDisplayTag(field, value, extraClass) {
+      var td = document.createElement('td');
+      td.className = 'risk-display-cell' + (extraClass ? ' ' + extraClass : '');
+      var raw = value != null ? String(value).trim() : '';
+      if (!raw) {
+        td.textContent = '—';
+        return td;
+      }
+      var span = document.createElement('span');
+      span.className = 'risk-tag';
+      span.textContent = field === 'status' ? formatRiskStatus(raw) : raw;
+      applyRiskTagColor(span, field, raw);
+      td.appendChild(span);
+      return td;
+    }
+
     function renderRiskThead() {
       var thead = document.getElementById('risk-thead');
       if (!thead) return;
@@ -6743,8 +6465,7 @@
         { key: 'owner', label: '跟进人', sortable: true, thClass: 'sub risk-th-owner' },
         { key: 'regTime', label: '风险登记时间', sortable: true, thClass: 'sub risk-th-date' },
         { key: 'closeTime', label: '风险解除时间', sortable: true, thClass: 'sub risk-th-date' },
-        { key: 'status', label: '状态', sortable: true, thClass: 'sub risk-th-status' },
-        { key: null, label: '操作', sortable: false, thClass: 'sub risk-th-action' }
+        { key: 'status', label: '状态', sortable: true, thClass: 'sub risk-th-status' }
       ];
       var tr = document.createElement('tr');
       headers.forEach(function (h) {
@@ -6780,17 +6501,14 @@
       renderRiskThead();
       const tb = document.getElementById('risk-table-body');
       if (!tb) return;
-      const allowEdit = canEditPanel('risk');
       tb.innerHTML = '';
       if (riskRows.length === 0) {
         const tr = document.createElement('tr');
         const td = document.createElement('td');
-        td.colSpan = 12;
+        td.colSpan = RISK_TABLE_COL_COUNT;
         td.className = 'center-cell';
         td.style.padding = '24px';
-        td.textContent = allowEdit
-          ? '暂无风险记录，请点击「+ 新增风险」添加。'
-          : '暂无风险记录。普通用户仅可查看；管理员可通过「+ 新增风险」添加。';
+        td.textContent = '暂无风险记录，请前往「项目信息」页维护。';
         tr.appendChild(td);
         tb.appendChild(tr);
         updateRiskTableFooterStats();
@@ -6803,7 +6521,7 @@
       if (filteredIndices.length === 0) {
         const tr = document.createElement('tr');
         const td = document.createElement('td');
-        td.colSpan = 12;
+        td.colSpan = RISK_TABLE_COL_COUNT;
         td.className = 'center-cell';
         td.style.padding = '24px';
         td.textContent = '当前筛选条件下无匹配记录，请调整级别或状态下拉，或选择「全部」。';
@@ -6812,215 +6530,35 @@
         updateRiskTableFooterStats();
         return;
       }
-      var riskProjectOptions = buildRiskProjectOptions();
       filteredIndices.forEach(function (idx, visPos) {
         const row = riskRows[idx];
         const tr = document.createElement('tr');
-        tr.setAttribute('data-risk-row-index', String(idx));
 
         const tdSeq = document.createElement('td');
         tdSeq.className = 'main seq';
         tdSeq.textContent = String(visPos + 1);
         tr.appendChild(tdSeq);
 
-        function tdTextInput(field, cls) {
-          const td = document.createElement('td');
-          td.className = 'risk-cell' + (cls ? ' ' + cls : '');
-          const inp = document.createElement('input');
-          inp.type = 'text';
-          inp.className = 'risk-input';
-          inp.setAttribute('data-risk-field', field);
-          inp.value = row[field] || '';
-          inp.readOnly = !allowEdit;
-          inp.addEventListener('change', function () {
-            if (allowEdit) updateRisk(idx, field, inp.value);
-          });
-          td.appendChild(inp);
-          return td;
-        }
+        tr.appendChild(riskDisplayTag('category', row.category, 'risk-cell-tag'));
+        tr.appendChild(riskDisplayTag('source', row.source, 'risk-cell-tag'));
 
-        function riskSelectColorClass(field, value) {
-          var v = value != null ? String(value).trim().toLowerCase() : '';
-          if (!v) return '';
-          if (field === 'category') {
-            if (v === '进度') return 'risk-color-progress';
-            if (v === '质量') return 'risk-color-quality';
-            if (v === '范围') return 'risk-color-scope';
-            if (v === '成本') return 'risk-color-cost';
-            return '';
-          }
-          if (field === 'source') {
-            if (v === '资源') return 'risk-color-resource';
-            if (v === '技术') return 'risk-color-tech';
-            if (v === '合规') return 'risk-color-compliance';
-            return '';
-          }
-          if (field === 'level') {
-            if (v === '高') return 'risk-color-high';
-            if (v === '中') return 'risk-color-mid';
-            if (v === '低') return 'risk-color-low';
-            return '';
-          }
-          if (field === 'status') {
-            if (v === 'open') return 'risk-color-open';
-            if (v === 'hold') return 'risk-color-hold';
-            if (v === 'close') return 'risk-color-close';
-            return '';
-          }
-          return '';
-        }
+        var tdProj = document.createElement('td');
+        tdProj.className = 'risk-display-cell risk-cell-project';
+        var fullPath = row.project || '';
+        var displayValue = riskProjectDisplayValue(row);
+        tdProj.textContent = displayValue || '—';
+        if (fullPath || displayValue) tdProj.title = fullPath || displayValue;
+        tr.appendChild(tdProj);
 
-        function applyRiskSelectColor(el, field, value) {
-          if (!el) return;
-          el.classList.remove(
-            'risk-color-progress', 'risk-color-quality', 'risk-color-scope', 'risk-color-cost',
-            'risk-color-resource', 'risk-color-tech', 'risk-color-compliance',
-            'risk-color-high', 'risk-color-mid', 'risk-color-low',
-            'risk-color-open', 'risk-color-hold', 'risk-color-close'
-          );
-          var cls = riskSelectColorClass(field, value);
-          if (cls) el.classList.add(cls);
-        }
+        tr.appendChild(riskDisplayText(row.issue, 'risk-cell-textwide', true));
+        tr.appendChild(riskDisplayText(row.solution, 'risk-cell-textwide', true));
+        tr.appendChild(riskDisplayTag('level', row.level, 'risk-cell-level'));
+        tr.appendChild(riskDisplayText(row.owner, 'risk-cell-owner'));
 
-        function tdSelect(field, options, cls) {
-          const td = document.createElement('td');
-          td.className = 'risk-cell' + (cls ? ' ' + cls : '');
-          const sel = document.createElement('select');
-          sel.className = 'risk-select';
-          sel.setAttribute('data-risk-field', field);
-          const current = row[field] != null ? String(row[field]) : '';
-          [['', '请选择']].concat(options).forEach(function (opt) {
-            const o = document.createElement('option');
-            o.value = opt[0];
-            o.textContent = opt[1];
-            if (current === opt[0]) o.selected = true;
-            sel.appendChild(o);
-          });
-          sel.disabled = !allowEdit;
-          applyRiskSelectColor(sel, field, current);
-          sel.addEventListener('change', function () {
-            if (allowEdit) updateRisk(idx, field, sel.value);
-            applyRiskSelectColor(sel, field, sel.value);
-          });
-          td.appendChild(sel);
-          return td;
-        }
-
-        function tdProject() {
-          const td = document.createElement('td');
-          td.className = 'risk-cell risk-cell-project';
-          var fullPath = row.project || '';
-          var displayValue = riskProjectDisplayValue(row);
-          if (allowEdit) {
-            const wrap = document.createElement('div');
-            wrap.className = 'risk-project-combobox';
-            const inp = document.createElement('input');
-            inp.type = 'text';
-            inp.className = 'risk-input';
-            inp.setAttribute('data-risk-field', 'project');
-            inp.setAttribute('autocomplete', 'off');
-            inp.setAttribute('placeholder', '输入关键字搜索或手填');
-            inp.value = displayValue;
-            inp.title = fullPath || displayValue;
-            const panel = document.createElement('div');
-            panel.className = 'risk-project-suggest';
-            panel.setAttribute('role', 'listbox');
-            wrap.appendChild(inp);
-            wrap.appendChild(panel);
-            wireRiskProjectCombobox(wrap, row, idx, riskProjectOptions);
-            td.appendChild(wrap);
-          } else {
-            const inp = document.createElement('input');
-            inp.type = 'text';
-            inp.className = 'risk-input';
-            inp.readOnly = true;
-            inp.value = displayValue;
-            inp.title = fullPath || displayValue;
-            td.appendChild(inp);
-          }
-          return td;
-        }
-
-        tr.appendChild(tdSelect('category', [['进度', '进度'], ['质量', '质量'], ['范围', '范围'], ['成本', '成本']], 'risk-cell-tag'));
-        tr.appendChild(tdSelect('source', [['资源', '资源'], ['技术', '技术'], ['合规', '合规']], 'risk-cell-tag'));
-        tr.appendChild(tdProject());
-
-        const tdIssue = document.createElement('td');
-        tdIssue.className = 'risk-cell w-wide risk-cell-textwide';
-        const taIssue = document.createElement('textarea');
-        taIssue.className = 'risk-input';
-        taIssue.setAttribute('data-risk-field', 'issue');
-        taIssue.rows = 2;
-        taIssue.value = row.issue || '';
-        taIssue.readOnly = !allowEdit;
-        taIssue.addEventListener('change', function () {
-          if (allowEdit) updateRisk(idx, 'issue', taIssue.value);
-        });
-        tdIssue.appendChild(taIssue);
-        tr.appendChild(tdIssue);
-
-        const tdSolution = document.createElement('td');
-        tdSolution.className = 'risk-cell w-wide risk-cell-textwide';
-        const taSolution = document.createElement('textarea');
-        taSolution.className = 'risk-input';
-        taSolution.setAttribute('data-risk-field', 'solution');
-        taSolution.rows = 2;
-        taSolution.value = row.solution || '';
-        taSolution.readOnly = !allowEdit;
-        taSolution.addEventListener('change', function () {
-          if (allowEdit) updateRisk(idx, 'solution', taSolution.value);
-        });
-        tdSolution.appendChild(taSolution);
-        tr.appendChild(tdSolution);
-
-        tr.appendChild(tdSelect('level', [['高', '高'], ['中', '中'], ['低', '低']], 'risk-cell-level'));
-
-        tr.appendChild(tdTextInput('owner', 'risk-cell-owner'));
-
-        const tdRegDate = document.createElement('td');
-        tdRegDate.className = 'risk-cell risk-cell-date';
-        const rin = document.createElement('input');
-        rin.type = 'date';
-        rin.className = 'risk-input';
-        rin.setAttribute('data-risk-field', 'regTime');
-        rin.value = row.regTime || '';
-        rin.disabled = !allowEdit;
-        rin.addEventListener('change', function () {
-          if (allowEdit) updateRisk(idx, 'regTime', rin.value);
-        });
-        tdRegDate.appendChild(rin);
-        tr.appendChild(tdRegDate);
-
-        const tdCloseDate = document.createElement('td');
-        tdCloseDate.className = 'risk-cell risk-cell-date';
-        const din = document.createElement('input');
-        din.type = 'date';
-        din.className = 'risk-input';
-        din.setAttribute('data-risk-field', 'closeTime');
-        din.value = row.closeTime || '';
-        din.disabled = !allowEdit;
-        din.addEventListener('change', function () {
-          if (allowEdit) updateRisk(idx, 'closeTime', din.value);
-        });
-        tdCloseDate.appendChild(din);
-        tr.appendChild(tdCloseDate);
-
-        tr.appendChild(tdSelect('status', [['open', 'open'], ['close', 'close'], ['hold', 'hold']], 'risk-cell-status'));
-
-        const tdAct = document.createElement('td');
-        tdAct.className = 'center-cell risk-cell-action';
-        if (allowEdit) {
-          const delBtn = document.createElement('button');
-          delBtn.type = 'button';
-          delBtn.className = 'delete-btn';
-          delBtn.textContent = '删除';
-          delBtn.onclick = function () { showRiskDeleteModal(idx); };
-          tdAct.appendChild(delBtn);
-        } else {
-          tdAct.className = 'center-cell risk-cell-action risk-readonly-cell';
-          tdAct.textContent = '—';
-        }
-        tr.appendChild(tdAct);
+        var regDisplay = row.regTime ? String(row.regTime).slice(0, 10) : '';
+        tr.appendChild(riskDisplayText(regDisplay, 'risk-cell-date'));
+        tr.appendChild(riskDisplayText(row.closeTime, 'risk-cell-date'));
+        tr.appendChild(riskDisplayTag('status', row.status, 'risk-cell-status'));
 
         tb.appendChild(tr);
       });
@@ -7458,13 +6996,6 @@
       }
     }
 
-    function showRiskDeleteModal(riskIdx) {
-      if (!requireAdminOrAlert()) return;
-      delCtx = { type: 'risk', riskIdx: riskIdx };
-      document.getElementById('modal-msg').textContent = '确认删除序号为 ' + (riskIdx + 1) + ' 的风险登记？';
-      openDeleteModal();
-    }
-
     function renderManpowerTheadMonth() {
       const thead = document.getElementById('register-thead');
       if (!thead) return;
@@ -7837,15 +7368,11 @@
             var rowTotal = 0;
             for (let i = 0; i < nCols; ++i) {
               const tdC = document.createElement('td');
-              tdC.className = 'center-cell col-mp';
+              tdC.className = 'center-cell col-mp manpower-readonly-cell';
               const v = proj.manpower[i] != null ? proj.manpower[i] : 0;
               var vn = Number(v);
               if (!isNaN(vn)) rowTotal += vn;
-              if (admin) {
-                appendManpowerEditableCell(tdC, setIdx, projectSetIdx, projIdx, i, v);
-              } else {
-                tdC.innerHTML = '<span>' + escapeHtml(formatManpowerValue(v)) + '</span>';
-              }
+              tdC.innerHTML = '<span>' + escapeHtml(formatManpowerValue(v)) + '</span>';
               tr.appendChild(tdC);
             }
             const tdSum = document.createElement('td');
@@ -8230,12 +7757,8 @@
           phaseData.splice(ctx.setIdx, 1);
         }
       }
-      else if (kind === 'risk') {
-        riskRows.splice(ctx.riskIdx, 1);
-      }
       closeModal();
-      if (kind === 'risk') renderRiskTable();
-      else if (kind === 'set' || kind === 'projectSet' || kind === 'project') {
+      if (kind === 'set' || kind === 'projectSet' || kind === 'project') {
         renderPhaseTable();
         renderTable();
       } else {

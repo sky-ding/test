@@ -231,6 +231,24 @@
     return String(d).slice(0, 10);
   }
 
+  function fmtManMonth(v) {
+    var n = Number(v);
+    if (isNaN(n)) return '0.00';
+    return n.toFixed(2);
+  }
+
+  function saturationBadge(level, rate) {
+    var pct = Math.round(Number(rate) * 100);
+    var cls = level === 'over' ? 'pi-sat-over' : (level === 'normal' ? 'pi-sat-normal' : 'pi-sat-low');
+    return '<span class="pi-sat ' + cls + '">' + pct + '%</span>';
+  }
+
+  function projectMonthlyTotal(members) {
+    return (members || []).reduce(function (sum, m) {
+      return sum + (Number(m.monthly_allocation) || 0);
+    }, 0);
+  }
+
   function daysBetween(a, b) {
     if (!a || !b) return 0;
     var t0 = new Date(a).getTime();
@@ -353,6 +371,7 @@
   }
 
   function loadProjectInfo() {
+    if (isEditing()) clearEditView();
     if (!state.subProjectId) {
       state.data = null;
       render();
@@ -367,6 +386,7 @@
       })
       .then(function (data) {
         state.data = data;
+        state.period = data.period || state.period;
         state.dirty = false;
         render();
       })
@@ -464,6 +484,35 @@
     box.innerHTML = '';
   }
 
+  function isEditing() {
+    return state.view === 'edit';
+  }
+
+  function clearEditView() {
+    state.view = 'summary';
+    state.dirty = false;
+    state.edit = null;
+    destroySortables();
+    var bar = document.getElementById('pi-bottom-bar');
+    if (bar) bar.classList.add('pi-hidden');
+  }
+
+  function updateEditLockUi() {
+    var locked = isEditing();
+    var row = document.querySelector('#panel-project-info .pi-toolbar-row');
+    if (row) row.classList.toggle('pi-toolbar-row--locked', locked);
+    ['pi-sel-program', 'pi-sel-sub-program', 'pi-sel-sub-project'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.disabled = locked;
+    });
+    var tools = document.getElementById('pi-structure-tools');
+    if (tools && !tools.hidden) {
+      tools.querySelectorAll('button').forEach(function (btn) {
+        btn.disabled = locked;
+      });
+    }
+  }
+
   function updateAdminTools() {
     var tools = document.getElementById('pi-structure-tools');
     if (!tools) return;
@@ -472,6 +521,7 @@
 
   function handleCreateFirstProgram() {
     if (!isAdmin()) return;
+    if (isEditing()) return;
     var name = prompt('输入新项目集名称：');
     if (!name || !String(name).trim()) return;
     createProgramWithDefaultLeaf(String(name).trim(), 0)
@@ -481,6 +531,7 @@
 
   function handleAddProgram() {
     if (!isAdmin()) return;
+    if (isEditing()) return;
     var name = prompt('输入新项目集名称：');
     if (!name || !String(name).trim()) return;
     createProgramWithDefaultLeaf(String(name).trim(), (state.tree || []).length)
@@ -490,6 +541,7 @@
 
   function handleAddSubProgram() {
     if (!isAdmin()) return;
+    if (isEditing()) return;
     if (!state.programId) {
       alert('请先选择项目集。');
       return;
@@ -504,6 +556,7 @@
 
   function handleAddSubProject() {
     if (!isAdmin()) return;
+    if (isEditing()) return;
     if (!state.subProgramId) {
       alert('请先选择子项目集。');
       return;
@@ -525,6 +578,7 @@
 
   function handleRenameNode() {
     if (!isAdmin()) return;
+    if (isEditing()) return;
     var prog = (state.tree || []).find(function (p) { return p.id === state.programId; });
     var spg = prog && (prog.sub_programs || []).find(function (s) { return s.id === state.subProgramId; });
     var leaf = spg && (spg.sub_projects || []).find(function (j) { return j.id === state.subProjectId; });
@@ -553,6 +607,7 @@
 
   function handleDeleteNode() {
     if (!isAdmin()) return;
+    if (isEditing()) return;
     var prog = (state.tree || []).find(function (p) { return p.id === state.programId; });
     if (!prog) {
       alert('请先选择要删除的节点。');
@@ -612,15 +667,30 @@
         '<div>' + esc(MILESTONE_LABELS[m.status] || m.status) + '</div></div>';
     }).join('');
 
-    var riskRows = (d.risks || []).slice(0, 6).map(function (r) {
-      return '<tr><td>' + esc(r.risk_category) + '</td><td>' + esc(r.risk_source) + '</td><td>' +
-        esc(r.level) + '</td><td>' + esc(r.assignee) + '</td><td>' + esc(r.status) + '</td></tr>';
+    var riskRows = (d.risks || []).map(function (r) {
+      return '<tr><td>' + esc(r.risk_category) + '</td><td>' + esc(r.risk_source) + '</td>' +
+        '<td class="pi-cell-text">' + esc(r.description || '—') + '</td>' +
+        '<td class="pi-cell-text">' + esc(r.solution || '—') + '</td>' +
+        '<td>' + esc(r.level) + '</td><td>' + esc(r.assignee) + '</td>' +
+        '<td>' + fmtDate(r.created_at) + '</td><td>' + fmtDate(r.resolution_date) + '</td>' +
+        '<td>' + esc(r.status) + '</td></tr>';
+    }).join('');
+
+    var taskRows = (d.tasks || []).map(function (t) {
+      return '<tr><td><strong>' + esc(t.name) + '</strong></td><td>' + esc(t.phase) + '</td>' +
+        '<td>' + esc(t.assignee || '—') + '</td><td>' + fmtDate(t.start_date) + '</td>' +
+        '<td>' + fmtDate(t.end_date) + '</td><td>' + (Number(t.progress) || 0) + '%</td></tr>';
     }).join('');
 
     var teamRows = (d.team_members || []).map(function (t) {
       return '<tr><td><strong>' + esc(t.name) + '</strong></td><td>' + esc(t.team_column_name) +
-        '</td><td>' + esc(t.role) + '</td><td>' + esc(t.participation) + '</td><td>' + esc(t.remark || '') + '</td></tr>';
+        '</td><td>' + esc(t.role) + '</td><td>' + esc(t.participation) + '</td>' +
+        '<td>' + fmtManMonth(t.monthly_allocation) + '</td>' +
+        '<td>' + fmtManMonth(t.person_total_allocation) + '</td>' +
+        '<td>' + saturationBadge(t.person_saturation_level, t.person_saturation_rate) + '</td>' +
+        '<td>' + esc(t.remark || '') + '</td></tr>';
     }).join('');
+    var monthTotal = fmtManMonth(d.project_monthly_total != null ? d.project_monthly_total : projectMonthlyTotal(d.team_members));
 
     var editBtn = (global.pmIsAdmin && global.pmIsAdmin())
       ? '<button type="button" class="pi-btn pi-btn-primary" id="pi-btn-enter-edit">编辑项目</button>'
@@ -637,25 +707,35 @@
       '<div class="pi-stat"><div class="pi-stat-lbl">里程碑进度</div><div class="pi-stat-val">' + ms.done + ' / ' + ms.total +
       '</div><div class="pi-stat-sub">完成 ' + ms.done + ' · 进行 ' + ms.prog + ' · 待开始 ' + ms.pending + '</div></div>' +
       '<div class="pi-stat"><div class="pi-stat-lbl">整体进度</div><div class="pi-stat-val">' + prog +
-      '<span style="font-size:14px;font-weight:400">%</span></div></div></div>' +
+      '<span style="font-size:14px;font-weight:400">%</span></div></div>' +
+      '<div class="pi-stat"><div class="pi-stat-lbl">本月投入</div><div class="pi-stat-val">' + monthTotal +
+      '<span style="font-size:14px;font-weight:400"> 人月</span></div>' +
+      '<div class="pi-stat-sub">' + esc(d.period || state.period) + '</div></div></div>' +
       '<div class="pi-card"><h3>项目概要</h3><div class="pi-meta">' +
-      '<div class="pi-meta-col"><h4>基本信息</h4>' +
+      '<div class="pi-meta-col pi-meta-col--basic"><h4>基本信息</h4><div class="pi-meta-fields">' +
       '<div class="pi-meta-row"><span class="pi-meta-k">项目名称</span><span class="pi-meta-v">' + esc(sp.name) + '</span></div>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">项目状态</span><span class="pi-meta-v">' + statusTag(sp.status) + '</span></div>' +
-      '<div class="pi-meta-row"><span class="pi-meta-k">关键目标</span><span class="pi-meta-v">' + esc(sp.key_goal || '—') + '</span></div>' +
-      '<div class="pi-meta-row"><span class="pi-meta-k">自动化率</span><span class="pi-meta-v">' + esc(sp.automation_rate_goal || '—') + '</span></div></div>' +
-      '<div class="pi-meta-col"><h4>时间信息</h4>' +
+      '<div class="pi-meta-row pi-meta-row--full"><span class="pi-meta-k">关键目标</span><span class="pi-meta-v pi-meta-v--multiline">' + esc(sp.key_goal || '—') + '</span></div></div></div>' +
+      '<div class="pi-meta-col pi-meta-col--time"><h4>时间信息</h4>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">计划开始</span><span class="pi-meta-v">' + fmtDate(sp.planned_start_date) + '</span></div>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">计划结束</span><span class="pi-meta-v">' + fmtDate(sp.planned_end_date) + '</span></div>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">实际开始</span><span class="pi-meta-v">' + fmtDate(sp.actual_start_date) + '</span></div>' +
       '<div class="pi-meta-row"><span class="pi-meta-k">实际结束</span><span class="pi-meta-v">' + fmtDate(sp.actual_end_date) + '</span></div></div>' +
-      '<div class="pi-meta-col"><h4>项目描述</h4><p style="font-size:13px;color:#5f6368;line-height:1.7">' +
+      '<div class="pi-meta-col pi-meta-col--desc"><h4>项目描述</h4><p class="pi-meta-desc">' +
       esc(sp.description || '（暂无描述）') + '</p></div></div></div>' +
       '<div class="pi-card"><h3>里程碑</h3><div class="pi-ms-tl">' + (msHtml || '<span>暂无里程碑</span>') + '</div></div>' +
-      '<div class="pi-card"><h3>近期风险</h3><table class="pi-table"><thead><tr><th>类别</th><th>来源</th><th>等级</th><th>跟进人</th><th>状态</th></tr></thead><tbody>' +
-      (riskRows || '<tr><td colspan="5">暂无风险</td></tr>') + '</tbody></table></div>' +
-      '<div class="pi-card"><h3>项目团队</h3><table class="pi-table"><thead><tr><th>姓名</th><th>所属团队</th><th>角色</th><th>参与方式</th><th>备注</th></tr></thead><tbody>' +
-      (teamRows || '<tr><td colspan="5">暂无成员</td></tr>') + '</tbody></table></div>';
+      '<div class="pi-card"><h3>任务清单</h3><div class="pi-table-wrap"><table class="pi-table"><thead><tr>' +
+      '<th>名称</th><th>阶段</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th></tr></thead><tbody>' +
+      (taskRows || '<tr><td colspan="6">暂无任务</td></tr>') + '</tbody></table></div></div>' +
+      '<div class="pi-card"><h3>风险管理</h3><div class="pi-table-wrap"><table class="pi-table"><thead><tr>' +
+      '<th>类别</th><th>来源</th><th>说明</th><th>方案</th><th>等级</th><th>跟进人</th>' +
+      '<th>登记时间</th><th>解除时间</th><th>状态</th></tr></thead><tbody>' +
+      (riskRows || '<tr><td colspan="9">暂无风险</td></tr>') + '</tbody></table></div></div>' +
+      '<div class="pi-card"><h3>团队与人力</h3><p class="pi-card-sub">单位：人月 · 个人容量 1.0/月 · 展示 ' + esc(d.period || state.period) + '</p>' +
+      '<div class="pi-table-wrap"><table class="pi-table"><thead><tr><th>姓名</th><th>所属团队</th><th>角色</th><th>参与方式</th>' +
+      '<th>本月投入</th><th>个人合计</th><th>饱和度</th><th>备注</th></tr></thead><tbody>' +
+      (teamRows || '<tr><td colspan="8">暂无成员</td></tr>') + '</tbody></table></div>' +
+      '<p class="pi-readonly-hint">部门人力登记页为只读汇总；成员投入请在本页编辑模式中维护。</p></div>';
 
     var btn = document.getElementById('pi-btn-enter-edit');
     if (btn) btn.addEventListener('click', enterEditView);
@@ -685,10 +765,7 @@
 
   function exitEditView() {
     if (state.dirty && !confirm('有未保存的更改，确定离开？')) return;
-    state.view = 'summary';
-    state.dirty = false;
-    state.edit = null;
-    destroySortables();
+    clearEditView();
     render();
   }
 
@@ -726,13 +803,13 @@
 
     root.innerHTML =
       '<div class="pi-card"><h3>基本信息</h3><div class="pi-form-grid">' +
-      '<div class="pi-form-group"><label>项目名称 *</label><input type="text" id="pi-f-name" value="' + esc(sp.name) + '"></div>' +
-      '<div class="pi-form-group"><label>项目状态 *</label><select id="pi-f-status">' +
+      '<div class="pi-form-group pi-full"><label>项目名称 *</label><input type="text" id="pi-f-name" value="' + esc(sp.name) + '"></div>' +
+      '<div class="pi-form-group pi-form-group--compact"><label>项目状态 *</label><select id="pi-f-status">' +
       '<option value="active"' + (sp.status === 'active' ? ' selected' : '') + '>进行中</option>' +
       '<option value="archived"' + (sp.status === 'archived' ? ' selected' : '') + '>已归档</option></select></div>' +
-      '<div class="pi-form-group pi-full"><label>项目描述</label><textarea id="pi-f-desc" rows="3">' + esc(sp.description || '') + '</textarea></div>' +
-      '<div class="pi-form-group"><label>关键目标</label><input type="text" id="pi-f-goal" value="' + esc(sp.key_goal || '') + '"></div>' +
-      '<div class="pi-form-group"><label>自动化率目标</label><input type="text" id="pi-f-auto" value="' + esc(sp.automation_rate_goal || '') + '"></div></div></div>' +
+      '<div class="pi-form-group pi-full"><label>项目描述</label><textarea id="pi-f-desc" rows="4">' + esc(sp.description || '') + '</textarea></div>' +
+      '<div class="pi-form-group pi-full"><label>关键目标</label>' +
+      '<textarea id="pi-f-goal" rows="5" placeholder="每行可填写一个目标，支持多行登记">' + esc(sp.key_goal || '') + '</textarea></div></div></div>' +
       '<div class="pi-card"><h3>时间信息</h3><div class="pi-form-grid">' +
       '<div class="pi-form-group"><label>计划开始 *</label><input type="date" id="pi-f-ps" value="' + fmtDate(sp.planned_start_date) + '"></div>' +
       '<div class="pi-form-group"><label>计划结束 *</label><input type="date" id="pi-f-pe" value="' + fmtDate(sp.planned_end_date) + '"></div>' +
@@ -742,10 +819,12 @@
       '<button type="button" class="pi-btn" id="pi-add-milestone">+ 添加里程碑</button></div>' +
       '<div class="pi-card"><h3>任务</h3><table class="pi-table" id="pi-tbl-tasks"><thead><tr><th></th><th>名称</th><th>阶段</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th><th></th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-task">+ 添加任务</button></div>' +
-      '<div class="pi-card"><h3>项目团队</h3><table class="pi-table" id="pi-tbl-team"><thead><tr><th></th><th>姓名</th><th>所属团队</th><th>角色</th><th>参与方式</th><th>备注</th><th></th></tr></thead><tbody></tbody></table>' +
-      '<button type="button" class="pi-btn" id="pi-add-team">+ 添加成员</button></div>' +
-      '<div class="pi-card"><h3>人力投入</h3><div class="pi-toolbar"><label>月份</label><select id="pi-f-month"></select></div>' +
-      '<table class="pi-table" id="pi-tbl-manpower"><thead><tr><th>部门列</th><th>投入（人天）</th></tr></thead><tbody></tbody></table></div>' +
+      '<div class="pi-card"><h3>团队与人力</h3>' +
+      '<div class="pi-toolbar"><label>月份</label><select id="pi-f-month"></select>' +
+      '<span id="pi-project-total" class="pi-project-total"></span></div>' +
+      '<table class="pi-table" id="pi-tbl-team"><thead><tr><th></th><th>姓名</th><th>所属团队</th><th>角色</th><th>参与方式</th><th>本月投入（人月）</th><th>备注</th><th></th></tr></thead><tbody></tbody></table>' +
+      '<button type="button" class="pi-btn" id="pi-add-team">+ 添加成员</button>' +
+      '<p class="pi-readonly-hint">在此维护成员投入（人月，0~1）；保存后自动汇总至部门人力登记页（只读）。</p></div>' +
       '<div class="pi-card"><h3>风险管理</h3><table class="pi-table" id="pi-tbl-risks"><thead><tr><th>类别</th><th>来源</th><th>说明</th><th>方案</th><th>等级</th><th>跟进人</th><th>登记时间</th><th>解除时间</th><th>状态</th><th></th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-risk">+ 添加风险</button></div>';
 
@@ -755,7 +834,6 @@
     bindEditInput('#pi-f-status', function (el) { e.sub_project.status = el.value; });
     bindEditInput('#pi-f-desc', function (el) { e.sub_project.description = el.value; });
     bindEditInput('#pi-f-goal', function (el) { e.sub_project.key_goal = el.value; });
-    bindEditInput('#pi-f-auto', function (el) { e.sub_project.automation_rate_goal = el.value; });
     bindEditInput('#pi-f-ps', function (el) { e.sub_project.planned_start_date = el.value || null; });
     bindEditInput('#pi-f-pe', function (el) { e.sub_project.planned_end_date = el.value || null; });
     bindEditInput('#pi-f-as', function (el) { e.sub_project.actual_start_date = el.value || null; });
@@ -763,9 +841,8 @@
 
     renderMilestoneRows();
     renderTaskRows();
-    renderTeamRows();
     renderManpowerMonthSelect();
-    renderManpowerRows();
+    renderTeamManpowerRows();
     renderRiskRows();
 
     document.getElementById('pi-add-milestone').addEventListener('click', function () {
@@ -789,10 +866,11 @@
       var colId = firstColumnId();
       e.team_members.push({
         id: null, name: '', team_column_id: colId, role: '项目负责人',
-        participation: '核心成员', remark: '', sort_order: e.team_members.length
+        participation: '核心成员', remark: '', sort_order: e.team_members.length,
+        monthly_allocation: 0
       });
       markDirty();
-      renderTeamRows();
+      renderTeamManpowerRows();
     });
     document.getElementById('pi-add-risk').addEventListener('click', function () {
       e.risks.push({
@@ -874,29 +952,74 @@
     });
   }
 
-  function renderTeamRows() {
+  function teamGroupLabel(columnId) {
+    var groups = (state.edit.manpower && state.edit.manpower.dept_groups) || [];
+    for (var i = 0; i < groups.length; i++) {
+      var g = groups[i];
+      var cols = g.columns || [];
+      for (var j = 0; j < cols.length; j++) {
+        if (cols[j].id === columnId) return g.name + ' / ' + cols[j].name;
+      }
+    }
+    return '未分配团队';
+  }
+
+  function teamColumnSubtotal(members, columnId) {
+    return members.filter(function (m) { return m.team_column_id === columnId; })
+      .reduce(function (sum, m) { return sum + (Number(m.monthly_allocation) || 0); }, 0);
+  }
+
+  function updateProjectTotalLabel() {
+    var el = document.getElementById('pi-project-total');
+    if (!el || !state.edit) return;
+    el.textContent = '项目本月合计：' + fmtManMonth(projectMonthlyTotal(state.edit.team_members)) + ' 人月';
+  }
+
+  function renderTeamManpowerRows() {
     var tbody = document.querySelector('#pi-tbl-team tbody');
-    if (!tbody) return;
+    if (!tbody || !state.edit) return;
     var e = state.edit;
-    tbody.innerHTML = e.team_members.map(function (t, idx) {
-      return '<tr data-idx="' + idx + '"><td class="pi-drag">⠿</td><td><input data-f="name" value="' + esc(t.name) + '"></td>' +
+    var members = e.team_members || [];
+    var seenCols = {};
+    var html = '';
+    members.forEach(function (t, idx) {
+      if (!seenCols[t.team_column_id]) {
+        seenCols[t.team_column_id] = true;
+        var sub = teamColumnSubtotal(members, t.team_column_id);
+        html += '<tr class="pi-group-row"><td colspan="8">' + esc(teamGroupLabel(t.team_column_id)) +
+          ' · 团队小计 ' + fmtManMonth(sub) + ' 人月</td></tr>';
+      }
+      html += '<tr data-idx="' + idx + '"><td class="pi-drag">⠿</td><td><input data-f="name" value="' + esc(t.name) + '"></td>' +
         '<td><select data-f="team_column_id">' + columnOptions(t.team_column_id) + '</select></td>' +
         '<td><input data-f="role" value="' + esc(t.role) + '"></td>' +
         '<td><select data-f="participation">' + optHtml(PARTICIPATION, t.participation) + '</select></td>' +
+        '<td><input type="number" step="0.01" min="0" max="1" data-f="monthly_allocation" value="' +
+        fmtManMonth(t.monthly_allocation != null ? t.monthly_allocation : 0) + '"></td>' +
         '<td><input data-f="remark" value="' + esc(t.remark || '') + '"></td>' +
         '<td><button type="button" class="pi-btn" data-del="team">删</button></td></tr>';
-    }).join('');
+    });
+    tbody.innerHTML = html || '<tr><td colspan="8">暂无成员，请添加</td></tr>';
     wireRowInputs(tbody, e.team_members, function (el, row, field) {
-      if (field === 'team_column_id') row.team_column_id = parseInt(el.value, 10);
+      if (field === 'team_column_id') {
+        row.team_column_id = parseInt(el.value, 10);
+        renderTeamManpowerRows();
+      }
+      if (field === 'monthly_allocation') {
+        var v = parseFloat(el.value);
+        row.monthly_allocation = isNaN(v) ? 0 : Math.min(1, Math.max(0, v));
+        el.value = fmtManMonth(row.monthly_allocation);
+        updateProjectTotalLabel();
+      }
     });
     tbody.querySelectorAll('[data-del="team"]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var idx = parseInt(btn.closest('tr').getAttribute('data-idx'), 10);
         e.team_members.splice(idx, 1);
         markDirty();
-        renderTeamRows();
+        renderTeamManpowerRows();
       });
     });
+    updateProjectTotalLabel();
   }
 
   function renderManpowerMonthSelect() {
@@ -919,44 +1042,10 @@
           state.edit.manpower.period = data.manpower.period;
           state.edit.manpower.cells = data.manpower.cells || [];
           state.edit.manpower.dept_groups = data.manpower.dept_groups;
-          renderManpowerRows();
+          state.edit.team_members = deepClone(data.team_members || []);
+          renderTeamManpowerRows();
         });
     };
-  }
-
-  function cellAllocation(columnId) {
-    var cells = state.edit.manpower.cells || [];
-    var c = cells.find(function (x) { return x.column_id === columnId; });
-    return c ? c.allocation : 0;
-  }
-
-  function setCellAllocation(columnId, val) {
-    var cells = state.edit.manpower.cells || [];
-    var c = cells.find(function (x) { return x.column_id === columnId; });
-    if (c) c.allocation = val;
-    else cells.push({ column_id: columnId, allocation: val });
-    state.edit.manpower.cells = cells;
-  }
-
-  function renderManpowerRows() {
-    var tbody = document.querySelector('#pi-tbl-manpower tbody');
-    if (!tbody) return;
-    var groups = state.edit.manpower.dept_groups || [];
-    var rows = '';
-    groups.forEach(function (g) {
-      (g.columns || []).forEach(function (col) {
-        var val = cellAllocation(col.id);
-        rows += '<tr><td>' + esc(g.name) + ' / ' + esc(col.name) + '</td>' +
-          '<td><input type="number" step="0.5" min="0" data-col="' + col.id + '" value="' + val + '"></td></tr>';
-      });
-    });
-    tbody.innerHTML = rows || '<tr><td colspan="2">请先在设置中配置人力表头</td></tr>';
-    tbody.querySelectorAll('input[data-col]').forEach(function (el) {
-      el.addEventListener('change', function () {
-        setCellAllocation(parseInt(el.getAttribute('data-col'), 10), parseFloat(el.value) || 0);
-        markDirty();
-      });
-    });
   }
 
   function renderRiskRows() {
@@ -1010,6 +1099,7 @@
     if (!tbody) return;
     var s = global.Sortable.create(tbody, {
       handle: '.pi-drag',
+      draggable: 'tr[data-idx]',
       animation: 120,
       onEnd: function () {
         var order = [];
@@ -1022,7 +1112,7 @@
         markDirty();
         if (key === 'milestones') renderMilestoneRows();
         if (key === 'tasks') renderTaskRows();
-        if (key === 'team_members') renderTeamRows();
+        if (key === 'team_members') renderTeamManpowerRows();
       }
     });
     state.sortables.push(s);
@@ -1066,7 +1156,8 @@
       team_members: e.team_members.map(function (t) {
         return {
           id: t.id, name: t.name, team_column_id: t.team_column_id, role: t.role,
-          participation: t.participation, remark: t.remark || null, sort_order: t.sort_order
+          participation: t.participation, remark: t.remark || null, sort_order: t.sort_order,
+          monthly_allocation: fmtManMonth(t.monthly_allocation != null ? t.monthly_allocation : 0)
         };
       }),
       deleted_team_member_ids: deletedIds(snap.team_members || [], e.team_members),
@@ -1079,10 +1170,7 @@
       }),
       deleted_risk_ids: deletedIds(snap.risks || [], e.risks),
       manpower: {
-        period: e.manpower.period || state.period,
-        cells: (e.manpower.cells || []).map(function (c) {
-          return { column_id: c.column_id, allocation: String(c.allocation) };
-        })
+        period: e.manpower.period || state.period
       }
     };
   }
@@ -1096,6 +1184,14 @@
     }
     if (sp.planned_end_date < sp.planned_start_date) {
       alert('计划结束日期不能早于开始日期');
+      return;
+    }
+    var badAlloc = (state.edit.team_members || []).find(function (m) {
+      var v = Number(m.monthly_allocation);
+      return isNaN(v) || v < 0 || v > 1;
+    });
+    if (badAlloc) {
+      alert('成员投入须为 0~1 人月');
       return;
     }
     var payload = buildPutPayload();
@@ -1112,10 +1208,7 @@
     }).then(function (data) {
       state.data = data;
       state.period = data.period;
-      state.view = 'summary';
-      state.dirty = false;
-      state.edit = null;
-      destroySortables();
+      clearEditView();
       render();
       alert('保存成功');
     }).catch(function (err) {
@@ -1139,6 +1232,7 @@
       destroySortables();
       renderSummary();
     }
+    updateEditLockUi();
   }
 
   function wireControls() {
@@ -1164,6 +1258,10 @@
       if (selJ && selJ.value) state.subProjectId = parseInt(selJ.value, 10);
     }
     function onProjectSelectionChange(revert) {
+      if (isEditing()) {
+        if (revert) revert();
+        return;
+      }
       if (state.dirty && !confirm('切换项目将丢失未保存更改，是否继续？')) {
         if (revert) revert();
         return;
@@ -1218,6 +1316,7 @@
     syncYearFromGlobal();
     wireControls();
     updateAdminTools();
+    updateEditLockUi();
     global.addEventListener('beforeunload', function (e) {
       if (state.dirty) {
         e.preventDefault();
@@ -1232,7 +1331,7 @@
   }
 
   function onYearChanged(y) {
-    if (state.dirty) state.dirty = false;
+    clearEditView();
     state.year = y;
     state.period = defaultPeriod(y);
     loadTree().then(loadProjectInfo);
@@ -1242,8 +1341,12 @@
     init: init,
     onTabShow: onTabShow,
     onYearChanged: onYearChanged,
+    isEditing: isEditing,
     hasDirtyChanges: function () { return !!state.dirty; },
-    refreshAdminTools: updateAdminTools
+    refreshAdminTools: function () {
+      updateAdminTools();
+      updateEditLockUi();
+    }
   };
 
   if (document.readyState === 'loading') {
