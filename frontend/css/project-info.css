@@ -145,8 +145,8 @@
 
 #panel-project-info .pi-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
   margin-bottom: 20px;
 }
 
@@ -154,12 +154,13 @@
   background: #fff;
   border: 1px solid #E8EAED;
   border-radius: 12px;
-  padding: 18px 20px;
+  padding: 16px 14px;
+  min-width: 0;
 }
 
 #panel-project-info .pi-stat-lbl { font-size: 12px; color: #9aa0a6; margin-bottom: 6px; }
-#panel-project-info .pi-stat-val { font-size: 26px; font-weight: 800; }
-#panel-project-info .pi-stat-sub { font-size: 12px; color: #5f6368; margin-top: 6px; }
+#panel-project-info .pi-stat-val { font-size: 22px; font-weight: 800; line-height: 1.2; }
+#panel-project-info .pi-stat-sub { font-size: 11px; color: #5f6368; margin-top: 6px; line-height: 1.35; }
 
 #panel-project-info .pi-meta {
   display: grid;
@@ -436,7 +437,13 @@
 }
 
 @media (max-width: 1100px) {
-  #panel-project-info .pi-cards { grid-template-columns: repeat(2, 1fr); }
+  #panel-project-info .pi-cards {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+  }
+  #panel-project-info .pi-stat { padding: 12px 8px; }
+  #panel-project-info .pi-stat-val { font-size: 18px; }
+  #panel-project-info .pi-stat-sub { font-size: 10px; }
   #panel-project-info .pi-meta { grid-template-columns: 1fr; }
   #panel-project-info .pi-meta-col + .pi-meta-col { border-left: none; border-top: 1px solid #E8EAED; padding-top: 12px; }
 }
