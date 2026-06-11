@@ -18,6 +18,27 @@
   flex-shrink: 0;
 }
 
+#panel-project-info .pi-toolbar-row--locked .pi-selectors select:disabled,
+#panel-project-info .pi-toolbar-row--locked .pi-structure-tools button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+#panel-project-info .pi-edit-lock-hint {
+  flex: 1 1 100%;
+  font-size: 12px;
+  color: #856404;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 0;
+}
+
+#panel-project-info .pi-edit-lock-hint[hidden] {
+  display: none !important;
+}
+
 #panel-project-info .pi-body {
   flex: 1 1 auto;
   min-height: 0;
