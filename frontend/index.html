@@ -2684,14 +2684,14 @@
     <div class="tabs-nav-center">
       <div class="tabs" role="tablist" aria-label="功能切换">
         <button type="button" class="tab active" role="tab" aria-selected="true" data-target="panel-phase">项目阶段状态</button>
-        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-manpower">部门项目人力登记</button>
-        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-risk">项目风险登记</button>
-        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-project-info">项目信息</button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-manpower">部门项目人力</button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-risk">项目风险</button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-project-info">项目信息登记</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-settings">设置</button>
       </div>
     </div>
     <div class="tabs-sticky-actions">
-      <div class="pm-year-select-wrap" title="阶段、人力、风险与项目信息均按此年度加载">
+      <div class="pm-year-select-wrap" title="阶段、人力、风险与项目信息登记均按此年度加载">
         <label for="pm-work-year">年度</label>
         <select class="pm-year-select" id="pm-work-year" aria-label="工作年度"></select>
       </div>
@@ -2777,7 +2777,7 @@
     <div class="table-footer-stats" id="manpower-footer-stats-year" aria-live="polite"></div>
   </div>
   </div>
-  <div id="panel-risk" class="tab-panel" role="tabpanel" aria-label="项目风险登记">
+  <div id="panel-risk" class="tab-panel" role="tabpanel" aria-label="项目风险">
     <div class="manpower-toolbar risk-toolbar">
       <label>级别 <select id="risk-filter-level" aria-label="按风险等级筛选" title="不改变已加载数据，仅过滤当前表格显示">
         <option value="">全部</option>
@@ -2803,7 +2803,7 @@
       <div class="table-footer-stats" id="risk-table-footer-stats" aria-live="polite"></div>
     </div>
   </div>
-  <div id="panel-project-info" class="tab-panel" role="tabpanel" aria-label="项目信息">
+  <div id="panel-project-info" class="tab-panel" role="tabpanel" aria-label="项目信息登记">
     <div class="pi-toolbar-row">
       <div class="pi-selectors">
         <label for="pi-sel-program">项目集</label>
@@ -2895,12 +2895,12 @@
                 <td class="perm-col-muted"><span class="perm-tag viewer">仅查看</span>表格与字段内容，不可编辑、不可保存</td>
               </tr>
               <tr>
-                <td>部门项目人力登记</td>
+                <td>部门项目人力</td>
                 <td class="perm-col-muted"><span class="perm-tag admin">增删改查</span>项目集/项目（与项目阶段状态同步）、一级部门分组、二级部门列、人力单元格；保存至服务器</td>
                 <td class="perm-col-muted"><span class="perm-tag viewer">仅查看</span>全部表格数据，不可编辑、不可保存</td>
               </tr>
               <tr>
-                <td>项目风险登记</td>
+                <td>项目风险</td>
                 <td class="perm-col-muted"><span class="perm-tag admin">增删改查</span>风险行与字段；保存至服务器</td>
                 <td class="perm-col-muted"><span class="perm-tag viewer">仅查看</span>列表与字段内容，不可改、不可删、不可保存</td>
               </tr>
@@ -3262,12 +3262,12 @@
           return;
         }
         if (window.ProjectInfoModule && window.ProjectInfoModule.isEditing && window.ProjectInfoModule.isEditing()) {
-          alert('项目信息页正在编辑，请先保存或取消后再切换工作年度。');
+          alert('项目信息登记页正在编辑，请先保存或取消后再切换工作年度。');
           wy.value = String(pmDataYear);
           return;
         }
         if (window.ProjectInfoModule && window.ProjectInfoModule.hasDirtyChanges && window.ProjectInfoModule.hasDirtyChanges()) {
-          if (!confirm('切换工作年度将丢失项目信息页未保存的更改，是否继续？')) {
+          if (!confirm('切换工作年度将丢失项目信息登记页未保存的更改，是否继续？')) {
             wy.value = String(pmDataYear);
             return;
           }
@@ -6201,7 +6201,7 @@
     }
 
     async function saveManpowerData() {
-      alert('部门人力登记为只读汇总，请在「项目信息」页维护成员投入（人月）。');
+      alert('部门人力登记为只读汇总，请在「项目信息登记」页维护成员投入（人月）。');
     }
 
     function syncPhaseFromDom() {
@@ -6508,7 +6508,7 @@
         td.colSpan = RISK_TABLE_COL_COUNT;
         td.className = 'center-cell';
         td.style.padding = '24px';
-        td.textContent = '暂无风险记录，请前往「项目信息」页维护。';
+        td.textContent = '暂无风险记录，请前往「项目信息登记」页维护。';
         tr.appendChild(td);
         tb.appendChild(tr);
         updateRiskTableFooterStats();
@@ -6704,8 +6704,8 @@
         tdE.className = 'center-cell';
         tdE.style.padding = '24px';
         tdE.textContent = admin
-          ? '当前工作年度暂无项目，请前往「项目信息」页创建项目结构。'
-          : '当前工作年度暂无项目，请联系管理员在「项目信息」页创建。';
+          ? '当前工作年度暂无项目，请前往「项目信息登记」页创建项目结构。'
+          : '当前工作年度暂无项目，请联系管理员在「项目信息登记」页创建。';
         trE.appendChild(tdE);
         tb.appendChild(trE);
         syncPhaseProjectSetFilterOptions();
