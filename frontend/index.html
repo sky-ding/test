@@ -1113,10 +1113,6 @@
       border-radius: 0 0 var(--radius-sm) var(--radius-sm);
     }
 
-    .risk-table-wrap .table-footer-stats {
-      width: 100%;
-    }
-
     #panel-phase .manpower-toolbar,
     #panel-phase .table-shell,
     #panel-phase .panel-actions {
@@ -2800,7 +2796,6 @@
         <tbody id="risk-table-body"></tbody>
       </table>
       </div>
-      <div class="table-footer-stats" id="risk-table-footer-stats" aria-live="polite"></div>
     </div>
   </div>
   <div id="panel-project-info" class="tab-panel" role="tabpanel" aria-label="项目信息登记">
@@ -6511,7 +6506,6 @@
         td.textContent = '暂无风险记录，请前往「项目信息登记」页维护。';
         tr.appendChild(td);
         tb.appendChild(tr);
-        updateRiskTableFooterStats();
         return;
       }
       var filteredIndices = [];
@@ -6527,7 +6521,6 @@
         td.textContent = '当前筛选条件下无匹配记录，请调整级别或状态下拉，或选择「全部」。';
         tr.appendChild(td);
         tb.appendChild(tr);
-        updateRiskTableFooterStats();
         return;
       }
       filteredIndices.forEach(function (idx, visPos) {
@@ -6562,7 +6555,6 @@
 
         tb.appendChild(tr);
       });
-      updateRiskTableFooterStats();
     }
 
     function syncPhaseProjectSetFilterOptions() {
@@ -6613,25 +6605,6 @@
       document.querySelectorAll('.table-footer-stats[id^="manpower-footer-stats-"]').forEach(function (n) {
         if (n && n.textContent !== undefined) n.textContent = '';
       });
-    }
-
-    function updateRiskTableFooterStats() {
-      var el = document.getElementById('risk-table-footer-stats');
-      if (!el) return;
-      var total = Array.isArray(riskRows) ? riskRows.length : 0;
-      if (total === 0) {
-        el.textContent = '共 0 条记录';
-        return;
-      }
-      var m = 0;
-      for (var ri = 0; ri < riskRows.length; ri++) {
-        if (riskRowMatchesFilters(riskRows[ri])) m++;
-      }
-      if (riskFiltersActive()) {
-        el.textContent = '共 ' + m + ' 条记录（全部 ' + total + ' 条）';
-      } else {
-        el.textContent = '共 ' + total + ' 条记录';
-      }
     }
 
     function renderPhaseThead() {
