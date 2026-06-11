@@ -134,7 +134,6 @@ def _put_body(sub_project_id: int, column_id: int, y: int, period: str) -> dict:
                 "participation": "核心成员",
                 "remark": "负责人",
                 "sort_order": 0,
-                "monthly_allocation": "0.25",
             }
         ],
         "deleted_team_member_ids": [],
@@ -154,6 +153,7 @@ def _put_body(sub_project_id: int, column_id: int, y: int, period: str) -> dict:
         "deleted_risk_ids": [],
         "manpower": {
             "period": period,
+            "cells": [{"column_id": column_id, "allocation": "2.50"}],
         },
     }
 
@@ -192,70 +192,15 @@ def test_put_and_get_project_info(client) -> None:
     assert data["tasks"][0]["progress"] == 100
     assert len(data["team_members"]) == 1
     assert data["team_members"][0]["team_column_name"] == "平台开发"
-    assert float(data["team_members"][0]["monthly_allocation"]) == 0.25
-    assert float(data["project_monthly_total"]) == 0.25
     assert len(data["risks"]) == 1
     assert data["risks"][0]["status"] == "Open"
     assert "created_at" in data["risks"][0]
-    assert float(data["manpower"]["cells"][0]["allocation"]) == 0.25
+    assert float(data["manpower"]["cells"][0]["allocation"]) == 2.5
 
     milestone_id = data["milestones"][0]["id"]
     get2 = client.get(f"/api/v1/project-info/{ids['sub_project_id']}?year={y}&period={period}")
     assert get2.status_code == 200
     assert get2.json()["milestones"][0]["id"] == milestone_id
-
-
-def test_member_allocation_rollups_to_manpower_cells(client) -> None:
-    y = 2045
-    ids = _create_tree(client, y=y)
-    col_id = _manpower_group(client, y)
-    period = f"{y}-06"
-    body = _put_body(ids["sub_project_id"], col_id, y, period)
-    body["team_members"] = [
-        {
-            "id": None,
-            "name": "张三",
-            "team_column_id": col_id,
-            "role": "开发",
-            "participation": "核心成员",
-            "remark": None,
-            "sort_order": 0,
-            "monthly_allocation": "0.30",
-        },
-        {
-            "id": None,
-            "name": "李四",
-            "team_column_id": col_id,
-            "role": "测试",
-            "participation": "核心成员",
-            "remark": None,
-            "sort_order": 1,
-            "monthly_allocation": "0.20",
-        },
-    ]
-    put = client.put(f"/api/v1/project-info/{ids['sub_project_id']}?year={y}", json=body)
-    assert put.status_code == 200, put.text
-    assert float(put.json()["manpower"]["cells"][0]["allocation"]) == 0.5
-    assert float(put.json()["project_monthly_total"]) == 0.5
-
-
-def test_manpower_put_is_read_only(client) -> None:
-    y = 2046
-    ids = _create_tree(client, y=y)
-    col_id = _manpower_group(client, y)
-    resp = client.put(
-        f"/api/v1/manpower-allocations?year={y}&period={y}-01",
-        json={
-            "cells": [
-                {
-                    "sub_project_id": ids["sub_project_id"],
-                    "column_id": col_id,
-                    "allocation": "1.00",
-                }
-            ]
-        },
-    )
-    assert resp.status_code == 403
 
 
 def test_put_invalid_dates_rolls_back(client) -> None:
@@ -295,7 +240,6 @@ def test_put_deletes_milestones(client) -> None:
             "participation": "核心成员",
             "remark": None,
             "sort_order": 0,
-            "monthly_allocation": "0.25",
         }
     ]
     body2["risks"] = [

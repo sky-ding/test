@@ -13,7 +13,6 @@ from app.routers import (
     auth,
     manpower_allocations,
     manpower_headers,
-    manpower_person_summary,
     phase_assessments,
     programs,
     project_info,
