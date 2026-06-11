@@ -465,6 +465,10 @@ class TeamMemberOut(BaseModel):
     participation: str
     remark: str | None = None
     sort_order: int = 0
+    monthly_allocation: Decimal = Decimal("0.00")
+    person_total_allocation: Decimal = Decimal("0.00")
+    person_saturation_rate: Decimal = Decimal("0.0000")
+    person_saturation_level: str = "low"
 
 
 class TeamMemberIn(BaseModel):
@@ -475,6 +479,7 @@ class TeamMemberIn(BaseModel):
     participation: str = Field(max_length=20)
     remark: str | None = None
     sort_order: int = Field(ge=0)
+    monthly_allocation: Decimal = Field(default=Decimal("0.00"), ge=Decimal("0"), le=Decimal("1"))
 
     @field_validator("participation")
     @classmethod
@@ -483,6 +488,11 @@ class TeamMemberIn(BaseModel):
         if s not in _PARTICIPATION:
             raise ValueError("invalid participation")
         return s
+
+    @field_validator("monthly_allocation")
+    @classmethod
+    def two_decimals(cls, v: Decimal) -> Decimal:
+        return v.quantize(Decimal("0.01"))
 
 
 class ProjectInfoRiskIn(BaseModel):
@@ -588,3 +598,26 @@ class ProjectInfoGetResponse(BaseModel):
     risks: list[ProjectRiskDetailOut]
     manpower: ProjectInfoManpowerOut
     breadcrumb: ProjectInfoBreadcrumb
+    project_monthly_total: Decimal = Decimal("0.00")
+
+
+class PersonSummaryProjectOut(BaseModel):
+    sub_project_id: int
+    sub_project_name: str
+    program_name: str
+    allocation: Decimal
+
+
+class PersonSummaryRowOut(BaseModel):
+    name: str
+    total_allocation: Decimal
+    saturation_rate: Decimal
+    saturation_level: str
+    projects: list[PersonSummaryProjectOut]
+
+
+class PersonSummaryResponse(BaseModel):
+    year: int
+    period: str
+    capacity_per_person: Decimal
+    persons: list[PersonSummaryRowOut]
