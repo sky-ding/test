@@ -59,7 +59,7 @@ def test_risk_panel_is_readonly_and_points_to_project_info() -> None:
     src = _html()
 
     assert "请先在「设置」中为该年创建项目树" not in src
-    assert "请前往「项目信息」页维护" in src
+    assert "请前往「项目信息登记」页维护" in src
     assert "function saveRiskData" not in src
     assert "btn-risk-edit-toggle" not in src
     assert "risk-display-cell" in src

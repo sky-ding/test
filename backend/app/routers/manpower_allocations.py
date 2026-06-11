@@ -100,5 +100,5 @@ def replace_manpower_for_period(
     _ = db
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="部门人力登记为只读汇总，请在「项目信息」页维护成员投入（人月）",
+        detail="部门人力登记为只读汇总，请在「项目信息登记」页维护成员投入（人月）",
     )

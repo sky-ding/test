@@ -381,7 +381,7 @@
       '?year=' + state.year + '&period=' + encodeURIComponent(state.period);
     return piFetch(url)
       .then(function (r) {
-        if (!r.ok) throw new Error('加载项目信息失败');
+        if (!r.ok) throw new Error('加载项目信息登记失败');
         return r.json();
       })
       .then(function (data) {
@@ -436,7 +436,7 @@
         box.innerHTML =
           '<div class="pi-empty-card">' +
           '<h3>' + state.year + ' 年还没有项目</h3>' +
-          '<p>年初请先创建项目结构，再填写项目信息与各登记页数据。</p>' +
+          '<p>年初请先创建项目结构，再填写项目信息登记与各登记页数据。</p>' +
           '<p class="pi-empty-sub">将自动创建：项目集 → 默认子项目集 → 子项目</p>' +
           '<button type="button" class="pi-btn pi-btn-primary" id="pi-btn-create-first">+ 创建第一个项目集</button>' +
           '</div>';
@@ -446,7 +446,7 @@
         box.innerHTML =
           '<div class="pi-empty-card">' +
           '<h3>' + state.year + ' 年还没有项目</h3>' +
-          '<p>请联系管理员在「项目信息」页创建项目结构。</p>' +
+          '<p>请联系管理员在「项目信息登记」页创建项目结构。</p>' +
           '</div>';
       }
       return;
