@@ -251,7 +251,7 @@
       padding: 4px var(--tabs-rail-pad-x);
       background: var(--header-bg);
       border: 1px solid var(--border-light);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-full);
       box-shadow: var(--shadow-xs);
       flex-wrap: nowrap;
       align-items: center;
@@ -269,9 +269,13 @@
     }
 
     .tabs .tab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: calc(var(--tabs-menu-height) - 8px);
       padding: 0 clamp(12px, 2.5vw, 24px);
       border: none;
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-full);
       background: transparent;
       color: var(--text-secondary);
       font-size: var(--tab-font-size);
@@ -1006,9 +1010,7 @@
       font-size: 13px;
       line-height: 1.35;
       resize: none;
-      overflow-y: auto;
-      -ms-overflow-style: none;
-      scrollbar-width: none;
+      overflow-y: hidden;
       box-sizing: border-box;
       background: transparent;
       color: var(--text);
@@ -1026,17 +1028,6 @@
       border-color: var(--accent);
       background: #fff;
       box-shadow: none;
-    }
-
-    /* 完全隐藏滚动条（滚轮仍可滚动），避免出现滚动箭头或轨道 */
-    #phase-table textarea.phase-field-input::-webkit-scrollbar {
-      width: 0;
-      height: 0;
-      background: transparent;
-    }
-
-    #phase-table textarea.phase-field-input::-webkit-scrollbar-thumb {
-      background: transparent;
     }
 
     #phase-table textarea.phase-field-input:read-only {
@@ -3153,6 +3144,19 @@
       sel.classList.toggle('phase-field-select-no', sel.value === '否');
     }
 
+    function autoResizePhaseTextarea(ta) {
+      if (!ta) return;
+      ta.style.height = 'auto';
+      var minH = parseFloat(getComputedStyle(ta).minHeight) || 48;
+      ta.style.height = Math.max(minH, ta.scrollHeight) + 'px';
+    }
+
+    function autoResizeAllPhaseTextareas(root) {
+      var scope = root || document.getElementById('phase-table');
+      if (!scope) return;
+      scope.querySelectorAll('textarea.phase-field-input').forEach(autoResizePhaseTextarea);
+    }
+
     function mapPhaseDataFromStorage(arr) {
       if (!Array.isArray(arr)) return [];
       return arr.map(function (set) {
@@ -4417,6 +4421,7 @@
         document.body.style.cursor = '';
         phaseColResizeDrag = null;
         savePhaseColWidths();
+        requestAnimationFrame(autoResizeAllPhaseTextareas);
       }
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
@@ -6526,12 +6531,11 @@
                 ta.className = 'phase-field-input';
                 ta.value = slice[key] || '';
                 ta.readOnly = !admin;
-                ta.rows = 2;
-                if (admin) {
-                  ta.addEventListener('input', function () {
-                    slice[key] = ta.value;
-                  });
-                }
+                ta.rows = 1;
+                ta.addEventListener('input', function () {
+                  if (admin) slice[key] = ta.value;
+                  autoResizePhaseTextarea(ta);
+                });
                 td.appendChild(ta);
               }
               tr.appendChild(td);
@@ -6554,6 +6558,7 @@
       applyPhaseProjectSetFilter();
       requestAnimationFrame(function () {
         applyStickyPinLeftFromDom(document.getElementById('phase-table'));
+        requestAnimationFrame(autoResizeAllPhaseTextareas);
       });
     }
 
