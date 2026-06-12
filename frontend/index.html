@@ -474,15 +474,7 @@
       font-size: 12px;
     }
 
-    #panel-manpower #register-table tbody tr:hover td,
-    #panel-manpower #register-table-season tbody tr:hover td,
-    #panel-manpower #register-table-year tbody tr:hover td {
-      background: var(--accent-soft) !important;
-      transition: background var(--transition-fast);
-    }
-    
     /* 表格行悬停效果优化 */
-    #phase-table tbody tr:hover td,
     #risk-table tbody tr:hover td {
       background: var(--table-row-hover);
       transition: background var(--transition-fast);
@@ -737,7 +729,15 @@
       background: var(--surface);
     }
 
-    #phase-table .pin-col-3,
+    #phase-table .pin-col-3 {
+      position: sticky;
+      left: var(--pin-left-3, 212px);
+      z-index: 12;
+      background: var(--surface);
+      box-shadow: none;
+      border-right: 1px solid var(--border-light);
+    }
+
     #register-table .pin-col-3,
     #register-table-season .pin-col-3,
     #register-table-year .pin-col-3 {
@@ -817,12 +817,19 @@
       line-height: 1.2;
     }
 
-    #panel-manpower #register-table tbody tr:not(.manpower-set-stripe-b) td,
-    #panel-manpower #register-table-season tbody tr:not(.manpower-set-stripe-b) td,
-    #panel-manpower #register-table-year tbody tr:not(.manpower-set-stripe-b) td {
-      background: var(--surface) !important;
+    #panel-manpower #register-table tbody td,
+    #panel-manpower #register-table-season tbody td,
+    #panel-manpower #register-table-year tbody td {
+      background: var(--surface);
       font-size: 12px;
       color: var(--text);
+    }
+
+    #panel-manpower #register-table tbody tr:hover td,
+    #panel-manpower #register-table-season tbody tr:hover td,
+    #panel-manpower #register-table-year tbody tr:hover td {
+      background: var(--accent-soft) !important;
+      transition: background var(--transition-fast);
     }
 
     #panel-manpower #register-table tbody td .editable-text,
@@ -870,13 +877,6 @@
     #panel-manpower #register-table-season thead th[class*="dept-g-"].sub,
     #panel-manpower #register-table-year thead th[class*="dept-g-"].sub {
       color: var(--text-muted);
-    }
-
-    /* 人力数据区：整行（含项目结构列 + 人力列 + 小计）按项目集同色 */
-    #panel-manpower #register-table tbody tr.manpower-set-stripe-b td,
-    #panel-manpower #register-table-season tbody tr.manpower-set-stripe-b td,
-    #panel-manpower #register-table-year tbody tr.manpower-set-stripe-b td {
-      background: var(--manpower-set-row-bg) !important;
     }
 
     #register-table thead th .cell-head-inline {
@@ -928,10 +928,6 @@
     .text-action.danger-text:hover {
       color: var(--danger);
       background: var(--danger-soft);
-    }
-
-    #phase-table tbody tr.manpower-set-stripe-b td.phase-field-cell {
-      background: var(--manpower-set-row-bg) !important;
     }
 
     #phase-table {
@@ -1003,7 +999,7 @@
       width: 100%;
       min-height: var(--phase-field-min-h);
       max-width: 100%;
-      padding: 6px;
+      padding: 6px 8px;
       border: 1px solid var(--border-light);
       border-radius: var(--radius-sm);
       font-family: inherit;
@@ -1014,8 +1010,22 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
       box-sizing: border-box;
-      background: #fff;
+      background: transparent;
       color: var(--text);
+      box-shadow: none;
+      transition: border-color var(--transition-fast), background var(--transition-fast);
+    }
+
+    #phase-table textarea.phase-field-input:hover:not(:read-only) {
+      border-color: var(--border);
+      background: #fff;
+    }
+
+    #phase-table textarea.phase-field-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #fff;
+      box-shadow: none;
     }
 
     /* 完全隐藏滚动条（滚轮仍可滚动），避免出现滚动箭头或轨道 */
@@ -1030,8 +1040,9 @@
     }
 
     #phase-table textarea.phase-field-input:read-only {
-      background: var(--header-bg-sub);
+      background: transparent;
       color: var(--text-muted);
+      border-color: transparent;
       cursor: default;
     }
 
@@ -1047,13 +1058,28 @@
       font-size: 13px;
       line-height: 1.35;
       box-sizing: border-box;
-      background: #fff;
+      background: transparent;
       color: var(--text);
+      box-shadow: none;
+      transition: border-color var(--transition-fast), background var(--transition-fast);
+    }
+
+    #phase-table select.phase-field-select:hover:not(:disabled) {
+      border-color: var(--border);
+      background: #fff;
+    }
+
+    #phase-table select.phase-field-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #fff;
+      box-shadow: none;
     }
 
     #phase-table select.phase-field-select:disabled {
-      background: var(--header-bg-sub);
+      background: transparent;
       color: var(--text-muted);
+      border-color: transparent;
       cursor: default;
     }
 
