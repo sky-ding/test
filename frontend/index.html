@@ -1015,6 +1015,7 @@
       background: transparent;
       color: var(--text);
       box-shadow: none;
+      field-sizing: content;
       transition: border-color var(--transition-fast), background var(--transition-fast);
     }
 
@@ -3144,17 +3145,48 @@
       sel.classList.toggle('phase-field-select-no', sel.value === '否');
     }
 
+    var phaseTextareaResizeObserver = null;
+
     function autoResizePhaseTextarea(ta) {
-      if (!ta) return;
-      ta.style.height = 'auto';
+      if (!ta || !ta.isConnected || ta._phaseResizing) return;
+      ta._phaseResizing = true;
       var minH = parseFloat(getComputedStyle(ta).minHeight) || 48;
-      ta.style.height = Math.max(minH, ta.scrollHeight) + 'px';
+      ta.style.height = '0px';
+      ta.style.height = Math.max(minH, ta.scrollHeight + 2) + 'px';
+      ta._phaseResizing = false;
+    }
+
+    function observePhaseTextareaResize(ta) {
+      if (!ta || ta._phaseResizeObserved || typeof ResizeObserver === 'undefined') return;
+      ta._phaseResizeObserved = true;
+      if (!phaseTextareaResizeObserver) {
+        phaseTextareaResizeObserver = new ResizeObserver(function (entries) {
+          entries.forEach(function (entry) {
+            autoResizePhaseTextarea(entry.target);
+          });
+        });
+      }
+      phaseTextareaResizeObserver.observe(ta);
     }
 
     function autoResizeAllPhaseTextareas(root) {
       var scope = root || document.getElementById('phase-table');
       if (!scope) return;
-      scope.querySelectorAll('textarea.phase-field-input').forEach(autoResizePhaseTextarea);
+      scope.querySelectorAll('textarea.phase-field-input').forEach(function (ta) {
+        autoResizePhaseTextarea(ta);
+        observePhaseTextareaResize(ta);
+      });
+    }
+
+    function schedulePhaseTextareaAutoResize() {
+      autoResizeAllPhaseTextareas();
+      requestAnimationFrame(function () {
+        autoResizeAllPhaseTextareas();
+        requestAnimationFrame(function () {
+          autoResizeAllPhaseTextareas();
+          setTimeout(autoResizeAllPhaseTextareas, 120);
+        });
+      });
     }
 
     function mapPhaseDataFromStorage(arr) {
@@ -4379,6 +4411,9 @@
       if (table) {
         void table.offsetHeight;
         applyStickyPinLeftFromDom(table);
+        if (table.querySelector('textarea.phase-field-input')) {
+          schedulePhaseTextareaAutoResize();
+        }
       }
     }
 
@@ -4413,6 +4448,7 @@
           Math.min(getPhaseColMax(idx), w[idx] + deltaRaw)
         );
         applyPhaseColWidthsToDom();
+        schedulePhaseTextareaAutoResize();
       }
       function onUp() {
         document.removeEventListener('mousemove', onMove);
@@ -4421,7 +4457,7 @@
         document.body.style.cursor = '';
         phaseColResizeDrag = null;
         savePhaseColWidths();
-        requestAnimationFrame(autoResizeAllPhaseTextareas);
+        schedulePhaseTextareaAutoResize();
       }
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
@@ -6558,7 +6594,7 @@
       applyPhaseProjectSetFilter();
       requestAnimationFrame(function () {
         applyStickyPinLeftFromDom(document.getElementById('phase-table'));
-        requestAnimationFrame(autoResizeAllPhaseTextareas);
+        schedulePhaseTextareaAutoResize();
       });
     }
 
