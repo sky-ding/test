@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.manpower_saturation import PERSON_MONTHLY_CAPACITY, person_totals_by_name, saturation_level
 from app.models_relational import (
+    Goal,
+    GoalLink,
     ManpowerCell,
     ManpowerColumn,
     Milestone,
@@ -25,6 +27,9 @@ from app.models_relational import (
 from app.relational_api import assert_period_matches_year, parse_year
 from app.routers.manpower_allocations import build_manpower_matrix_response
 from app.schemas_relational import (
+    GoalDerivedProgress,
+    GoalLinkOut,
+    GoalOut,
     MilestoneOut,
     ProjectInfoBreadcrumb,
     ProjectInfoGetResponse,
@@ -35,6 +40,7 @@ from app.schemas_relational import (
     TaskOut,
     TeamMemberOut,
 )
+from app.goal_service import derive_goal_progress, compute_goal_overall_status
 
 
 def default_period_for_year(year: int) -> str:
@@ -165,12 +171,73 @@ def build_project_info_response(
     cells = [c for c in matrix.cells if c.sub_project_id == sub_project_id]
     team_members = _team_members_out(db, sub_project_id, year=y, period=p)
 
+    # ========== 目标跟踪 ==========
+    goals = list(
+        db.scalars(
+            select(Goal)
+            .where(Goal.sub_project_id == sub_project_id)
+            .order_by(Goal.sort_order, Goal.id)
+        ).all()
+    )
+
+    # 查询所有 goal_links 用于构建反向索引
+    all_links: list[GoalLink] = []
+    if goals:
+        goal_ids = [g.id for g in goals]
+        all_links = list(
+            db.scalars(
+                select(GoalLink).where(GoalLink.goal_id.in_(goal_ids))
+            ).all()
+        )
+
+    # 构建反向索引: (target_type, target_id) -> [goal_id, ...]
+    reverse_links: dict[tuple[str, int], list[int]] = {}
+    for lnk in all_links:
+        key = (lnk.target_type, lnk.target_id)
+        reverse_links.setdefault(key, []).append(lnk.goal_id)
+
+    # 为每个 goal 构建 links 列表
+    goal_links_map: dict[int, list[GoalLink]] = {}
+    for lnk in all_links:
+        goal_links_map.setdefault(lnk.goal_id, []).append(lnk)
+
+    goals_out: list[GoalOut] = []
+    for g in goals:
+        derived = derive_goal_progress(db, g, year=y)
+        overall = compute_goal_overall_status(g, derived, year=y)
+        goals_out.append(GoalOut(
+            id=g.id,
+            name=g.name,
+            metric_unit=g.metric_unit,
+            initial_target=g.initial_target,
+            mid_term_target=g.mid_term_target,
+            current_value=g.current_value,
+            direction=g.direction,
+            sort_order=g.sort_order,
+            links=[GoalLinkOut.model_validate(lnk) for lnk in goal_links_map.get(g.id, [])],
+            derived_progress=[GoalDerivedProgress(**d) for d in derived],
+            overall_status=overall,
+        ))
+
+    # 给里程碑/任务填充 goal_ids
+    milestones_out: list[MilestoneOut] = []
+    for m in milestones:
+        ms_out = MilestoneOut.model_validate(m)
+        ms_out.goal_ids = reverse_links.get(("milestone", m.id), [])
+        milestones_out.append(ms_out)
+
+    tasks_out: list[TaskOut] = []
+    for t in tasks:
+        tk_out = TaskOut.model_validate(t)
+        tk_out.goal_ids = reverse_links.get(("task", t.id), [])
+        tasks_out.append(tk_out)
+
     return ProjectInfoGetResponse(
         year=y,
         period=p,
         sub_project=SubProjectDetailOut.model_validate(sp),
-        milestones=[MilestoneOut.model_validate(m) for m in milestones],
-        tasks=[TaskOut.model_validate(t) for t in tasks],
+        milestones=milestones_out,
+        tasks=tasks_out,
         team_members=team_members,
         risks=[ProjectRiskDetailOut.model_validate(r) for r in risks],
         manpower=ProjectInfoManpowerOut(
@@ -180,6 +247,7 @@ def build_project_info_response(
         ),
         breadcrumb=_breadcrumb(sp),
         project_monthly_total=_project_monthly_total(team_members),
+        goals=goals_out,
     )
 
 
@@ -322,27 +390,55 @@ def save_project_info(
     for mid in body.deleted_milestone_ids:
         db.delete(db.get(Milestone, mid))
 
+    # ========== 清理被删里程碑/任务的 goal_links ==========
+    from sqlalchemy import delete as sa_delete
+    for mid in body.deleted_milestone_ids:
+        db.execute(sa_delete(GoalLink).where(
+            GoalLink.target_type == "milestone",
+            GoalLink.target_id == mid,
+        ))
+    for tid in body.deleted_task_ids:
+        db.execute(sa_delete(GoalLink).where(
+            GoalLink.target_type == "task",
+            GoalLink.target_id == tid,
+        ))
+
     for item in body.milestones:
         if item.id is None:
-            db.add(
-                Milestone(
-                    sub_project_id=sub_project_id,
-                    name=item.name.strip(),
-                    planned_date=item.planned_date,
-                    status=item.status,
-                    description=(item.description or "").strip() or None,
-                    sort_order=item.sort_order,
-                )
+            milestone = Milestone(
+                sub_project_id=sub_project_id,
+                name=item.name.strip(),
+                planned_date=item.planned_date,
+                status=item.status,
+                description=(item.description or "").strip() or None,
+                sort_order=item.sort_order,
             )
+            db.add(milestone)
+            db.flush()
         else:
-            row = db.get(Milestone, item.id)
-            if row is None or row.sub_project_id != sub_project_id:
+            milestone = db.get(Milestone, item.id)
+            if milestone is None or milestone.sub_project_id != sub_project_id:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid milestone id")
-            row.name = item.name.strip()
-            row.planned_date = item.planned_date
-            row.status = item.status
-            row.description = (item.description or "").strip() or None
-            row.sort_order = item.sort_order
+            milestone.name = item.name.strip()
+            milestone.planned_date = item.planned_date
+            milestone.status = item.status
+            milestone.description = (item.description or "").strip() or None
+            milestone.sort_order = item.sort_order
+
+        # 同步该里程碑的 goal 关联
+        db.execute(sa_delete(GoalLink).where(
+            GoalLink.target_type == "milestone",
+            GoalLink.target_id == milestone.id,
+        ))
+        for gid in item.goal_ids:
+            goal = db.get(Goal, gid)
+            if goal is None or goal.sub_project_id != sub_project_id:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"invalid goal id {gid}")
+            db.add(GoalLink(
+                goal_id=gid,
+                target_type="milestone",
+                target_id=milestone.id,
+            ))
 
     _assert_owned_ids(db, Task, sub_project_id, body.deleted_task_ids, "task")
     for tid in body.deleted_task_ids:
@@ -350,29 +446,44 @@ def save_project_info(
 
     for item in body.tasks:
         if item.id is None:
-            db.add(
-                Task(
-                    sub_project_id=sub_project_id,
-                    name=item.name.strip(),
-                    phase=item.phase,
-                    assignee=(item.assignee or "").strip() or None,
-                    start_date=item.start_date,
-                    end_date=item.end_date,
-                    progress=item.progress,
-                    sort_order=item.sort_order,
-                )
+            task = Task(
+                sub_project_id=sub_project_id,
+                name=item.name.strip(),
+                phase=item.phase,
+                assignee=(item.assignee or "").strip() or None,
+                start_date=item.start_date,
+                end_date=item.end_date,
+                progress=item.progress,
+                sort_order=item.sort_order,
             )
+            db.add(task)
+            db.flush()
         else:
-            row = db.get(Task, item.id)
-            if row is None or row.sub_project_id != sub_project_id:
+            task = db.get(Task, item.id)
+            if task is None or task.sub_project_id != sub_project_id:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid task id")
-            row.name = item.name.strip()
-            row.phase = item.phase
-            row.assignee = (item.assignee or "").strip() or None
-            row.start_date = item.start_date
-            row.end_date = item.end_date
-            row.progress = item.progress
-            row.sort_order = item.sort_order
+            task.name = item.name.strip()
+            task.phase = item.phase
+            task.assignee = (item.assignee or "").strip() or None
+            task.start_date = item.start_date
+            task.end_date = item.end_date
+            task.progress = item.progress
+            task.sort_order = item.sort_order
+
+        # 同步该任务的 goal 关联
+        db.execute(sa_delete(GoalLink).where(
+            GoalLink.target_type == "task",
+            GoalLink.target_id == task.id,
+        ))
+        for gid in item.goal_ids:
+            goal = db.get(Goal, gid)
+            if goal is None or goal.sub_project_id != sub_project_id:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"invalid goal id {gid}")
+            db.add(GoalLink(
+                goal_id=gid,
+                target_type="task",
+                target_id=task.id,
+            ))
 
     _assert_owned_ids(db, TeamMember, sub_project_id, body.deleted_team_member_ids, "team_member")
     for tid in body.deleted_team_member_ids:
@@ -440,6 +551,37 @@ def save_project_info(
             row.assignee = item.assignee.strip()
             row.resolution_date = item.resolution_date
             _apply_risk_status(row, item.status)
+
+    # ========== Upsert 目标 ==========
+    _assert_owned_ids(db, Goal, sub_project_id, body.deleted_goal_ids, "goal")
+    for gid in body.deleted_goal_ids:
+        db.delete(db.get(Goal, gid))
+
+    for item in body.goals:
+        if item.id is None:
+            goal = Goal(
+                sub_project_id=sub_project_id,
+                name=item.name.strip(),
+                metric_unit=(item.metric_unit or "").strip() or None,
+                initial_target=item.initial_target.strip(),
+                mid_term_target=(item.mid_term_target or "").strip() or None,
+                current_value=(item.current_value or "").strip() or None,
+                direction=item.direction,
+                sort_order=item.sort_order,
+            )
+            db.add(goal)
+            db.flush()  # 获取 id
+        else:
+            goal = db.get(Goal, item.id)
+            if goal is None or goal.sub_project_id != sub_project_id:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid goal id")
+            goal.name = item.name.strip()
+            goal.metric_unit = (item.metric_unit or "").strip() or None
+            goal.initial_target = item.initial_target.strip()
+            goal.mid_term_target = (item.mid_term_target or "").strip() or None
+            goal.current_value = (item.current_value or "").strip() or None
+            goal.direction = item.direction
+            goal.sort_order = item.sort_order
 
     db.flush()
     return build_project_info_response(db, sub_project_id=sub_project_id, year=y, period=p)

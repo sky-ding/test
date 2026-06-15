@@ -102,6 +102,9 @@ class SubProject(Base):
         back_populates="sub_project", cascade="all, delete-orphan"
     )
     tasks: Mapped[list[Task]] = relationship(back_populates="sub_project", cascade="all, delete-orphan")
+    goals: Mapped[list[Goal]] = relationship(
+        back_populates="sub_project", cascade="all, delete-orphan"
+    )
     team_members: Mapped[list[TeamMember]] = relationship(
         back_populates="sub_project", cascade="all, delete-orphan"
     )
@@ -292,3 +295,49 @@ class TeamMemberAllocation(Base):
     updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
 
     team_member: Mapped[TeamMember] = relationship(back_populates="allocations")
+
+
+# --- 目标跟踪 ---
+
+
+class Goal(Base):
+    __tablename__ = "goals"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    sub_project_id: Mapped[int] = mapped_column(
+        ForeignKey("sub_projects.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    metric_unit: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    initial_target: Mapped[str] = mapped_column(String(200), nullable=False)
+    mid_term_target: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    current_value: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    direction: Mapped[str] = mapped_column(String(10), nullable=False, default="higher_better")
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
+
+    sub_project: Mapped[SubProject] = relationship(
+        back_populates="goals",
+        foreign_keys=[sub_project_id],
+    )
+    links: Mapped[list[GoalLink]] = relationship(
+        back_populates="goal", cascade="all, delete-orphan"
+    )
+
+
+class GoalLink(Base):
+    __tablename__ = "goal_links"
+    __table_args__ = (
+        UniqueConstraint("goal_id", "target_type", "target_id", name="uk_goal_link_target"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    goal_id: Mapped[int] = mapped_column(
+        ForeignKey("goals.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    target_type: Mapped[str] = mapped_column(String(20), nullable=False)  # 'milestone' | 'task'
+    target_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
+
+    goal: Mapped[Goal] = relationship(back_populates="links")

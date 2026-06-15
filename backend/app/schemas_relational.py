@@ -8,6 +8,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing_extensions import Self
+from typing import Literal
 
 
 # --- 项目树 ---
@@ -399,6 +400,7 @@ class MilestoneOut(BaseModel):
     status: str
     description: str | None = None
     sort_order: int = 0
+    goal_ids: list[int] = Field(default_factory=list)
 
 
 class MilestoneIn(BaseModel):
@@ -408,6 +410,7 @@ class MilestoneIn(BaseModel):
     status: str = Field(max_length=20)
     description: str | None = None
     sort_order: int = Field(ge=0)
+    goal_ids: list[int] = Field(default_factory=list)
 
     @field_validator("status")
     @classmethod
@@ -429,6 +432,7 @@ class TaskOut(BaseModel):
     end_date: date
     progress: int = 0
     sort_order: int = 0
+    goal_ids: list[int] = Field(default_factory=list)
 
 
 class TaskIn(BaseModel):
@@ -440,6 +444,7 @@ class TaskIn(BaseModel):
     end_date: date
     progress: int = Field(default=0, ge=0, le=100)
     sort_order: int = Field(ge=0)
+    goal_ids: list[int] = Field(default_factory=list)
 
     @field_validator("phase")
     @classmethod
@@ -586,6 +591,8 @@ class ProjectInfoPutBody(BaseModel):
     risks: list[ProjectInfoRiskIn] = Field(default_factory=list)
     deleted_risk_ids: list[int] = Field(default_factory=list)
     manpower: ProjectInfoManpowerIn
+    goals: list[GoalIn] = Field(default_factory=list)
+    deleted_goal_ids: list[int] = Field(default_factory=list)
 
 
 class ProjectInfoGetResponse(BaseModel):
@@ -599,6 +606,7 @@ class ProjectInfoGetResponse(BaseModel):
     manpower: ProjectInfoManpowerOut
     breadcrumb: ProjectInfoBreadcrumb
     project_monthly_total: Decimal = Decimal("0.00")
+    goals: list[GoalOut] = Field(default_factory=list)
 
 
 class PersonSummaryProjectOut(BaseModel):
@@ -621,3 +629,65 @@ class PersonSummaryResponse(BaseModel):
     period: str
     capacity_per_person: Decimal
     persons: list[PersonSummaryRowOut]
+
+
+# --- 目标跟踪 ---
+
+
+class GoalLinkOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    target_type: str    # 'milestone' | 'task'
+    target_id: int
+
+
+class GoalLinkIn(BaseModel):
+    target_type: Literal["milestone", "task"]
+    target_id: int = Field(ge=1)
+
+
+class GoalDerivedProgress(BaseModel):
+    """系统自动推导的季度/月度进展(只读,不存库)。"""
+    period: str               # 'YYYY-MM' 或 'YYYY-Q1' 等
+    related_items: list[str]  # 关联的里程碑/任务名称列表
+    progress_pct: float | None  # 进度百分比(0-100),布尔型目标为 None
+    status: str               # 'completed' | 'in_progress' | 'at_risk' | 'not_started' | 'manual'
+
+
+class GoalOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    metric_unit: str | None = None
+    initial_target: str
+    mid_term_target: str | None = None
+    current_value: str | None = None
+    direction: str
+    sort_order: int = 0
+    links: list[GoalLinkOut] = Field(default_factory=list)
+    derived_progress: list[GoalDerivedProgress] = Field(default_factory=list)
+    overall_status: str = "not_started"  # 自动计算的整体状态
+
+
+class GoalIn(BaseModel):
+    id: int | None = None  # None = 新建,有值 = 更新
+    name: str = Field(min_length=1, max_length=200)
+    metric_unit: str | None = Field(default=None, max_length=50)
+    initial_target: str = Field(min_length=1, max_length=200)
+    mid_term_target: str | None = Field(default=None, max_length=200)
+    current_value: str | None = Field(default=None, max_length=200)
+    direction: Literal["higher_better", "lower_better", "boolean"] = "higher_better"
+    sort_order: int = 0
+    # links 不再由 GoalIn 维护，改由 MilestoneIn.goal_ids / TaskIn.goal_ids 维护
+
+
+class GoalSummaryOut(BaseModel):
+    """项目阶段状态页用的只读摘要。"""
+    sub_project_id: int
+    sub_project_name: str
+    name: str
+    metric_unit: str | None = None
+    target_value: str           # 取 mid_term_target 或 initial_target
+    current_value: str | None   # 自动推导或手动更新的当前值
+    status: str                 # 'on_track' | 'at_risk' | 'behind' | 'completed' | 'not_started'
+    status_emoji: str           # 🟢 / 🟡 / 🔴 / ✅ / ⏳
