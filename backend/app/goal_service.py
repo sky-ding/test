@@ -174,10 +174,30 @@ def compute_goal_overall_status(goal: Goal, derived: list[dict], year: int | Non
             return "not_started"     # 都未开始
 
     if not derived:
-        # 无推导数据 → 用 current_value 和 initial_target 比较
-        if goal.current_value:
-            return "on_track"  # 有手动值就认为在跟踪中
-        return "not_started"
+        # 无推导数据 → 用 current_value 和目标值做数值比较
+        if not goal.current_value:
+            return "not_started"
+        try:
+            cv = float(goal.current_value.replace("%", ""))
+            tv = float((goal.mid_term_target or goal.initial_target).replace("%", ""))
+            if goal.direction == "higher_better":
+                if cv >= tv:
+                    return "on_track"
+                elif tv != 0 and cv / tv >= 0.8:
+                    return "at_risk"
+                else:
+                    return "behind"
+            elif goal.direction == "lower_better":
+                if cv <= tv:
+                    return "on_track"
+                elif tv != 0 and cv / tv <= 1.2:
+                    return "at_risk"
+                else:
+                    return "behind"
+            else:  # boolean
+                return "on_track"
+        except (ValueError, ZeroDivisionError):
+            return "on_track"
 
     # 有推导数据:看年度整体进度
     y = year or date.today().year
@@ -254,9 +274,31 @@ def build_goal_summary(
                 current_value = "-"
             status = compute_goal_overall_status(goal, derived, year=year)
         else:
-            # 无关联 → 取手动更新的最新值
+            # 无关联 → 取手动更新的最新值，并与目标值比较判定状态
             current_value = goal.current_value or "-"
-            status = "on_track" if goal.current_value else "not_started"
+            status = "not_started"
+            if goal.current_value:
+                try:
+                    cv = float(goal.current_value.replace("%", ""))
+                    tv = float(target.replace("%", ""))
+                    if goal.direction == "higher_better":
+                        if cv >= tv:
+                            status = "on_track"
+                        elif tv != 0 and cv / tv >= 0.8:
+                            status = "at_risk"
+                        else:
+                            status = "behind"
+                    elif goal.direction == "lower_better":
+                        if cv <= tv:
+                            status = "on_track"
+                        elif tv != 0 and cv / tv <= 1.2:
+                            status = "at_risk"
+                        else:
+                            status = "behind"
+                    else:  # boolean
+                        status = "on_track"
+                except (ValueError, ZeroDivisionError):
+                    status = "on_track"
 
         emoji_map = {
             "completed": "✅",
