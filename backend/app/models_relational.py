@@ -312,7 +312,7 @@ class Goal(Base):
     initial_target: Mapped[str] = mapped_column(String(200), nullable=False)
     mid_term_target: Mapped[str | None] = mapped_column(String(200), nullable=True)
     current_value: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    direction: Mapped[str] = mapped_column(String(10), nullable=False, default="higher_better")
+    direction: Mapped[str] = mapped_column(String(20), nullable=False, default="higher_better")
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)

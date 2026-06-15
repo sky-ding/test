@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS goals (
   initial_target VARCHAR(200) NOT NULL,
   mid_term_target VARCHAR(200) NULL,
   current_value VARCHAR(200) NULL,
-  direction VARCHAR(10) NOT NULL DEFAULT 'higher_better',
+  direction VARCHAR(20) NOT NULL DEFAULT 'higher_better',
   sort_order INT NOT NULL DEFAULT 0,
   created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
