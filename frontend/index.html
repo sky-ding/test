@@ -1113,6 +1113,50 @@
       box-sizing: border-box;
     }
 
+    /* ===== 阶段状态页目标摘要面板 ===== */
+    .phase-goal-panel {
+      margin: 0 0 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      font-size: 13px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .phase-goal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--border-light);
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+    .phase-goal-body {
+      padding: 8px 12px;
+    }
+    .phase-goal-body table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .phase-goal-body th,
+    .phase-goal-body td {
+      padding: 4px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .phase-goal-body th {
+      font-weight: 500;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+    .phase-goal-body .pi-goal-status-on_track { color: #16a34a; }
+    .phase-goal-body .pi-goal-status-at_risk { color: #d97706; }
+    .phase-goal-body .pi-goal-status-behind { color: #dc2626; }
+    .phase-goal-body .pi-goal-status-not_started { color: #6b7280; }
+    .phase-goal-body .pi-goal-status-completed { color: #059669; }
+
     #register-table-season,
     #register-table-year {
       table-layout: fixed;
@@ -2529,6 +2573,13 @@
       <label>项目集 <select id="phase-project-set-filter" aria-label="按项目集筛选" title="不改变年月数据范围，仅过滤当前视图"></select></label>
       <button type="button" class="manpower-analysis-btn" id="btn-phase-analysis" title="按当前所选年月查看阶段状态分析（预留）">项目阶段状态分析</button>
     </div>
+    <div id="phase-goal-panel" class="phase-goal-panel" style="display:none">
+      <div class="phase-goal-header">
+        <span>📊 本月目标进展（自动汇总，只读）</span>
+        <button type="button" class="icon-btn" id="phase-goal-toggle" title="展开/收起">▾</button>
+      </div>
+      <div id="phase-goal-body" class="phase-goal-body"></div>
+    </div>
     <div class="table-shell">
       <table id="phase-table">
         <colgroup id="phase-colgroup"></colgroup>
@@ -3019,6 +3070,7 @@
       return loadRegistryData().then(function () {
         renderTable();
         renderPhaseTable();
+        loadPhaseGoalSummary();
         renderRiskTable();
         if (window.ProjectInfoModule && window.ProjectInfoModule.onYearChanged) {
           window.ProjectInfoModule.onYearChanged(y);
@@ -6494,6 +6546,77 @@
       tr.appendChild(tdProj);
     }
 
+    // ========== 阶段状态页目标摘要 ==========
+
+    async function loadPhaseGoalSummary() {
+      var panel = document.getElementById('phase-goal-panel');
+      var body = document.getElementById('phase-goal-body');
+      if (!panel || !body) return;
+
+      // 收集当前阶段表数据中的子项目 ID
+      var subProjectIds = [];
+      (phaseData || []).forEach(function (set) {
+        (set.projectSets || []).forEach(function (ps) {
+          (ps.subProjects || []).forEach(function (p) {
+            if (p._subProjectId) subProjectIds.push(p._subProjectId);
+          });
+        });
+      });
+
+      if (subProjectIds.length === 0) {
+        panel.style.display = 'none';
+        return;
+      }
+
+      // 使用批量 API 一次请求获取所有子项目的目标摘要
+      var allSummaries = [];
+      try {
+        var ids = subProjectIds.join(',');
+        var resp = await pmFetch(
+          '/api/v1/project-info/goal-summary-batch?year=' + pmDataYear + '&sub_project_ids=' + ids
+        );
+        if (resp.ok) {
+          allSummaries = await resp.json();
+        }
+      } catch (e) {
+        /* 请求失败时静默隐藏面板 */
+      }
+
+      if (allSummaries.length === 0) {
+        panel.style.display = 'none';
+        return;
+      }
+
+      // 渲染表格
+      var rows = allSummaries.map(function (s) {
+        var cls = 'pi-goal-status-' + s.status;
+        return '<tr>' +
+          '<td>' + escapeHtml(s.sub_project_name) + '</td>' +
+          '<td>' + escapeHtml(s.name) + '</td>' +
+          '<td>' + escapeHtml(s.metric_unit || '') + '</td>' +
+          '<td>' + escapeHtml(s.target_value) + '</td>' +
+          '<td>' + escapeHtml(s.current_value) + '</td>' +
+          '<td class="' + cls + '">' + escapeHtml(s.status_emoji) + ' ' + escapeHtml(s.status) + '</td>' +
+          '</tr>';
+      }).join('');
+
+      body.innerHTML = '<table><thead><tr>' +
+        '<th>所属项目</th><th>目标</th><th>单位</th><th>目标值</th><th>当前值</th><th>状态</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>';
+      panel.style.display = '';
+    }
+
+    // 折叠/展开
+    document.addEventListener('click', function (e) {
+      if (e.target && e.target.id === 'phase-goal-toggle') {
+        var body = document.getElementById('phase-goal-body');
+        if (body) {
+          body.style.display = body.style.display === 'none' ? '' : 'none';
+          e.target.textContent = body.style.display === 'none' ? '▸' : '▾';
+        }
+      }
+    });
+
     function renderPhaseTable() {
       syncPhaseRowPointer();
       renderPhaseThead();
@@ -7607,6 +7730,7 @@
           }
           if (target === 'panel-phase') {
             renderPhaseTable();
+            loadPhaseGoalSummary();
           }
           if (target === 'panel-project-info' && window.ProjectInfoModule) {
             window.ProjectInfoModule.onTabShow();

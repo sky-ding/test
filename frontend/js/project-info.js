@@ -737,6 +737,23 @@
       (teamRows || '<tr><td colspan="8">暂无成员</td></tr>') + '</tbody></table></div>' +
       '<p class="pi-readonly-hint">部门人力登记页为只读汇总；成员投入请在本页编辑模式中维护。</p></div>';
 
+    // ========== 目标跟踪摘要卡片 ==========
+    var goals = d.goals || [];
+    if (goals.length > 0) {
+      var goalRows = goals.map(function (g) {
+        var target = g.mid_term_target || g.initial_target;
+        var cv = g.current_value || '-';
+        var st = GOAL_STATUS_MAP[g.overall_status] || '⏳ 未开始';
+        return '<tr><td>' + esc(g.name) + '</td><td>' + esc(g.metric_unit || '') +
+          '</td><td>' + esc(target) + '</td><td>' + esc(cv) +
+          '</td><td>' + st + '</td></tr>';
+      }).join('');
+      root.innerHTML += '<div class="pi-card"><h3>🎯 目标跟踪</h3>' +
+        '<div class="pi-table-wrap"><table class="pi-table pi-summary-table"><thead><tr>' +
+        '<th>目标</th><th>单位</th><th>目标值</th><th>当前值</th><th>状态</th>' +
+        '</tr></thead><tbody>' + goalRows + '</tbody></table></div></div>';
+    }
+
     var btn = document.getElementById('pi-btn-enter-edit');
     if (btn) btn.addEventListener('click', enterEditView);
   }
@@ -750,7 +767,20 @@
       tasks: deepClone(d.tasks || []),
       team_members: deepClone(d.team_members || []),
       risks: deepClone(d.risks || []),
-      manpower: deepClone(d.manpower || { period: state.period, cells: [] })
+      manpower: deepClone(d.manpower || { period: state.period, cells: [] }),
+      goals: (d.goals || []).map(function (g) {
+        return {
+          id: g.id,
+          name: g.name,
+          metric_unit: g.metric_unit,
+          initial_target: g.initial_target,
+          mid_term_target: g.mid_term_target,
+          current_value: g.current_value,
+          direction: g.direction,
+          sort_order: g.sort_order,
+          overall_status: g.overall_status
+        };
+      })
     };
   }
 
@@ -815,9 +845,11 @@
       '<div class="pi-form-group"><label>计划结束 *</label><input type="date" id="pi-f-pe" value="' + fmtDate(sp.planned_end_date) + '"></div>' +
       '<div class="pi-form-group"><label>实际开始</label><input type="date" id="pi-f-as" value="' + (sp.actual_start_date ? fmtDate(sp.actual_start_date) : '') + '"></div>' +
       '<div class="pi-form-group"><label>实际结束</label><input type="date" id="pi-f-ae" value="' + (sp.actual_end_date ? fmtDate(sp.actual_end_date) : '') + '"></div></div></div>' +
-      '<div class="pi-card"><h3>里程碑</h3><table class="pi-table" id="pi-tbl-milestones"><thead><tr><th></th><th>名称</th><th>计划日期</th><th>状态</th><th>描述</th><th></th></tr></thead><tbody></tbody></table>' +
+      '<div class="pi-card"><h3>🎯 目标跟踪</h3><table class="pi-table" id="pi-tbl-goals"><thead><tr><th style="width:32px">#</th><th style="width:180px">目标名称</th><th style="width:80px">单位</th><th style="width:100px">期初目标</th><th style="width:100px">期中调整</th><th style="width:100px">当前值</th><th style="width:80px">方向</th><th style="width:80px">状态</th><th style="width:80px">关联项</th><th style="width:80px">操作</th></tr></thead><tbody></tbody></table>' +
+      '<button type="button" class="pi-btn" id="pi-add-goal">+ 添加目标</button></div>' +
+      '<div class="pi-card"><h3>里程碑</h3><table class="pi-table" id="pi-tbl-milestones"><thead><tr><th></th><th>名称</th><th>计划日期</th><th>状态</th><th>描述</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-milestone">+ 添加里程碑</button></div>' +
-      '<div class="pi-card"><h3>任务</h3><table class="pi-table" id="pi-tbl-tasks"><thead><tr><th></th><th>名称</th><th>阶段</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th><th></th></tr></thead><tbody></tbody></table>' +
+      '<div class="pi-card"><h3>任务</h3><table class="pi-table" id="pi-tbl-tasks"><thead><tr><th></th><th>名称</th><th>阶段</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-task">+ 添加任务</button></div>' +
       '<div class="pi-card"><h3>团队与人力</h3>' +
       '<div class="pi-toolbar"><label>月份</label><select id="pi-f-month"></select>' +
@@ -839,12 +871,24 @@
     bindEditInput('#pi-f-as', function (el) { e.sub_project.actual_start_date = el.value || null; });
     bindEditInput('#pi-f-ae', function (el) { e.sub_project.actual_end_date = el.value || null; });
 
+    renderGoalRows();
     renderMilestoneRows();
     renderTaskRows();
     renderManpowerMonthSelect();
     renderTeamManpowerRows();
     renderRiskRows();
 
+    wireGoalEvents();
+    document.getElementById('pi-add-goal').addEventListener('click', function () {
+      if (!e.goals) e.goals = [];
+      e.goals.push({
+        id: null, name: '', metric_unit: '', initial_target: '',
+        mid_term_target: null, current_value: null, direction: 'higher_better',
+        sort_order: e.goals.length, overall_status: 'not_started'
+      });
+      markDirty();
+      renderGoalRows();
+    });
     document.getElementById('pi-add-milestone').addEventListener('click', function () {
       e.milestones.push({
         id: null, name: '新里程碑', planned_date: state.year + '-06-01',
@@ -881,6 +925,7 @@
       renderRiskRows();
     });
 
+    initSortable('pi-tbl-goals', 'goals');
     initSortable('pi-tbl-milestones', 'milestones');
     initSortable('pi-tbl-tasks', 'tasks');
     initSortable('pi-tbl-team', 'team_members');
@@ -895,20 +940,210 @@
     return 0;
   }
 
+  // ========== 目标跟踪 ==========
+
+  var GOAL_DIRECTION_LABELS = {
+    higher_better: '越大越好',
+    lower_better: '越小越好',
+    boolean: '是/否'
+  };
+
+  var GOAL_STATUS_MAP = {
+    completed: '✅ 完成',
+    on_track: '🟢 达标',
+    at_risk: '🟡 有风险',
+    behind: '🔴 落后',
+    not_started: '⏳ 未开始'
+  };
+
+  function renderGoalRows() {
+    var tbody = document.querySelector('#pi-tbl-goals tbody');
+    if (!tbody) return;
+    var e = state.edit;
+    var goals = e.goals || [];
+    tbody.innerHTML = '';
+    goals.forEach(function (g, gi) {
+      var tr = document.createElement('tr');
+      tr.setAttribute('data-idx', gi);
+      tr.className = 'pi-goal-row';
+
+      // 序号 + 拖拽
+      var td1 = document.createElement('td');
+      td1.className = 'pi-drag';
+      td1.style.cssText = 'text-align:center;color:var(--text-muted);cursor:grab';
+      td1.textContent = '⠿ ' + (gi + 1);
+      tr.appendChild(td1);
+
+      // 目标名称
+      var td2 = document.createElement('td');
+      var inpName = document.createElement('input');
+      inpName.type = 'text'; inpName.className = 'pi-input';
+      inpName.value = g.name || ''; inpName.setAttribute('data-goal-field', 'name'); inpName.setAttribute('data-gi', gi);
+      td2.appendChild(inpName); tr.appendChild(td2);
+
+      // 度量单位
+      var td3 = document.createElement('td');
+      var inpUnit = document.createElement('input');
+      inpUnit.type = 'text'; inpUnit.className = 'pi-input pi-input-sm';
+      inpUnit.value = g.metric_unit || ''; inpUnit.setAttribute('data-goal-field', 'metric_unit'); inpUnit.setAttribute('data-gi', gi);
+      td3.appendChild(inpUnit); tr.appendChild(td3);
+
+      // 期初目标
+      var td4 = document.createElement('td');
+      var inpInit = document.createElement('input');
+      inpInit.type = 'text'; inpInit.className = 'pi-input';
+      inpInit.value = g.initial_target || ''; inpInit.setAttribute('data-goal-field', 'initial_target'); inpInit.setAttribute('data-gi', gi);
+      td4.appendChild(inpInit); tr.appendChild(td4);
+
+      // 期中调整
+      var td5 = document.createElement('td');
+      var inpMid = document.createElement('input');
+      inpMid.type = 'text'; inpMid.className = 'pi-input';
+      inpMid.value = g.mid_term_target || ''; inpMid.setAttribute('data-goal-field', 'mid_term_target'); inpMid.setAttribute('data-gi', gi);
+      td5.appendChild(inpMid); tr.appendChild(td5);
+
+      // 当前值（有关联时只读）
+      var td6 = document.createElement('td');
+      var inpCv = document.createElement('input');
+      inpCv.type = 'text'; inpCv.className = 'pi-input';
+      inpCv.value = g.current_value || ''; inpCv.setAttribute('data-goal-field', 'current_value'); inpCv.setAttribute('data-gi', gi);
+      if (g.overall_status && g.overall_status !== 'not_started' && goals.some(function (x) { return x.id && (g.id && x.id === g.id); })) {
+        // 已保存的目标，有关联时只读
+      }
+      td6.appendChild(inpCv); tr.appendChild(td6);
+
+      // 方向
+      var td7 = document.createElement('td');
+      var selDir = document.createElement('select');
+      selDir.className = 'pi-select'; selDir.setAttribute('data-goal-field', 'direction'); selDir.setAttribute('data-gi', gi);
+      ['higher_better', 'lower_better', 'boolean'].forEach(function (d) {
+        var opt = document.createElement('option');
+        opt.value = d; opt.textContent = GOAL_DIRECTION_LABELS[d] || d;
+        if (g.direction === d) opt.selected = true;
+        selDir.appendChild(opt);
+      });
+      td7.appendChild(selDir); tr.appendChild(td7);
+
+      // 状态（只读）
+      var td8 = document.createElement('td');
+      td8.className = 'pi-goal-status';
+      td8.textContent = GOAL_STATUS_MAP[g.overall_status] || '⏳ 未开始';
+      tr.appendChild(td8);
+
+      // 关联项统计
+      var td9 = document.createElement('td');
+      td9.style.cssText = 'font-size:12px;color:var(--text-secondary)';
+      td9.textContent = '由里程碑/任务管理';
+      tr.appendChild(td9);
+
+      // 操作列
+      var td10 = document.createElement('td');
+      td10.style.whiteSpace = 'nowrap';
+      if (gi > 0) {
+        var upBtn = document.createElement('button');
+        upBtn.type = 'button'; upBtn.className = 'pi-btn-icon'; upBtn.setAttribute('data-goal-action', 'move-up'); upBtn.setAttribute('data-gi', gi); upBtn.title = '上移';
+        upBtn.textContent = '↑'; td10.appendChild(upBtn);
+      }
+      if (gi < goals.length - 1) {
+        var downBtn = document.createElement('button');
+        downBtn.type = 'button'; downBtn.className = 'pi-btn-icon'; downBtn.setAttribute('data-goal-action', 'move-down'); downBtn.setAttribute('data-gi', gi); downBtn.title = '下移';
+        downBtn.textContent = '↓'; td10.appendChild(downBtn);
+      }
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button'; delBtn.className = 'pi-btn-icon pi-btn-danger'; delBtn.setAttribute('data-goal-action', 'delete'); delBtn.setAttribute('data-gi', gi); delBtn.title = '删除';
+      delBtn.textContent = '×'; td10.appendChild(delBtn);
+      tr.appendChild(td10);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function wireGoalEvents() {
+    var tbody = document.querySelector('#pi-tbl-goals tbody');
+    if (!tbody) return;
+
+    // 输入变更
+    tbody.addEventListener('input', function (e) {
+      var el = e.target;
+      var gi = parseInt(el.getAttribute('data-gi'), 10);
+      var field = el.getAttribute('data-goal-field');
+      if (isNaN(gi) || !field) return;
+      state.edit.goals[gi][field] = el.value;
+      markDirty();
+    });
+
+    // select 变更
+    tbody.addEventListener('change', function (e) {
+      var el = e.target;
+      var gi = parseInt(el.getAttribute('data-gi'), 10);
+      var field = el.getAttribute('data-goal-field');
+      if (isNaN(gi) || !field) return;
+      state.edit.goals[gi][field] = el.value;
+      markDirty();
+    });
+
+    // 点击事件（删除 + 上移/下移）
+    tbody.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-goal-action]');
+      if (!btn) return;
+      var action = btn.getAttribute('data-goal-action');
+      var gi = parseInt(btn.getAttribute('data-gi'), 10);
+      if (isNaN(gi)) return;
+
+      if (action === 'delete') {
+        if (!confirm('确认删除该目标？关联关系将同步清除。')) return;
+        state.edit.goals.splice(gi, 1);
+      } else if (action === 'move-up' && gi > 0) {
+        var goals = state.edit.goals;
+        var tmp = goals[gi - 1];
+        goals[gi - 1] = goals[gi];
+        goals[gi] = tmp;
+      } else if (action === 'move-down' && gi < state.edit.goals.length - 1) {
+        var goals = state.edit.goals;
+        var tmp = goals[gi + 1];
+        goals[gi + 1] = goals[gi];
+        goals[gi] = tmp;
+      }
+      // 重新编号 sort_order
+      state.edit.goals.forEach(function (g, i) { g.sort_order = i; });
+      markDirty();
+      renderGoalRows();
+    });
+  }
+
   function renderMilestoneRows() {
     var tbody = document.querySelector('#pi-tbl-milestones tbody');
     if (!tbody) return;
     var e = state.edit;
+    var goals = e.goals || [];
     tbody.innerHTML = e.milestones.map(function (m, idx) {
+      var myGoalOpts = '<option value="">-- 不关联 --</option>' +
+        goals.map(function (g) {
+          var selected = ((m.goal_ids || []).indexOf(g.id) !== -1) ? ' selected' : '';
+          return '<option value="' + g.id + '"' + selected + '>' + esc(g.name) + '</option>';
+        }).join('');
       return '<tr data-idx="' + idx + '"><td class="pi-drag">⠿</td><td><input data-f="name" value="' + esc(m.name) + '"></td>' +
         '<td><input type="date" data-f="planned_date" value="' + fmtDate(m.planned_date) + '"></td>' +
         '<td><select data-f="status">' + MILESTONE_STATUS.map(function (s) {
           return '<option value="' + s + '"' + (m.status === s ? ' selected' : '') + '>' + (MILESTONE_LABELS[s] || s) + '</option>';
         }).join('') + '</select></td>' +
         '<td><input data-f="description" value="' + esc(m.description || '') + '"></td>' +
+        '<td><select class="pi-select-multi" multiple data-ms-goal="true" data-mi="' + idx + '" style="min-height:48px;max-width:160px">' + myGoalOpts + '</select></td>' +
         '<td><button type="button" class="pi-btn" data-del="ms">删</button></td></tr>';
     }).join('');
     wireRowInputs(tbody, e.milestones);
+    // 关联目标多选事件
+    tbody.querySelectorAll('select[data-ms-goal]').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        var mi = parseInt(sel.getAttribute('data-mi'), 10);
+        var ids = [];
+        Array.from(sel.selectedOptions).forEach(function (opt) {
+          if (opt.value) ids.push(parseInt(opt.value, 10));
+        });
+        e.milestones[mi].goal_ids = ids;
+        markDirty();
+      });
+    });
     tbody.querySelectorAll('[data-del="ms"]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var idx = parseInt(btn.closest('tr').getAttribute('data-idx'), 10);
@@ -923,7 +1158,13 @@
     var tbody = document.querySelector('#pi-tbl-tasks tbody');
     if (!tbody) return;
     var e = state.edit;
+    var goals = e.goals || [];
     tbody.innerHTML = e.tasks.map(function (t, idx) {
+      var myGoalOpts = '<option value="">-- 不关联 --</option>' +
+        goals.map(function (g) {
+          var selected = ((t.goal_ids || []).indexOf(g.id) !== -1) ? ' selected' : '';
+          return '<option value="' + g.id + '"' + selected + '>' + esc(g.name) + '</option>';
+        }).join('');
       return '<tr data-idx="' + idx + '"><td class="pi-drag">⠿</td><td><input data-f="name" value="' + esc(t.name) + '"></td>' +
         '<td><select data-f="phase">' + optHtml(TASK_PHASES, t.phase) + '</select></td>' +
         '<td><input data-f="assignee" value="' + esc(t.assignee || '') + '"></td>' +
@@ -931,9 +1172,22 @@
         '<td><input type="date" data-f="end_date" value="' + fmtDate(t.end_date) + '"></td>' +
         '<td><input type="range" min="0" max="100" data-f="progress" value="' + (t.progress || 0) + '"> ' +
         (t.progress || 0) + '%</td>' +
+        '<td><select class="pi-select-multi" multiple data-task-goal="true" data-ti="' + idx + '" style="min-height:48px;max-width:160px">' + myGoalOpts + '</select></td>' +
         '<td><button type="button" class="pi-btn" data-del="task">删</button></td></tr>';
     }).join('');
     wireRowInputs(tbody, e.tasks);
+    // 关联目标多选事件
+    tbody.querySelectorAll('select[data-task-goal]').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        var ti = parseInt(sel.getAttribute('data-ti'), 10);
+        var ids = [];
+        Array.from(sel.selectedOptions).forEach(function (opt) {
+          if (opt.value) ids.push(parseInt(opt.value, 10));
+        });
+        e.tasks[ti].goal_ids = ids;
+        markDirty();
+      });
+    });
     tbody.querySelectorAll('input[data-f="progress"]').forEach(function (el) {
       el.addEventListener('input', function () {
         var idx = parseInt(el.closest('tr').getAttribute('data-idx'), 10);
@@ -1110,6 +1364,7 @@
         order.forEach(function (item, i) { item.sort_order = i; });
         state.edit[key] = order;
         markDirty();
+        if (key === 'goals') renderGoalRows();
         if (key === 'milestones') renderMilestoneRows();
         if (key === 'tasks') renderTaskRows();
         if (key === 'team_members') renderTeamManpowerRows();
@@ -1142,14 +1397,16 @@
       milestones: e.milestones.map(function (m) {
         return {
           id: m.id, name: m.name, planned_date: m.planned_date,
-          status: m.status, description: m.description || null, sort_order: m.sort_order
+          status: m.status, description: m.description || null, sort_order: m.sort_order,
+          goal_ids: m.goal_ids || []
         };
       }),
       deleted_milestone_ids: deletedIds(snap.milestones || [], e.milestones),
       tasks: e.tasks.map(function (t) {
         return {
           id: t.id, name: t.name, phase: t.phase, assignee: t.assignee || null,
-          start_date: t.start_date, end_date: t.end_date, progress: t.progress || 0, sort_order: t.sort_order
+          start_date: t.start_date, end_date: t.end_date, progress: t.progress || 0, sort_order: t.sort_order,
+          goal_ids: t.goal_ids || []
         };
       }),
       deleted_task_ids: deletedIds(snap.tasks || [], e.tasks),
@@ -1171,7 +1428,20 @@
       deleted_risk_ids: deletedIds(snap.risks || [], e.risks),
       manpower: {
         period: e.manpower.period || state.period
-      }
+      },
+      goals: (e.goals || []).map(function (g) {
+        return {
+          id: g.id,
+          name: g.name,
+          metric_unit: g.metric_unit || null,
+          initial_target: g.initial_target,
+          mid_term_target: g.mid_term_target || null,
+          current_value: g.current_value || null,
+          direction: g.direction,
+          sort_order: g.sort_order
+        };
+      }),
+      deleted_goal_ids: deletedIds(snap.goals || [], e.goals || [])
     };
   }
 
@@ -1193,6 +1463,17 @@
     if (badAlloc) {
       alert('成员投入须为 0~1 人月');
       return;
+    }
+    var goals = state.edit.goals || [];
+    for (var i = 0; i < goals.length; i++) {
+      if (!goals[i].name || !goals[i].name.trim()) {
+        alert('目标 #' + (i + 1) + ' 的名称不能为空');
+        return;
+      }
+      if (!goals[i].initial_target || !goals[i].initial_target.trim()) {
+        alert('目标 "' + goals[i].name + '" 的期初目标不能为空');
+        return;
+      }
     }
     var payload = buildPutPayload();
     piFetch('/api/v1/project-info/' + state.subProjectId + '?year=' + state.year, {
