@@ -5087,7 +5087,7 @@
           try {
             var ids = subProjectIds.join(',');
             var mr = await pmFetch(
-              '/api/v1/project-info/phase-monthly-data?year=' + y +
+              '/api/v1/project-info/phase-monthly-data?year=' + phaseSelYear +
               '&month=' + phaseSelMonth + '&sub_project_ids=' + ids
             );
             if (mr.ok) {
