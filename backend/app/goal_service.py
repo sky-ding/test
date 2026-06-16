@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from datetime import date
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
 
 from app.models_relational import Goal, GoalLink, Milestone, Task
 
@@ -192,6 +193,73 @@ def compute_goal_overall_status(goal: Goal, derived: list[dict], year: int | Non
     except (ValueError, ZeroDivisionError):
         # 无法解析为数字（如文本"完成"），只要有值就视为在跟踪中
         return "on_track"
+
+
+def build_phase_monthly_data(
+    db: Session,
+    sub_project_id: int,
+    year: int,
+    month: int,
+) -> dict:
+    """构建单个子项目的月度自动填充数据。
+
+    返回自动填充的阶段交付目标文本和目标达成状态。
+    前端只在 phase_assessments 对应字段为 NULL 时使用这些数据。
+    """
+    # 1. 获取本月相关的里程碑和任务
+    milestones = list(db.scalars(
+        select(Milestone)
+        .where(Milestone.sub_project_id == sub_project_id)
+    ).all())
+
+    tasks = list(db.scalars(
+        select(Task)
+        .where(Task.sub_project_id == sub_project_id)
+    ).all())
+
+    # 2. 筛选本月相关的项，生成自动填充文本
+    month_start = date(year, month, 1)
+    month_end = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
+
+    lines = []
+    for m in milestones:
+        if m.planned_date.year == year and m.planned_date.month == month:
+            lines.append(f"📌 {m.name}（{m.planned_date.isoformat()}）")
+
+    for t in tasks:
+        if t.start_date < month_end and t.end_date >= month_start:
+            lines.append(f"📋 {t.name}（进度 {t.progress}%）")
+
+    auto_goal_text = "\n".join(lines) if lines else ""
+
+    # 3. 计算目标达成状态
+    goals = list(db.scalars(
+        select(Goal)
+        .where(Goal.sub_project_id == sub_project_id)
+        .options(selectinload(Goal.links))
+        .order_by(Goal.sort_order, Goal.id)
+    ).all())
+
+    if not goals:
+        auto_status = "not_started"
+    else:
+        statuses = [compute_goal_overall_status(g, [], year=year) for g in goals]
+        priority = {"behind": 0, "at_risk": 1, "not_started": 2, "on_track": 3}
+        auto_status = min(statuses, key=lambda s: priority.get(s, 2))
+
+    emoji_map = {
+        "on_track": "🟢",
+        "at_risk": "🟡",
+        "behind": "🔴",
+        "not_started": "⏳",
+    }
+
+    return {
+        "sub_project_id": sub_project_id,
+        "auto_goal_text": auto_goal_text,
+        "auto_status": auto_status,
+        "auto_status_emoji": emoji_map.get(auto_status, "⏳"),
+    }
 
 
 def build_goal_summary(

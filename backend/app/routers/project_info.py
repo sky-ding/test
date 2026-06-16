@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import AdminUser, CurrentUser
-from app.goal_service import build_goal_summary
+from app.goal_service import build_goal_summary, build_phase_monthly_data
 from app.project_info_service import (
     build_project_info_response,
     default_period_for_year,
@@ -16,6 +16,7 @@ from app.project_info_service import (
 from app.relational_api import parse_year, assert_sub_project_year
 from app.schemas_relational import (
     GoalSummaryOut,
+    PhaseMonthlyDataOut,
     ProjectInfoGetResponse,
     ProjectInfoPutBody,
 )
@@ -49,6 +50,35 @@ def get_goal_summary_batch(
         except HTTPException:
             pass  # 跳过无效的子项目
     return [GoalSummaryOut(**s) for s in all_summaries]
+
+
+# phase-monthly-data 路由必须放在 /{sub_project_id}/... 之前
+@router.get("/phase-monthly-data", response_model=list[PhaseMonthlyDataOut])
+def get_phase_monthly_data(
+    _user: CurrentUser,
+    year: int = Query(..., ge=2000, le=2100),
+    month: int = Query(..., ge=1, le=12),
+    sub_project_ids: str = Query(..., description="逗号分隔的子项目 ID"),
+    db: Session = Depends(get_db),
+) -> list[PhaseMonthlyDataOut]:
+    """获取多个子项目的月度自动填充数据。"""
+    _ = _user
+    y = parse_year(year)
+    ids = [int(x) for x in sub_project_ids.split(",") if x.strip().isdigit()]
+    if not ids or len(ids) > 100:
+        return []
+
+    results = []
+    for sp_id in ids:
+        try:
+            data = build_phase_monthly_data(db, sp_id, y, month)
+            results.append(PhaseMonthlyDataOut(**data))
+        except Exception:
+            pass
+    return results
+
+
+
 
 
 @router.get("/{sub_project_id}/goal-summary", response_model=list[GoalSummaryOut])
