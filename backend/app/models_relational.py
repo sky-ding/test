@@ -120,7 +120,7 @@ class PhaseAssessment(Base):
     )
     period: Mapped[str] = mapped_column(String(7), nullable=False, index=True)
     delivery_target: Mapped[str | None] = mapped_column(Text, nullable=True)
-    on_track: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    on_track: Mapped[str | None] = mapped_column(String(20), nullable=True)
     actual_delivery: Mapped[str | None] = mapped_column(Text, nullable=True)
     execution_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
     problem_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)

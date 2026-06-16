@@ -115,6 +115,14 @@ class SubProjectDetailOut(BaseModel):
 # --- 阶段 ---
 
 
+class PhaseMonthlyDataOut(BaseModel):
+    """单个子项目的月度自动填充数据。"""
+    sub_project_id: int
+    auto_goal_text: str = ""           # 自动填充的阶段交付目标文本
+    auto_status: str = "not_started"   # 自动计算的目标达成状态
+    auto_status_emoji: str = "⏳"      # 状态 emoji
+
+
 class PhaseAssessmentOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -130,12 +138,17 @@ class PhaseAssessmentOut(BaseModel):
 
 
 class PhaseAssessmentUpsert(BaseModel):
-    """写入一行；字段名与表一致；亦可从旧 JSON 字段名兼容。"""
+    """写入一行；字段名与表一致；亦可从旧 JSON 字段名兼容。
+
+    特殊约定：
+    - goal 为 ""（空字符串）时，清空 delivery_target（恢复自动填充）
+    - planMatch 为 ""（空字符串）时，清空 on_track（恢复自动计算）
+    """
 
     sub_project_id: int
     period: str = Field(min_length=7, max_length=7)
     delivery_target: str | None = None
-    on_track: str | None = Field(default=None, max_length=10)
+    on_track: str | None = Field(default=None, max_length=20)
     actual_delivery: str | None = None
     execution_analysis: str | None = None
     problem_analysis: str | None = None
@@ -151,11 +164,17 @@ class PhaseAssessmentUpsert(BaseModel):
     @model_validator(mode="after")
     def map_legacy_keys(self) -> Self:
         updates: dict[str, object] = {}
-        if self.delivery_target is None and self.goal is not None:
+        # goal 为空字符串时，显式清空 delivery_target（恢复自动填充）
+        if self.goal == "":
+            updates["delivery_target"] = None
+        elif self.delivery_target is None and self.goal is not None:
             updates["delivery_target"] = self.goal
         if self.actual_delivery is None and self.deliver is not None:
             updates["actual_delivery"] = self.deliver
-        if self.on_track is None and self.planMatch is not None:
+        # planMatch 为空字符串时，显式清空 on_track（恢复自动计算）
+        if self.planMatch == "":
+            updates["on_track"] = None
+        elif self.on_track is None and self.planMatch is not None:
             updates["on_track"] = self.planMatch
         if self.execution_analysis is None and self.highlight is not None:
             updates["execution_analysis"] = self.highlight

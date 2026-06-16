@@ -1113,49 +1113,39 @@
       box-sizing: border-box;
     }
 
-    /* ===== 阶段状态页目标摘要面板 ===== */
-    .phase-goal-panel {
-      margin: 0 0 8px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: var(--surface);
-      font-size: 13px;
-      width: 100%;
-      box-sizing: border-box;
+
+    /* ===== 阶段状态自动填充字段 ===== */
+    .phase-field-auto {
+      background: #f0f7ff !important;
+      border-color: #b3d4fc !important;
+      font-style: italic;
+      color: #555;
     }
-    .phase-goal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 6px 12px;
-      background: var(--header-bg);
-      border-bottom: 1px solid var(--border-light);
-      font-weight: 600;
-      color: var(--text-secondary);
+    textarea.phase-field-auto:focus {
+      background: #fff !important;
+      font-style: normal;
+      color: #000;
     }
-    .phase-goal-body {
-      padding: 8px 12px;
+    select.phase-field-auto {
+      background: #f0f7ff !important;
+      font-style: italic;
     }
-    .phase-goal-body table {
-      width: 100%;
-      border-collapse: collapse;
+
+    .phase-reset-btn {
+      display: block;
+      margin-top: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      color: #666;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      cursor: pointer;
     }
-    .phase-goal-body th,
-    .phase-goal-body td {
-      padding: 4px 8px;
-      text-align: left;
-      border-bottom: 1px solid var(--border-light);
+    .phase-reset-btn:hover {
+      background: #e8e8e8;
+      color: #333;
     }
-    .phase-goal-body th {
-      font-weight: 500;
-      color: var(--text-secondary);
-      font-size: 12px;
-    }
-    .phase-goal-body .pi-goal-status-on_track { color: #16a34a; }
-    .phase-goal-body .pi-goal-status-at_risk { color: #d97706; }
-    .phase-goal-body .pi-goal-status-behind { color: #dc2626; }
-    .phase-goal-body .pi-goal-status-not_started { color: #6b7280; }
-    .phase-goal-body .pi-goal-status-completed { color: #059669; }
 
     #register-table-season,
     #register-table-year {
@@ -2573,13 +2563,6 @@
       <label>项目集 <select id="phase-project-set-filter" aria-label="按项目集筛选" title="不改变年月数据范围，仅过滤当前视图"></select></label>
       <button type="button" class="manpower-analysis-btn" id="btn-phase-analysis" title="按当前所选年月查看阶段状态分析（预留）">项目阶段状态分析</button>
     </div>
-    <div id="phase-goal-panel" class="phase-goal-panel" style="display:none">
-      <div class="phase-goal-header">
-        <span>📊 本月目标进展（自动汇总，只读）</span>
-        <button type="button" class="icon-btn" id="phase-goal-toggle" title="展开/收起">▾</button>
-      </div>
-      <div id="phase-goal-body" class="phase-goal-body"></div>
-    </div>
     <div class="table-shell">
       <table id="phase-table">
         <colgroup id="phase-colgroup"></colgroup>
@@ -3016,7 +2999,7 @@
     const PHASE_FIELD_LABELS = {
       goal: '阶段交付目标',
       deliver: '实际交付评估',
-      planMatch: '是否符合计划',
+      planMatch: '状态',
       highlight: '执行过程分析',
       weakness: '问题分析',
       nextNote: '改进计划'
@@ -3070,7 +3053,6 @@
       return loadRegistryData().then(function () {
         renderTable();
         renderPhaseTable();
-        loadPhaseGoalSummary();
         renderRiskTable();
         if (window.ProjectInfoModule && window.ProjectInfoModule.onYearChanged) {
           window.ProjectInfoModule.onYearChanged(y);
@@ -3190,11 +3172,6 @@
           });
         });
       });
-    }
-
-    function applyPhasePlanMatchStyle(sel) {
-      if (!sel) return;
-      sel.classList.toggle('phase-field-select-no', sel.value === '否');
     }
 
     var phaseTextareaResizeObserver = null;
@@ -5096,6 +5073,43 @@
           { method: 'GET' }
         );
         if (pr.ok) mergePhaseRowsIntoPhaseData(await pr.json(), pkey);
+
+        // 加载月度自动填充数据（里程碑/任务/目标状态）
+        var subProjectIds = [];
+        (phaseData || []).forEach(function (set) {
+          getProgramProjectSets(set).forEach(function (ps) {
+            getSubProjects(ps).forEach(function (p) {
+              if (p._subProjectId) subProjectIds.push(p._subProjectId);
+            });
+          });
+        });
+        if (subProjectIds.length > 0) {
+          try {
+            var ids = subProjectIds.join(',');
+            var mr = await pmFetch(
+              '/api/v1/project-info/phase-monthly-data?year=' + y +
+              '&month=' + phaseSelMonth + '&sub_project_ids=' + ids
+            );
+            if (mr.ok) {
+              var mdata = await mr.json();
+              var dataMap = {};
+              mdata.forEach(function (d) { dataMap[d.sub_project_id] = d; });
+              (phaseData || []).forEach(function (set) {
+                getProgramProjectSets(set).forEach(function (ps) {
+                  getSubProjects(ps).forEach(function (p) {
+                    var d = dataMap[p._subProjectId];
+                    if (d) {
+                      p._autoGoalText = d.auto_goal_text || '';
+                      p._autoStatus = d.auto_status || 'not_started';
+                      p._autoStatusEmoji = d.auto_status_emoji || '⏳';
+                    }
+                  });
+                });
+              });
+            }
+          } catch (e) { /* 静默失败 */ }
+        }
+
         var mkey = ymKey(manpowerSelYear, manpowerSelMonth);
         var mxAuth = await tryMergeManpowerMatrixForYearPeriod(y, mkey);
         if (mxAuth === null) {
@@ -6106,7 +6120,13 @@
         var fields = tr.querySelectorAll('textarea.phase-field-input, select.phase-field-select');
         if (fields.length < PHASE_FIELD_KEYS.length) return;
         PHASE_FIELD_KEYS.forEach(function (key, j) {
-          slice[key] = fields[j].value;
+          var field = fields[j];
+          // goal 列处于自动模式时，不清空 slice.goal（保持空字符串以触发重置）
+          if (key === 'goal' && field.classList.contains('phase-field-auto')) {
+            // 保持 slice.goal = ''（用户意图重置），不从 DOM 读值
+            return;
+          }
+          slice[key] = field.value;
         });
         ri++;
       });
@@ -6546,77 +6566,6 @@
       tr.appendChild(tdProj);
     }
 
-    // ========== 阶段状态页目标摘要 ==========
-
-    async function loadPhaseGoalSummary() {
-      var panel = document.getElementById('phase-goal-panel');
-      var body = document.getElementById('phase-goal-body');
-      if (!panel || !body) return;
-
-      // 收集当前阶段表数据中的子项目 ID
-      var subProjectIds = [];
-      (phaseData || []).forEach(function (set) {
-        (set.projectSets || []).forEach(function (ps) {
-          (ps.subProjects || []).forEach(function (p) {
-            if (p._subProjectId) subProjectIds.push(p._subProjectId);
-          });
-        });
-      });
-
-      if (subProjectIds.length === 0) {
-        panel.style.display = 'none';
-        return;
-      }
-
-      // 使用批量 API 一次请求获取所有子项目的目标摘要
-      var allSummaries = [];
-      try {
-        var ids = subProjectIds.join(',');
-        var resp = await pmFetch(
-          '/api/v1/project-info/goal-summary-batch?year=' + pmDataYear + '&sub_project_ids=' + ids
-        );
-        if (resp.ok) {
-          allSummaries = await resp.json();
-        }
-      } catch (e) {
-        /* 请求失败时静默隐藏面板 */
-      }
-
-      if (allSummaries.length === 0) {
-        panel.style.display = 'none';
-        return;
-      }
-
-      // 渲染表格
-      var rows = allSummaries.map(function (s) {
-        var cls = 'pi-goal-status-' + s.status;
-        return '<tr>' +
-          '<td>' + escapeHtml(s.sub_project_name) + '</td>' +
-          '<td>' + escapeHtml(s.name) + '</td>' +
-          '<td>' + escapeHtml(s.metric_unit || '') + '</td>' +
-          '<td>' + escapeHtml(s.target_value) + '</td>' +
-          '<td>' + escapeHtml(s.current_value) + '</td>' +
-          '<td class="' + cls + '">' + escapeHtml(s.status_emoji) + ' ' + escapeHtml(s.status) + '</td>' +
-          '</tr>';
-      }).join('');
-
-      body.innerHTML = '<table><thead><tr>' +
-        '<th>所属项目</th><th>目标</th><th>单位</th><th>目标值</th><th>当前值</th><th>状态</th>' +
-        '</tr></thead><tbody>' + rows + '</tbody></table>';
-      panel.style.display = '';
-    }
-
-    // 折叠/展开
-    document.addEventListener('click', function (e) {
-      if (e.target && e.target.id === 'phase-goal-toggle') {
-        var body = document.getElementById('phase-goal-body');
-        if (body) {
-          body.style.display = body.style.display === 'none' ? '' : 'none';
-          e.target.textContent = body.style.display === 'none' ? '▸' : '▾';
-        }
-      }
-    });
-
     function renderPhaseTable() {
       syncPhaseRowPointer();
       renderPhaseThead();
@@ -6661,41 +6610,108 @@
             PHASE_FIELD_KEYS.forEach(function (key) {
               var td = document.createElement('td');
               td.className = 'phase-field-cell';
-              if (key === 'planMatch') {
+              if (key === 'goal') {
+                // ===== 阶段交付目标：默认自动填充，可编辑覆盖 =====
+                var userValue = slice.goal || '';
+                var autoText = proj._autoGoalText || '';
+                var isAuto = !userValue;
+
+                var ta = document.createElement('textarea');
+                ta.className = 'phase-field-input' + (isAuto ? ' phase-field-auto' : '');
+                ta.value = isAuto ? autoText : userValue;
+                ta.setAttribute('data-auto-text', autoText);
+                ta.setAttribute('title', isAuto ? '自动填充（来自里程碑/任务拆解）' : '用户自定义');
+                ta.readOnly = !admin;
+                ta.rows = 1;
+                if (admin) {
+                  ta.addEventListener('input', function () {
+                    slice.goal = ta.value;
+                    if (ta.value !== ta.getAttribute('data-auto-text')) {
+                      ta.classList.remove('phase-field-auto');
+                      ta.setAttribute('title', '用户自定义');
+                    }
+                    autoResizePhaseTextarea(ta);
+                  });
+                }
+                td.appendChild(ta);
+
+                // "重置"按钮（仅在用户自定义且有管理员权限时显示）
+                if (!isAuto && admin) {
+                  var resetBtn = document.createElement('button');
+                  resetBtn.type = 'button';
+                  resetBtn.className = 'phase-reset-btn';
+                  resetBtn.textContent = '↺ 重置';
+                  resetBtn.title = '恢复自动填充';
+                  resetBtn.addEventListener('click', function () {
+                    ta.value = autoText;
+                    ta.classList.add('phase-field-auto');
+                    ta.setAttribute('title', '自动填充（来自里程碑/任务拆解）');
+                    slice.goal = '';
+                    resetBtn.style.display = 'none';
+                  });
+                  td.appendChild(resetBtn);
+                }
+              } else if (key === 'planMatch') {
+                // ===== 状态：默认自动计算，可编辑覆盖 =====
+                var userStatus = slice.planMatch || '';
+                var autoStatus = proj._autoStatus || 'not_started';
+                var autoEmoji = proj._autoStatusEmoji || '⏳';
+                var isAutoStatus = !userStatus;
+
                 var sel = document.createElement('select');
-                sel.className = 'phase-field-select';
-                var planOptions = [
-                  { value: '', label: '请选择' },
-                  { value: '是', label: '是' },
-                  { value: '否', label: '否' }
+                sel.className = 'phase-field-select' + (isAutoStatus ? ' phase-field-auto' : '');
+                sel.setAttribute('title', isAutoStatus ? '自动计算（来自目标达成状态）' : '用户自定义');
+                sel.disabled = !admin;
+
+                var statusOptions = [
+                  { value: '', label: '— 自动 —' },
+                  { value: 'on_track', label: '🟢 达标' },
+                  { value: 'at_risk', label: '🟡 有风险' },
+                  { value: 'behind', label: '🔴 落后' },
+                  { value: 'not_started', label: '⏳ 未开始' }
                 ];
-                planOptions.forEach(function (opt) {
+                var autoLabelMap = { on_track: '达标', at_risk: '有风险', behind: '落后', not_started: '未开始' };
+                var autoLabel = autoLabelMap[autoStatus] || '未开始';
+                statusOptions.forEach(function (opt) {
                   var o = document.createElement('option');
                   o.value = opt.value;
-                  o.textContent = opt.label;
-                  if ((slice[key] || '') === opt.value) o.selected = true;
+                  if (isAutoStatus && opt.value === '') {
+                    o.selected = true;
+                    o.textContent = autoEmoji + ' 自动（' + autoLabel + '）';
+                  } else if (!isAutoStatus && opt.value === userStatus) {
+                    o.selected = true;
+                    o.textContent = opt.label;
+                  } else {
+                    o.textContent = opt.label;
+                  }
                   sel.appendChild(o);
                 });
-                sel.disabled = !admin;
-                applyPhasePlanMatchStyle(sel);
+
                 if (admin) {
                   sel.addEventListener('change', function () {
-                    slice[key] = sel.value;
-                    applyPhasePlanMatchStyle(sel);
+                    if (sel.value === '') {
+                      sel.classList.add('phase-field-auto');
+                      sel.setAttribute('title', '自动计算（来自目标达成状态）');
+                      slice.planMatch = '';
+                    } else {
+                      sel.classList.remove('phase-field-auto');
+                      sel.setAttribute('title', '用户自定义');
+                      slice.planMatch = sel.value;
+                    }
                   });
                 }
                 td.appendChild(sel);
               } else {
-                var ta = document.createElement('textarea');
-                ta.className = 'phase-field-input';
-                ta.value = slice[key] || '';
-                ta.readOnly = !admin;
-                ta.rows = 1;
-                ta.addEventListener('input', function () {
-                  if (admin) slice[key] = ta.value;
-                  autoResizePhaseTextarea(ta);
+                var taOther = document.createElement('textarea');
+                taOther.className = 'phase-field-input';
+                taOther.value = slice[key] || '';
+                taOther.readOnly = !admin;
+                taOther.rows = 1;
+                taOther.addEventListener('input', function () {
+                  if (admin) slice[key] = taOther.value;
+                  autoResizePhaseTextarea(taOther);
                 });
-                td.appendChild(ta);
+                td.appendChild(taOther);
               }
               tr.appendChild(td);
             });
@@ -7730,7 +7746,6 @@
           }
           if (target === 'panel-phase') {
             renderPhaseTable();
-            loadPhaseGoalSummary();
           }
           if (target === 'panel-project-info' && window.ProjectInfoModule) {
             window.ProjectInfoModule.onTabShow();
