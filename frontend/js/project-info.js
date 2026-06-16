@@ -659,6 +659,7 @@
     var prog = overallProgress(d.tasks || []);
     var teamN = (d.team_members || []).length;
     var periodDays = daysBetween(sp.planned_start_date, sp.planned_end_date);
+    var goals = d.goals || [];
 
     var msHtml = (d.milestones || []).map(function (m) {
       var color = m.status === 'completed' ? '#34a853' : (m.status === 'in-progress' ? '#1E6FFF' : '#ddd');
@@ -723,6 +724,17 @@
       '<div class="pi-meta-row"><span class="pi-meta-k">实际结束</span><span class="pi-meta-v">' + fmtDate(sp.actual_end_date) + '</span></div></div>' +
       '<div class="pi-meta-col pi-meta-col--desc"><h4>项目描述</h4><p class="pi-meta-desc">' +
       esc(sp.description || '（暂无描述）') + '</p></div></div></div>' +
+      (goals.length > 0 ? '<div class="pi-card"><h3>🎯 目标跟踪</h3>' +
+        '<div class="pi-table-wrap"><table class="pi-table pi-summary-table"><thead><tr>' +
+        '<th>目标</th><th>单位</th><th>目标值</th><th>当前值</th><th>状态</th>' +
+        '</tr></thead><tbody>' + goals.map(function (g) {
+          var target = g.mid_term_target || g.initial_target;
+          var cv = g.current_value || '-';
+          var st = GOAL_STATUS_MAP[g.overall_status] || '⏳ 未开始';
+          return '<tr><td>' + esc(g.name) + '</td><td>' + esc(g.metric_unit || '') +
+            '</td><td>' + esc(target) + '</td><td>' + esc(cv) +
+            '</td><td>' + st + '</td></tr>';
+        }).join('') + '</tbody></table></div></div>' : '') +
       '<div class="pi-card"><h3>里程碑</h3><div class="pi-ms-tl">' + (msHtml || '<span>暂无里程碑</span>') + '</div></div>' +
       '<div class="pi-card"><h3>任务清单</h3><div class="pi-table-wrap"><table class="pi-table"><thead><tr>' +
       '<th>名称</th><th>阶段</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th></tr></thead><tbody>' +
@@ -736,23 +748,6 @@
       '<th>本月投入</th><th>个人合计</th><th>饱和度</th><th>备注</th></tr></thead><tbody>' +
       (teamRows || '<tr><td colspan="8">暂无成员</td></tr>') + '</tbody></table></div>' +
       '<p class="pi-readonly-hint">部门人力登记页为只读汇总；成员投入请在本页编辑模式中维护。</p></div>';
-
-    // ========== 目标跟踪摘要卡片 ==========
-    var goals = d.goals || [];
-    if (goals.length > 0) {
-      var goalRows = goals.map(function (g) {
-        var target = g.mid_term_target || g.initial_target;
-        var cv = g.current_value || '-';
-        var st = GOAL_STATUS_MAP[g.overall_status] || '⏳ 未开始';
-        return '<tr><td>' + esc(g.name) + '</td><td>' + esc(g.metric_unit || '') +
-          '</td><td>' + esc(target) + '</td><td>' + esc(cv) +
-          '</td><td>' + st + '</td></tr>';
-      }).join('');
-      root.innerHTML += '<div class="pi-card"><h3>🎯 目标跟踪</h3>' +
-        '<div class="pi-table-wrap"><table class="pi-table pi-summary-table"><thead><tr>' +
-        '<th>目标</th><th>单位</th><th>目标值</th><th>当前值</th><th>状态</th>' +
-        '</tr></thead><tbody>' + goalRows + '</tbody></table></div></div>';
-    }
 
     var btn = document.getElementById('pi-btn-enter-edit');
     if (btn) btn.addEventListener('click', enterEditView);
