@@ -151,79 +151,47 @@ def _aggregate_period(period: str, items: list[dict]) -> dict:
 
 def compute_goal_overall_status(goal: Goal, derived: list[dict], year: int | None = None) -> str:
     """
-    计算目标的整体状态。
+    计算目标的达成状态。
 
-    返回: 'completed' | 'on_track' | 'at_risk' | 'behind' | 'not_started'
+    目标达成状态只看 current_value 与 target_value 的比较，
+    不看里程碑/任务的完成进度（那是工作进度，不是目标达成状态）。
+
+    返回: 'on_track' | 'at_risk' | 'behind' | 'not_started'
     """
+    # boolean 类型：只要填了值就视为达标（如"是"或"否"）
     if goal.direction == "boolean":
-        # 二值型:看关联项的完成情况
-        monthly = [d for d in derived if "Q" not in d["period"]]
-        if not monthly:
-            return "not_started"
+        return "on_track" if goal.current_value else "not_started"
 
-        completed_count = sum(1 for d in monthly if d["status"] == "completed")
-        total = len(monthly)
-
-        if completed_count == total:
-            return "completed"       # 全部完成
-        elif completed_count > 0:
-            return "on_track"        # 部分完成
-        elif any(d["status"] == "in_progress" for d in monthly):
-            return "on_track"        # 有进行中的
-        else:
-            return "not_started"     # 都未开始
-
-    if not derived:
-        # 无推导数据 → 用 current_value 和目标值做数值比较
-        if not goal.current_value:
-            return "not_started"
-        try:
-            cv = float(goal.current_value.replace("%", ""))
-            tv = float((goal.mid_term_target or goal.initial_target).replace("%", ""))
-            if goal.direction == "higher_better":
-                if cv >= tv:
-                    return "on_track"
-                elif tv != 0 and cv / tv >= 0.8:
-                    return "at_risk"
-                else:
-                    return "behind"
-            elif goal.direction == "lower_better":
-                if cv <= tv:
-                    return "on_track"
-                elif tv != 0 and cv / tv <= 1.2:
-                    return "at_risk"
-                else:
-                    return "behind"
-            else:  # boolean
-                return "on_track"
-        except (ValueError, ZeroDivisionError):
-            return "on_track"
-
-    # 有推导数据:看年度整体进度
-    y = year or date.today().year
-    year_prefix = f"{y:04d}"
-    year_items = [d for d in derived if d["period"].startswith(year_prefix) and "Q" not in d["period"]]
-    if not year_items:
+    # 没有手填当前值 → 无法判断是否达成
+    if not goal.current_value:
         return "not_started"
 
-    total_progress = sum(d["progress_pct"] or 0 for d in year_items)
-    avg = total_progress / len(year_items)
+    # 有手填值 → 与目标值做数值比较
+    try:
+        cv = float(goal.current_value.replace("%", ""))
+        tv = float((goal.mid_term_target or goal.initial_target).replace("%", ""))
 
-    # 判断是否 at_risk:当前月份过半但进度不足 50%
-    now = date.today()
-    current_month = f"{now.year:04d}-{now.month:02d}"
-    current_items = [d for d in derived if d["period"] == current_month]
-    if current_items:
-        cp = current_items[0]["progress_pct"] or 0
-        if cp < 50 and now.day > 15:
-            return "at_risk"
-
-    if avg >= 80:
+        if goal.direction == "higher_better":
+            # 越大越好
+            if cv >= tv:
+                return "on_track"
+            elif tv != 0 and cv / tv >= 0.8:
+                return "at_risk"
+            else:
+                return "behind"
+        elif goal.direction == "lower_better":
+            # 越小越好
+            if cv <= tv:
+                return "on_track"
+            elif tv != 0 and cv / tv <= 1.2:
+                return "at_risk"
+            else:
+                return "behind"
+        else:
+            return "on_track"
+    except (ValueError, ZeroDivisionError):
+        # 无法解析为数字（如文本"完成"），只要有值就视为在跟踪中
         return "on_track"
-    elif avg >= 50:
-        return "at_risk"
-    else:
-        return "behind"
 
 
 def build_goal_summary(
@@ -259,46 +227,24 @@ def build_goal_summary(
         # 优先取期中调整值
         target = goal.mid_term_target or goal.initial_target
 
-        # 获取当前值
-        if goal.links:
-            # 有关联 → 自动推导当前月进度
+        # 获取当前值：优先取用户手填值，无手填值才用推导进度
+        if goal.current_value:
+            current_value = goal.current_value
+        elif goal.links:
             derived = derive_goal_progress(db, goal, year=year)
             now = date.today()
             current_month = f"{now.year:04d}-{now.month:02d}"
             current = next((d for d in derived if d["period"] == current_month), None)
             if current and current["progress_pct"] is not None:
                 current_value = f"{current['progress_pct']}%"
-            elif goal.current_value:
-                current_value = goal.current_value
             else:
                 current_value = "-"
-            status = compute_goal_overall_status(goal, derived, year=year)
         else:
-            # 无关联 → 取手动更新的最新值，并与目标值比较判定状态
-            current_value = goal.current_value or "-"
-            status = "not_started"
-            if goal.current_value:
-                try:
-                    cv = float(goal.current_value.replace("%", ""))
-                    tv = float(target.replace("%", ""))
-                    if goal.direction == "higher_better":
-                        if cv >= tv:
-                            status = "on_track"
-                        elif tv != 0 and cv / tv >= 0.8:
-                            status = "at_risk"
-                        else:
-                            status = "behind"
-                    elif goal.direction == "lower_better":
-                        if cv <= tv:
-                            status = "on_track"
-                        elif tv != 0 and cv / tv <= 1.2:
-                            status = "at_risk"
-                        else:
-                            status = "behind"
-                    else:  # boolean
-                        status = "on_track"
-                except (ValueError, ZeroDivisionError):
-                    status = "on_track"
+            current_value = "-"
+
+        # 统一用 compute_goal_overall_status 计算状态
+        derived = derive_goal_progress(db, goal, year=year) if goal.links else []
+        status = compute_goal_overall_status(goal, derived, year=year)
 
         emoji_map = {
             "completed": "✅",
