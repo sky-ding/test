@@ -313,6 +313,28 @@
 
 #panel-project-info .pi-table textarea { min-height: 52px; resize: vertical; }
 
+/* 风险表格列宽控制（编辑/展示统一） */
+#panel-project-info #pi-tbl-risks th:nth-child(1),
+#panel-project-info #pi-tbl-risks td:nth-child(1) { width: 7%; }   /* 类别 */
+#panel-project-info #pi-tbl-risks th:nth-child(2),
+#panel-project-info #pi-tbl-risks td:nth-child(2) { width: 7%; }   /* 来源 */
+#panel-project-info #pi-tbl-risks th:nth-child(3),
+#panel-project-info #pi-tbl-risks td:nth-child(3) { width: 18%; }  /* 说明 */
+#panel-project-info #pi-tbl-risks th:nth-child(4),
+#panel-project-info #pi-tbl-risks td:nth-child(4) { width: 18%; }  /* 方案 */
+#panel-project-info #pi-tbl-risks th:nth-child(5),
+#panel-project-info #pi-tbl-risks td:nth-child(5) { width: 8%; }   /* 等级 */
+#panel-project-info #pi-tbl-risks th:nth-child(6),
+#panel-project-info #pi-tbl-risks td:nth-child(6) { width: 10%; }  /* 跟进人 */
+#panel-project-info #pi-tbl-risks th:nth-child(7),
+#panel-project-info #pi-tbl-risks td:nth-child(7) { width: 10%; }  /* 登记时间 */
+#panel-project-info #pi-tbl-risks th:nth-child(8),
+#panel-project-info #pi-tbl-risks td:nth-child(8) { width: 10%; }  /* 解除时间 */
+#panel-project-info #pi-tbl-risks th:nth-child(9),
+#panel-project-info #pi-tbl-risks td:nth-child(9) { width: 8%; }   /* 状态 */
+#panel-project-info #pi-tbl-risks th:nth-child(10),
+#panel-project-info #pi-tbl-risks td:nth-child(10) { width: 4%; }  /* 操作 */
+
 #panel-project-info .pi-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

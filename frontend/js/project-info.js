@@ -739,15 +739,15 @@
       '<div class="pi-card"><h3>任务清单</h3><div class="pi-table-wrap"><table class="pi-table"><thead><tr>' +
       '<th>名称</th><th>阶段</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th></tr></thead><tbody>' +
       (taskRows || '<tr><td colspan="6">暂无任务</td></tr>') + '</tbody></table></div></div>' +
-      '<div class="pi-card"><h3>风险管理</h3><div class="pi-table-wrap"><table class="pi-table"><thead><tr>' +
-      '<th>类别</th><th>来源</th><th>说明</th><th>方案</th><th>等级</th><th>跟进人</th>' +
-      '<th>登记时间</th><th>解除时间</th><th>状态</th></tr></thead><tbody>' +
-      (riskRows || '<tr><td colspan="9">暂无风险</td></tr>') + '</tbody></table></div></div>' +
       '<div class="pi-card"><h3>团队与人力</h3><p class="pi-card-sub">单位：人月 · 个人容量 1.0/月 · 展示 ' + esc(d.period || state.period) + '</p>' +
       '<div class="pi-table-wrap"><table class="pi-table"><thead><tr><th>姓名</th><th>所属团队</th><th>角色</th><th>参与方式</th>' +
       '<th>本月投入</th><th>个人合计</th><th>饱和度</th><th>备注</th></tr></thead><tbody>' +
       (teamRows || '<tr><td colspan="8">暂无成员</td></tr>') + '</tbody></table></div>' +
-      '<p class="pi-readonly-hint">部门人力登记页为只读汇总；成员投入请在本页编辑模式中维护。</p></div>';
+      '<p class="pi-readonly-hint">部门人力登记页为只读汇总；成员投入请在本页编辑模式中维护。</p></div>' +
+      '<div class="pi-card"><h3>风险管理</h3><div class="pi-table-wrap"><table class="pi-table"><thead><tr>' +
+      '<th>类别</th><th>来源</th><th>说明</th><th>方案</th><th>等级</th><th>跟进人</th>' +
+      '<th>登记时间</th><th>解除时间</th><th>状态</th></tr></thead><tbody>' +
+      (riskRows || '<tr><td colspan="9">暂无风险</td></tr>') + '</tbody></table></div></div>';
 
     var btn = document.getElementById('pi-btn-enter-edit');
     if (btn) btn.addEventListener('click', enterEditView);
