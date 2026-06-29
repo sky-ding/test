@@ -505,6 +505,10 @@
   gap: 16px 20px;
 }
 
+#panel-project-info .pi-form-grid--3col {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
 #panel-project-info .pi-form-grid .pi-full { grid-column: 1 / -1; }
 
 #panel-project-info .pi-form-group input,

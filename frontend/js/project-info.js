@@ -894,19 +894,18 @@
     var sp = e.sub_project;
 
     root.innerHTML =
-      '<div class="pi-card"><h3>基本信息</h3><div class="pi-form-grid">' +
-      '<div class="pi-form-group pi-full"><label>项目名称 *</label><input type="text" id="pi-f-name" value="' + esc(sp.name) + '"></div>' +
+      '<div class="pi-card"><h3>基本信息</h3><div class="pi-form-grid pi-form-grid--3col">' +
+      '<div class="pi-form-group"><label>项目名称 *</label><input type="text" id="pi-f-name" value="' + esc(sp.name) + '"></div>' +
+      '<div class="pi-form-group"><label>计划开始 *</label><input type="date" id="pi-f-ps" value="' + fmtDate(sp.planned_start_date) + '"></div>' +
+      '<div class="pi-form-group"><label>实际开始</label><input type="date" id="pi-f-as" value="' + (sp.actual_start_date ? fmtDate(sp.actual_start_date) : '') + '"></div>' +
       '<div class="pi-form-group pi-form-group--compact"><label>项目状态 *</label><select id="pi-f-status">' +
       '<option value="active"' + (sp.status === 'active' ? ' selected' : '') + '>进行中</option>' +
       '<option value="archived"' + (sp.status === 'archived' ? ' selected' : '') + '>已归档</option></select></div>' +
+      '<div class="pi-form-group"><label>计划结束 *</label><input type="date" id="pi-f-pe" value="' + fmtDate(sp.planned_end_date) + '"></div>' +
+      '<div class="pi-form-group"><label>实际结束</label><input type="date" id="pi-f-ae" value="' + (sp.actual_end_date ? fmtDate(sp.actual_end_date) : '') + '"></div>' +
       '<div class="pi-form-group pi-full"><label>项目描述</label><textarea id="pi-f-desc" rows="4">' + esc(sp.description || '') + '</textarea></div>' +
       '<div class="pi-form-group pi-full"><label>关键目标</label>' +
       '<textarea id="pi-f-goal" rows="5" placeholder="每行可填写一个目标，支持多行登记">' + esc(sp.key_goal || '') + '</textarea></div></div></div>' +
-      '<div class="pi-card"><h3>时间信息</h3><div class="pi-form-grid">' +
-      '<div class="pi-form-group"><label>计划开始 *</label><input type="date" id="pi-f-ps" value="' + fmtDate(sp.planned_start_date) + '"></div>' +
-      '<div class="pi-form-group"><label>计划结束 *</label><input type="date" id="pi-f-pe" value="' + fmtDate(sp.planned_end_date) + '"></div>' +
-      '<div class="pi-form-group"><label>实际开始</label><input type="date" id="pi-f-as" value="' + (sp.actual_start_date ? fmtDate(sp.actual_start_date) : '') + '"></div>' +
-      '<div class="pi-form-group"><label>实际结束</label><input type="date" id="pi-f-ae" value="' + (sp.actual_end_date ? fmtDate(sp.actual_end_date) : '') + '"></div></div></div>' +
       '<div class="pi-card"><h3>🎯 项目目标</h3><table class="pi-table" id="pi-tbl-goals"><thead><tr><th style="width:32px">#</th><th style="width:180px">目标名称</th><th style="width:80px">单位</th><th style="width:100px">期初目标</th><th style="width:100px">期中调整</th><th style="width:100px">当前值</th><th style="width:80px">方向</th><th style="width:80px">状态</th><th style="width:80px">操作</th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-goal">+ 添加目标</button></div>' +
       '<div class="pi-card"><h3>任务</h3><table class="pi-table" id="pi-tbl-tasks"><thead><tr><th></th><th>名称</th><th>状态</th><th>负责人</th><th>开始</th><th>结束</th><th>里程碑</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
