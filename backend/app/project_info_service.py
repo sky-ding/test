@@ -391,7 +391,8 @@ def save_project_info(
     for tid in body.deleted_task_ids:
         db.delete(db.get(Task, tid))
 
-    for item in body.tasks:
+    # 两轮处理 tasks：先处理顶层任务（parent_id 为空），再处理子任务，避免外键约束违反
+    def _upsert_and_sync(item) -> None:
         if item.id is None:
             task = Task(
                 sub_project_id=sub_project_id,
@@ -435,6 +436,15 @@ def save_project_info(
                 target_type="task",
                 target_id=task.id,
             ))
+
+    # 第一轮：处理 parent_id 为空的顶层任务
+    for item in body.tasks:
+        if item.parent_id is None:
+            _upsert_and_sync(item)
+    # 第二轮：处理有 parent_id 的子任务
+    for item in body.tasks:
+        if item.parent_id is not None:
+            _upsert_and_sync(item)
 
     _assert_owned_ids(db, TeamMember, sub_project_id, body.deleted_team_member_ids, "team_member")
     for tid in body.deleted_team_member_ids:
