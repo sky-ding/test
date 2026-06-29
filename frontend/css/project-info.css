@@ -249,7 +249,7 @@
 #panel-project-info .pi-ms-timeline {
   display: flex;
   align-items: flex-start;
-  gap: 0;
+  gap: 28px;
   width: 100%;
 }
 
@@ -257,7 +257,7 @@
 #panel-project-info .pi-ms-col {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   flex: 1 1 0;
   min-width: 0;
   position: relative;
@@ -266,9 +266,9 @@
 /* 箭头 */
 #panel-project-info .pi-ms-arrow {
   position: absolute;
-  left: -14px;
+  left: -22px;
   top: 18px;
-  font-size: 18px;
+  font-size: 14px;
   color: #c1c3c7;
   line-height: 1;
 }
@@ -300,21 +300,22 @@
 #panel-project-info .pi-ms-items {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  align-items: center;
+  gap: 4px;
   width: 100%;
 }
 
 #panel-project-info .pi-ms-item {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: flex-start;
+  gap: 5px;
   font-size: 12px;
-  padding: 3px 8px;
-  background: #fff;
-  border: 1px solid #eff0f3;
-  border-radius: 6px;
+  padding: 4px 0;
   width: 100%;
+}
+
+#panel-project-info .pi-ms-item .pi-ms-dot {
+  flex-shrink: 0;
+  margin-top: 4px;
 }
 
 #panel-project-info .pi-ms-item-body {
@@ -326,21 +327,20 @@
 #panel-project-info .pi-ms-item-name {
   font-weight: 500;
   color: #1d1f23;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.4;
+  word-break: break-all;
 }
 
 #panel-project-info .pi-ms-item-status {
   font-size: 11px;
   color: #8a8d91;
+  line-height: 1.4;
 }
 
 #panel-project-info .pi-ms-dot {
-  width: 18px;
-  height: 18px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  margin: 0 auto 8px;
   border: 2px solid #fff;
 }
 
