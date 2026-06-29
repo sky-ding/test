@@ -1147,10 +1147,12 @@
     e.tasks.forEach(function (t) {
       if (!t.parent_id || !taskMap[t.parent_id]) {
         sortedTasks.push(t);
-        // 添加子任务
-        e.tasks.forEach(function (child) {
-          if (child.parent_id === t.id) sortedTasks.push(child);
-        });
+        // 添加子任务（只有已持久化的任务才可能有子任务）
+        if (t.id != null) {
+          e.tasks.forEach(function (child) {
+            if (child.parent_id === t.id) sortedTasks.push(child);
+          });
+        }
       }
     });
     // 没有被 parent 引用的独立任务也加入
