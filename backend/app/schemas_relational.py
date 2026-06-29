@@ -406,7 +406,7 @@ class ProjectRiskDetailOut(ProjectRiskOut):
 
 _PROJECT_STATUSES = frozenset({"active", "archived"})
 _MILESTONE_STATUSES = frozenset({"pending", "in-progress", "completed", "overdue"})
-_TASK_PHASES = frozenset({"需求与设计", "开发实施", "测试验证", "部署上线"})
+_TASK_STATUSES = _MILESTONE_STATUSES  # 任务状态与里程碑状态共用同一组可选值
 _PARTICIPATION = frozenset({"核心成员", "兼职参与", "外部协作"})
 
 
@@ -445,7 +445,7 @@ class TaskOut(BaseModel):
 
     id: int
     name: str
-    phase: str
+    status: str
     assignee: str | None = None
     start_date: date
     end_date: date
@@ -457,7 +457,7 @@ class TaskOut(BaseModel):
 class TaskIn(BaseModel):
     id: int | None = None
     name: str = Field(min_length=1, max_length=200)
-    phase: str = Field(max_length=50)
+    status: str = Field(max_length=20)
     assignee: str | None = Field(default=None, max_length=100)
     start_date: date
     end_date: date
@@ -465,12 +465,12 @@ class TaskIn(BaseModel):
     sort_order: int = Field(ge=0)
     goal_ids: list[int] = Field(default_factory=list)
 
-    @field_validator("phase")
+    @field_validator("status")
     @classmethod
-    def valid_phase(cls, v: str) -> str:
+    def valid_status(cls, v: str) -> str:
         s = v.strip()
-        if s not in _TASK_PHASES:
-            raise ValueError("invalid task phase")
+        if s not in _TASK_STATUSES:
+            raise ValueError("invalid task status")
         return s
 
     @model_validator(mode="after")
