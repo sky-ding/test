@@ -408,20 +408,7 @@
     return total === 0 ? 0 : Math.round(completed / total * 100);
   }
 
-  // 将 milestones 合并到 tasks 中，按 sort_order 排序
-  function mergeMilestonesIntoTasks(tasks, milestones) {
-    if (!milestones || !milestones.length) return tasks || [];
-    // milestones 是平铺列表，每个作为顶层任务（无 children）合并
-    var merged = (tasks || []).slice();
-    milestones.forEach(function (m) {
-      var copy = deepClone(m);
-      copy.children = copy.children || [];
-      merged.push(copy);
-    });
-    // 按 sort_order 排序
-    merged.sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); });
-    return merged;
-  }
+
 
   function buildTaskSummaryRows(tasks, depth) {
     depth = depth || 0;
@@ -725,8 +712,7 @@
     var d = state.data;
     var sp = d.sub_project;
     var ms = milestoneStats(d.milestones || []);
-    var allTasksForSummary = mergeMilestonesIntoTasks(d.tasks || [], d.milestones || []);
-    var prog = overallProgress(allTasksForSummary);
+    var prog = overallProgress(d.tasks || []);
     var teamN = (d.team_members || []).length;
     var periodDays = daysBetween(sp.planned_start_date, sp.planned_end_date);
     var goals = d.goals || [];
@@ -742,8 +728,8 @@
         '<td>' + esc(r.status) + '</td></tr>';
     }).join('');
 
-    // 渲染任务（带层级展开，包含里程碑任务）
-    var taskRowsHtml = buildTaskSummaryRows(allTasksForSummary, 0).join('');
+    // 渲染任务（带层级展开，任务树已包含里程碑标签的任务）
+    var taskRowsHtml = buildTaskSummaryRows(d.tasks || [], 0).join('');
 
     var teamRows = (d.team_members || []).map(function (t) {
       return '<tr><td><strong>' + esc(t.name) + '</strong></td><td>' + esc(t.team_column_name) +
@@ -830,7 +816,6 @@
         }
       });
     }
-    flattenTasks(d.milestones || []);
     flattenTasks(d.tasks || []);
     state.edit = {
       sub_project: deepClone(d.sub_project),
@@ -1435,7 +1420,7 @@
   }
 
   // 将快照的嵌套任务结构展平，用于 deletedIds 比较
-  function flattenTasksForSnapshot(tasks, milestones) {
+  function flattenTasksForSnapshot(tasks) {
     var result = [];
     function walk(list) {
       (list || []).forEach(function (t) {
@@ -1444,7 +1429,6 @@
       });
     }
     walk(tasks);
-    walk(milestones);
     return result;
   }
 
@@ -1477,7 +1461,7 @@
           sort_order: t.sort_order, goal_ids: t.goal_ids || []
         };
       }),
-      deleted_task_ids: deletedIds(flattenTasksForSnapshot(snap.tasks || [], snap.milestones || []), e.tasks),
+      deleted_task_ids: deletedIds(flattenTasksForSnapshot(snap.tasks || []), e.tasks),
       team_members: e.team_members.map(function (t) {
         return {
           id: t.id, name: t.name, team_column_id: t.team_column_id, role: t.role,

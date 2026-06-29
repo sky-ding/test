@@ -151,10 +151,8 @@ def build_project_info_response(
             .order_by(Task.sort_order, Task.id)
         ).all()
     )
-    # 里程碑 = is_milestone=True 的顶层任务（parent_id IS NULL），子里程碑只通过父任务 children 出现
-    milestone_tasks = [t for t in all_tasks if t.is_milestone and t.parent_id is None]
-    # 普通任务：is_milestone=False 的顶层任务（parent_id IS NULL），子任务通过 children 递归
-    normal_tasks = [t for t in all_tasks if not t.is_milestone and t.parent_id is None]
+    # 所有顶层任务统一按 parent_id 组织，里程碑只是一个标签，不做互斥筛选
+    top_tasks = [t for t in all_tasks if t.parent_id is None]
     risks = list(
         db.scalars(
             select(ProjectRisk)
@@ -223,8 +221,20 @@ def build_project_info_response(
         tk_out.children = [_build_task_out(c) for c in t.children]
         return tk_out
 
-    milestones_out: list[TaskOut] = [_build_task_out(t) for t in milestone_tasks]
-    tasks_out: list[TaskOut] = [_build_task_out(t) for t in normal_tasks]
+    # 构建任务树（所有任务，含 is_milestone=True 的任务，含 children）
+    tasks_out: list[TaskOut] = [_build_task_out(t) for t in top_tasks]
+
+    # 从任务树中提取里程碑（平铺，所有层级中 is_milestone=True 的任务）
+    def _extract_milestones(task_list: list[TaskOut]) -> list[TaskOut]:
+        result: list[TaskOut] = []
+        for t in task_list:
+            if t.is_milestone:
+                result.append(t)
+            if t.children:
+                result.extend(_extract_milestones(t.children))
+        return result
+
+    milestones_out: list[TaskOut] = _extract_milestones(tasks_out)
 
     return ProjectInfoGetResponse(
         year=y,
