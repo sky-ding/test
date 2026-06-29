@@ -1133,17 +1133,21 @@
     if (!tbody) return;
     var e = state.edit;
     var goals = e.goals || [];
-    // 先按 parent_id 排序：顶层任务在前，子任务在后
+    // 按 parent_id 排序：顶层任务在前，子任务紧跟其后（只展开2级）
     var sortedTasks = [];
     var taskMap = {};
     e.tasks.forEach(function (t, i) { t._idx = i; taskMap[t.id] = t; });
     e.tasks.forEach(function (t) {
       if (!t.parent_id || !taskMap[t.parent_id]) {
+        t._depth = 0;
         sortedTasks.push(t);
-        // 添加子任务（只有已持久化的任务才可能有子任务）
+        // 只展开一层子任务（最多2级）
         if (t.id != null) {
           e.tasks.forEach(function (child) {
-            if (child.parent_id === t.id) sortedTasks.push(child);
+            if (child.parent_id === t.id) {
+              child._depth = 1;
+              sortedTasks.push(child);
+            }
           });
         }
       }
@@ -1163,11 +1167,11 @@
 
     tbody.innerHTML = sortedTasks.map(function (t, sortedIdx) {
       var idx = t._idx;
-      var isChild = t.parent_id != null;
-      var indent = isChild ? '<span style="display:inline-block;width:20px"></span>└ ' : '';
+      var depth = t._depth || 0;
+      var indent = depth > 0 ? '<span style="display:inline-block;width:' + (depth * 20) + 'px"></span>└ ' : '';
       // 降级/升级按钮
       var demoteBtn = '';
-      if (!isChild) {
+      if (t.parent_id == null) {
         demoteBtn = '<button type="button" class="pi-btn" data-demote="' + idx + '" style="font-size:12px;padding:4px 10px">降级</button>';
       } else {
         demoteBtn = '<button type="button" class="pi-btn" data-upgrade="' + idx + '" style="font-size:12px;padding:4px 10px">升级</button>';
