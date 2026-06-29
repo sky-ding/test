@@ -288,11 +288,13 @@ def build_goal_summary(
         # 优先取期中调整值
         target = goal.mid_term_target or goal.initial_target
 
+        # 获取推导进度（统一计算一次，避免重复查询）
+        derived = derive_goal_progress(db, goal, year=year) if goal.links else []
+
         # 获取当前值：优先取用户手填值，无手填值才用推导进度
         if goal.current_value:
             current_value = goal.current_value
-        elif goal.links:
-            derived = derive_goal_progress(db, goal, year=year)
+        elif derived:
             now = date.today()
             current_month = f"{now.year:04d}-{now.month:02d}"
             current = next((d for d in derived if d["period"] == current_month), None)
@@ -304,7 +306,6 @@ def build_goal_summary(
             current_value = "-"
 
         # 统一用 compute_goal_overall_status 计算状态
-        derived = derive_goal_progress(db, goal, year=year) if goal.links else []
         status = compute_goal_overall_status(goal, derived, year=year)
 
         emoji_map = {

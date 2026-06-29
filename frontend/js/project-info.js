@@ -396,8 +396,16 @@
 
   function overallProgress(tasks) {
     if (!tasks || !tasks.length) return 0;
-    var completed = tasks.filter(function (t) { return t.status === 'completed'; }).length;
-    return Math.round(completed / tasks.length * 100);
+    var completed = 0, total = 0;
+    function count(list) {
+      (list || []).forEach(function (t) {
+        total++;
+        if (t.status === 'completed') completed++;
+        if (t.children && t.children.length) count(t.children);
+      });
+    }
+    count(tasks);
+    return total === 0 ? 0 : Math.round(completed / total * 100);
   }
 
   // 将 milestones 合并到 tasks 中，按 sort_order 排序
@@ -1210,7 +1218,11 @@
           alert('已是第一个任务，上方没有可归属的父任务');
           return;
         }
-        e.tasks[i].parent_id = prevParent.id || null;
+        if (prevParent.id == null) {
+          alert('上方任务尚未保存，请先保存后再降级');
+          return;
+        }
+        e.tasks[i].parent_id = prevParent.id;
         markDirty();
         renderTaskRows();
       });
@@ -1393,7 +1405,7 @@
         markDirty();
       };
       el.addEventListener('change', handler);
-      el.addEventListener('input', handler);
+      if (el.tagName !== 'SELECT') el.addEventListener('input', handler);
     });
   }
 

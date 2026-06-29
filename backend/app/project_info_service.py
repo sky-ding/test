@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.manpower_saturation import PERSON_MONTHLY_CAPACITY, person_totals_by_name, saturation_level
 from app.models_relational import (
@@ -147,6 +147,7 @@ def build_project_info_response(
         db.scalars(
             select(Task)
             .where(Task.sub_project_id == sub_project_id)
+            .options(selectinload(Task.children))
             .order_by(Task.sort_order, Task.id)
         ).all()
     )
@@ -392,7 +393,38 @@ def save_project_info(
         db.delete(db.get(Task, tid))
 
     # 两轮处理 tasks：先处理顶层任务（parent_id 为空），再处理子任务，避免外键约束违反
+    MAX_TASK_DEPTH = 5
+
+    def _check_depth(item) -> int:
+        """检查任务嵌套深度，返回当前深度。超过限制抛出异常。"""
+        depth = 0
+        cur_pid = item.parent_id
+        visited = set()
+        while cur_pid is not None:
+            if cur_pid in visited:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="circular parent_id reference detected")
+            visited.add(cur_pid)
+            parent_task = db.get(Task, cur_pid)
+            if parent_task is None:
+                break
+            cur_pid = parent_task.parent_id
+            depth += 1
+            if depth >= MAX_TASK_DEPTH:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"task nesting depth exceeds maximum ({MAX_TASK_DEPTH})")
+        return depth
+
     def _upsert_and_sync(item) -> None:
+        # 校验循环引用和嵌套深度
+        if item.parent_id is not None:
+            _check_depth(item)
+            # 新建任务要额外检查：不能让新建任务成为自己的 parent
+            if item.id is not None and item.parent_id == item.id:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="task cannot be its own parent")
+            # 新建任务 id 为 None，但需检查 parent_id 是否指向不存在的任务
+            parent_task = db.get(Task, item.parent_id)
+            if parent_task is None:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"parent task {item.parent_id} not found")
+
         if item.id is None:
             task = Task(
                 sub_project_id=sub_project_id,
