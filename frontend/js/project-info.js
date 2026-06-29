@@ -1116,29 +1116,20 @@
     var e = state.edit;
     var goals = e.goals || [];
     tbody.innerHTML = e.milestones.map(function (m, idx) {
-      var myGoalOpts = '<option value="">-- 不关联 --</option>' +
-        goals.map(function (g) {
-          var selected = ((m.goal_ids || []).indexOf(g.id) !== -1) ? ' selected' : '';
-          return '<option value="' + g.id + '"' + selected + '>' + esc(g.name) + '</option>';
-        }).join('');
       return '<tr data-idx="' + idx + '"><td class="pi-drag">⠿</td><td><input data-f="name" value="' + esc(m.name) + '"></td>' +
         '<td><input type="date" data-f="planned_date" value="' + fmtDate(m.planned_date) + '"></td>' +
         '<td><select data-f="status">' + MILESTONE_STATUS.map(function (s) {
           return '<option value="' + s + '"' + (m.status === s ? ' selected' : '') + '>' + (MILESTONE_LABELS[s] || s) + '</option>';
         }).join('') + '</select></td>' +
         '<td><input data-f="description" value="' + esc(m.description || '') + '"></td>' +
-        '<td><select class="pi-select-multi" multiple data-ms-goal="true" data-mi="' + idx + '" style="min-height:48px;max-width:160px">' + myGoalOpts + '</select></td>' +
+        '<td><div class="pi-multi-check" data-ms-goal="true" data-mi="' + idx + '"></div></td>' +
         '<td><button type="button" class="pi-btn" data-del="ms">删</button></td></tr>';
     }).join('');
     wireRowInputs(tbody, e.milestones);
-    // 关联目标多选事件
-    tbody.querySelectorAll('select[data-ms-goal]').forEach(function (sel) {
-      sel.addEventListener('change', function () {
-        var mi = parseInt(sel.getAttribute('data-mi'), 10);
-        var ids = [];
-        Array.from(sel.selectedOptions).forEach(function (opt) {
-          if (opt.value) ids.push(parseInt(opt.value, 10));
-        });
+    // 关联目标多选（自定义 checkbox 下拉）
+    tbody.querySelectorAll('.pi-multi-check[data-ms-goal]').forEach(function (container) {
+      var mi = parseInt(container.getAttribute('data-mi'), 10);
+      createMultiCheckDropdown(container, goals, e.milestones[mi].goal_ids || [], function (ids) {
         e.milestones[mi].goal_ids = ids;
         markDirty();
       });
@@ -1159,11 +1150,6 @@
     var e = state.edit;
     var goals = e.goals || [];
     tbody.innerHTML = e.tasks.map(function (t, idx) {
-      var myGoalOpts = '<option value="">-- 不关联 --</option>' +
-        goals.map(function (g) {
-          var selected = ((t.goal_ids || []).indexOf(g.id) !== -1) ? ' selected' : '';
-          return '<option value="' + g.id + '"' + selected + '>' + esc(g.name) + '</option>';
-        }).join('');
       return '<tr data-idx="' + idx + '"><td class="pi-drag">⠿</td><td><input data-f="name" value="' + esc(t.name) + '"></td>' +
         '<td><select data-f="status">' + TASK_STATUS.map(function (s) {
           return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + (TASK_STATUS_LABELS[s] || s) + '</option>';
@@ -1172,18 +1158,14 @@
         '<td><input type="date" data-f="start_date" value="' + fmtDate(t.start_date) + '"></td>' +
         '<td><input type="date" data-f="end_date" value="' + fmtDate(t.end_date) + '"></td>' +
         '<td><input type="number" min="0" max="100" step="1" data-f="progress" value="' + (t.progress || 0) + '" style="width:70px"> %</td>' +
-        '<td><select class="pi-select-multi" multiple data-task-goal="true" data-ti="' + idx + '" style="min-height:48px;max-width:160px">' + myGoalOpts + '</select></td>' +
+        '<td><div class="pi-multi-check" data-task-goal="true" data-ti="' + idx + '"></div></td>' +
         '<td><button type="button" class="pi-btn" data-del="task">删</button></td></tr>';
     }).join('');
     wireRowInputs(tbody, e.tasks);
-    // 关联目标多选事件
-    tbody.querySelectorAll('select[data-task-goal]').forEach(function (sel) {
-      sel.addEventListener('change', function () {
-        var ti = parseInt(sel.getAttribute('data-ti'), 10);
-        var ids = [];
-        Array.from(sel.selectedOptions).forEach(function (opt) {
-          if (opt.value) ids.push(parseInt(opt.value, 10));
-        });
+    // 关联目标多选（自定义 checkbox 下拉）
+    tbody.querySelectorAll('.pi-multi-check[data-task-goal]').forEach(function (container) {
+      var ti = parseInt(container.getAttribute('data-ti'), 10);
+      createMultiCheckDropdown(container, goals, e.tasks[ti].goal_ids || [], function (ids) {
         e.tasks[ti].goal_ids = ids;
         markDirty();
       });
@@ -1506,6 +1488,101 @@
       renderSummary();
     }
     updateEditLockUi();
+  }
+
+  // ========== 自定义 checkbox 下拉多选组件 ==========
+  function createMultiCheckDropdown(container, goals, selectedIds, onChange) {
+    // 容器
+    container.className = 'pi-multi-check';
+    container.innerHTML = '';
+
+    // 触发器：显示已选目标名称
+    var trigger = document.createElement('div');
+    trigger.className = 'pi-multi-check-trigger';
+    trigger.tabIndex = 0;
+    trigger.textContent = renderSelectedText(goals, selectedIds);
+    container.appendChild(trigger);
+
+    // 下拉面板
+    var panel = document.createElement('div');
+    panel.className = 'pi-multi-check-panel';
+    panel.style.display = 'none';
+    container.appendChild(panel);
+
+    // 构建选项列表
+    renderPanel(panel, goals, selectedIds, onChange);
+
+    // 展开/收起
+    trigger.addEventListener('click', function (e) {
+      e.stopPropagation();
+      togglePanel(panel);
+    });
+
+    // 点击外部关闭
+    document.addEventListener('click', function closePanel(e) {
+      if (!container.contains(e.target)) {
+        panel.style.display = 'none';
+      }
+    });
+  }
+
+  function renderSelectedText(goals, selectedIds) {
+    if (!selectedIds.length) return '—';
+    var names = [];
+    selectedIds.forEach(function (id) {
+      var g = findGoal(goals, id);
+      if (g) names.push(g.name);
+    });
+    return names.length ? names.join('、') : '—';
+  }
+
+  function findGoal(goals, id) {
+    for (var i = 0; i < goals.length; i++) {
+      if (goals[i].id === id) return goals[i];
+    }
+    return null;
+  }
+
+  function renderPanel(panel, goals, selectedIds, onChange) {
+    panel.innerHTML = '';
+    goals.forEach(function (g) {
+      if (!g.id) return; // 跳过未保存的新目标
+      var label = document.createElement('label');
+      label.className = 'pi-multi-check-item';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = g.id;
+      cb.checked = selectedIds.indexOf(g.id) !== -1;
+      cb.addEventListener('change', function () {
+        if (cb.checked) {
+          selectedIds.push(g.id);
+        } else {
+          var idx = selectedIds.indexOf(g.id);
+          if (idx !== -1) selectedIds.splice(idx, 1);
+        }
+        // 更新触发器文字
+        var container = panel.parentElement;
+        var trigger = container.querySelector('.pi-multi-check-trigger');
+        if (trigger) trigger.textContent = renderSelectedText(goals, selectedIds);
+        if (onChange) onChange(selectedIds.slice());
+      });
+      var span = document.createElement('span');
+      span.textContent = g.name;
+      label.appendChild(cb);
+      label.appendChild(span);
+      panel.appendChild(label);
+    });
+    if (!goals.some(function (g) { return !!g.id; })) {
+      panel.innerHTML = '<div class="pi-multi-check-empty">暂无已保存的目标</div>';
+    }
+  }
+
+  function togglePanel(panel) {
+    // 关闭其他所有面板
+    document.querySelectorAll('.pi-multi-check-panel').forEach(function (p) {
+      if (p !== panel) p.style.display = 'none';
+    });
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
   }
 
   function wireControls() {

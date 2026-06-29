@@ -313,21 +313,87 @@
 
 #panel-project-info .pi-table textarea { min-height: 52px; resize: vertical; }
 
-/* 关联目标多选下拉框 */
-#panel-project-info .pi-select-multi {
-  min-height: 60px;
-  max-width: 180px;
+/* 自定义 checkbox 下拉多选组件 */
+#panel-project-info .pi-multi-check {
+  position: relative;
   width: 100%;
-  font-size: 12px;
-  padding: 4px;
-  border-radius: 8px;
-  border: 1px solid #E8EAED;
-  background: #fff;
+  max-width: 180px;
 }
 
-#panel-project-info .pi-select-multi option {
-  padding: 3px 6px;
+#panel-project-info .pi-multi-check-trigger {
+  min-height: 28px;
+  padding: 4px 28px 4px 8px;
   font-size: 12px;
+  line-height: 1.5;
+  border: 1px solid #E8EAED;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  word-break: break-all;
+  position: relative;
+  user-select: none;
+}
+
+#panel-project-info .pi-multi-check-trigger::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  margin-top: -3px;
+  border: 5px solid transparent;
+  border-top-color: #9aa0a6;
+}
+
+#panel-project-info .pi-multi-check-trigger:focus {
+  border-color: #1E6FFF;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(30, 111, 255, 0.15);
+}
+
+#panel-project-info .pi-multi-check-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  margin-top: 2px;
+  max-height: 180px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #E8EAED;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#panel-project-info .pi-multi-check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin: 0;
+  font-weight: normal;
+}
+
+#panel-project-info .pi-multi-check-item:hover {
+  background: #F5F7FA;
+}
+
+#panel-project-info .pi-multi-check-item input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #1E6FFF;
+}
+
+#panel-project-info .pi-multi-check-empty {
+  padding: 12px;
+  font-size: 12px;
+  color: #9aa0a6;
+  text-align: center;
 }
 
 /* 风险表格列宽控制（编辑/展示统一） */
