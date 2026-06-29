@@ -427,21 +427,23 @@
     });
     // 按日期排序
     var keys = Object.keys(groups).sort();
-    return keys.map(function (dateKey) {
+    return '<div class="pi-ms-timeline">' + keys.map(function (dateKey, ki) {
       var items = groups[dateKey];
       var dateLabel = dateKey === '无日期' ? '未设置日期' : dateKey;
+      var done = items.filter(function (m) { return m.status === 'completed'; }).length;
       var groupMs = items.map(function (m) {
         var color = m.status === 'completed' ? '#34a853' : (m.status === 'in-progress' ? '#1E6FFF' : '#ddd');
-        return '<div class="pi-ms-item"><div class="pi-ms-dot" style="background:' + color + '"></div>' +
-          '<div><strong>' + esc(m.name) + '</strong></div>' +
-          '<div>' + esc(MILESTONE_LABELS[m.status] || m.status) + '</div></div>';
+        return '<div class="pi-ms-item">' +
+          '<div class="pi-ms-dot" style="background:' + color + '"></div>' +
+          '<div class="pi-ms-item-body"><div class="pi-ms-item-name">' + esc(m.name) + '</div>' +
+          '<div class="pi-ms-item-status">' + esc(MILESTONE_LABELS[m.status] || m.status) + '</div></div></div>';
       }).join('');
-      var done = items.filter(function (m) { return m.status === 'completed'; }).length;
-      return '<div class="pi-ms-group"><div class="pi-ms-group-head">' +
-        '<span class="pi-ms-group-date">' + esc(dateLabel) + '</span>' +
-        '<span class="pi-ms-group-progress">' + done + '/' + items.length + ' 已完成</span>' +
-        '</div>' + groupMs + '</div>';
-    }).join('');
+      return '<div class="pi-ms-col">' +
+        (ki > 0 ? '<div class="pi-ms-arrow">→</div>' : '') +
+        '<div class="pi-ms-date-card"><div class="pi-ms-date-label">' + esc(dateLabel) + '</div>' +
+        '<div class="pi-ms-date-progress">' + done + '/' + items.length + ' 完成</div></div>' +
+        '<div class="pi-ms-items">' + groupMs + '</div></div>';
+    }).join('') + '</div>';
   }
 
   function renderEmptyState() {

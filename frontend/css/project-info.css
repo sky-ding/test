@@ -242,43 +242,99 @@
 #panel-project-info .pi-tag-archived { background: #F1F3F4; color: #5f6368; }
 
 #panel-project-info .pi-ms-tl {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  overflow-x: auto;
   padding: 8px 0;
 }
 
-#panel-project-info .pi-ms-group {
-}
-
-#panel-project-info .pi-ms-group-head {
+/* 横向时间线容器 */
+#panel-project-info .pi-ms-timeline {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #E8EAED;
+  align-items: flex-start;
+  gap: 0;
+  min-width: max-content;
 }
 
-#panel-project-info .pi-ms-group-date {
+/* 日期列 */
+#panel-project-info .pi-ms-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 140px;
+  position: relative;
+}
+
+/* 箭头 */
+#panel-project-info .pi-ms-arrow {
+  position: absolute;
+  left: -14px;
+  top: 18px;
+  font-size: 18px;
+  color: #c1c3c7;
+  line-height: 1;
+}
+
+/* 日期卡片 */
+#panel-project-info .pi-ms-date-card {
+  text-align: center;
+  padding: 8px 12px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  width: 100%;
+  max-width: 130px;
+}
+
+#panel-project-info .pi-ms-date-label {
   font-size: 13px;
   font-weight: 600;
   color: #1d1f23;
+  white-space: nowrap;
 }
 
-#panel-project-info .pi-ms-group-progress {
+#panel-project-info .pi-ms-date-progress {
   font-size: 11px;
   color: #8a8d91;
+  margin-top: 2px;
 }
 
-#panel-project-info .pi-ms-group .pi-ms-item {
-  display: inline-flex;
+/* 里程碑项 */
+#panel-project-info .pi-ms-items {
+  display: flex;
   flex-direction: column;
+  gap: 6px;
   align-items: center;
-  text-align: center;
+}
+
+#panel-project-info .pi-ms-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
-  min-width: 100px;
-  padding: 4px 10px;
+  padding: 3px 8px;
+  background: #fff;
+  border: 1px solid #eff0f3;
+  border-radius: 6px;
+  width: 100%;
+  max-width: 130px;
+}
+
+#panel-project-info .pi-ms-item-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#panel-project-info .pi-ms-item-name {
+  font-weight: 500;
+  color: #1d1f23;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#panel-project-info .pi-ms-item-status {
+  font-size: 11px;
+  color: #8a8d91;
 }
 
 #panel-project-info .pi-ms-dot {
