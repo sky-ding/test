@@ -150,8 +150,8 @@ def build_project_info_response(
             .order_by(Task.sort_order, Task.id)
         ).all()
     )
-    # 里程碑 = is_milestone=True 的任务（顶层，不展开子任务）
-    milestone_tasks = [t for t in all_tasks if t.is_milestone]
+    # 里程碑 = is_milestone=True 的顶层任务（parent_id IS NULL），子里程碑只通过父任务 children 出现
+    milestone_tasks = [t for t in all_tasks if t.is_milestone and t.parent_id is None]
     # 普通任务：is_milestone=False 的顶层任务（parent_id IS NULL），子任务通过 children 递归
     normal_tasks = [t for t in all_tasks if not t.is_milestone and t.parent_id is None]
     risks = list(
