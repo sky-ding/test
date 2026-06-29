@@ -1233,7 +1233,21 @@
     tbody.querySelectorAll('[data-del="task"]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var idx = parseInt(btn.closest('tr').getAttribute('data-idx'), 10);
-        e.tasks.splice(idx, 1);
+        var task = e.tasks[idx];
+        // 删除该任务及其所有子任务
+        var idsToDelete = {};
+        idsToDelete[idx] = true;
+        if (task && task.id) {
+          // 找到所有 parent_id 指向该任务的行
+          for (var j = e.tasks.length - 1; j >= 0; j--) {
+            if (j !== idx && e.tasks[j].parent_id === task.id) {
+              idsToDelete[j] = true;
+            }
+          }
+        }
+        // 从后往前删，避免索引偏移
+        var sorted = Object.keys(idsToDelete).map(Number).sort(function (a, b) { return b - a; });
+        sorted.forEach(function (i) { e.tasks.splice(i, 1); });
         markDirty();
         renderTaskRows();
       });
@@ -1406,6 +1420,20 @@
     state.sortables.push(s);
   }
 
+  // 将快照的嵌套任务结构展平，用于 deletedIds 比较
+  function flattenTasksForSnapshot(tasks, milestones) {
+    var result = [];
+    function walk(list) {
+      (list || []).forEach(function (t) {
+        result.push(t);
+        if (t.children && t.children.length) walk(t.children);
+      });
+    }
+    walk(tasks);
+    walk(milestones);
+    return result;
+  }
+
   function deletedIds(snapshotList, currentList) {
     var curIds = {};
     currentList.forEach(function (r) { if (r.id) curIds[r.id] = true; });
@@ -1435,7 +1463,7 @@
           sort_order: t.sort_order, goal_ids: t.goal_ids || []
         };
       }),
-      deleted_task_ids: deletedIds(snap.tasks || [], e.tasks),
+      deleted_task_ids: deletedIds(flattenTasksForSnapshot(snap.tasks || [], snap.milestones || []), e.tasks),
       team_members: e.team_members.map(function (t) {
         return {
           id: t.id, name: t.name, team_column_id: t.team_column_id, role: t.role,
