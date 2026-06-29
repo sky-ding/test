@@ -893,7 +893,7 @@
       '<div class="pi-form-group"><label>实际结束</label><input type="date" id="pi-f-ae" value="' + (sp.actual_end_date ? fmtDate(sp.actual_end_date) : '') + '"></div></div></div>' +
       '<div class="pi-card"><h3>🎯 项目目标</h3><table class="pi-table" id="pi-tbl-goals"><thead><tr><th style="width:32px">#</th><th style="width:180px">目标名称</th><th style="width:80px">单位</th><th style="width:100px">期初目标</th><th style="width:100px">期中调整</th><th style="width:100px">当前值</th><th style="width:80px">方向</th><th style="width:80px">状态</th><th style="width:80px">操作</th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-goal">+ 添加目标</button></div>' +
-      '<div class="pi-card"><h3>任务</h3><table class="pi-table" id="pi-tbl-tasks"><thead><tr><th></th><th>名称</th><th>状态</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th><th>里程碑</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
+      '<div class="pi-card"><h3>任务</h3><table class="pi-table" id="pi-tbl-tasks"><thead><tr><th></th><th>名称</th><th>父任务</th><th>状态</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th><th>里程碑</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-task">+ 添加任务</button></div>' +
       '<div class="pi-card"><h3>团队与人力</h3>' +
       '<div class="pi-toolbar"><label>月份</label><select id="pi-f-month"></select>' +
@@ -1160,6 +1160,7 @@
         ) + '</select>';
       return '<tr data-idx="' + idx + '"><td class="pi-drag">⠿</td>' +
         '<td>' + indent + '<input data-f="name" value="' + esc(t.name) + '" style="width:100%"></td>' +
+        '<td>' + parentSel + '</td>' +
         '<td><select data-f="status">' + TASK_STATUS.map(function (s) {
           return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + (TASK_STATUS_LABELS[s] || s) + '</option>';
         }).join('') + '</select></td>' +
