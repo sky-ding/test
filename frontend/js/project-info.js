@@ -400,6 +400,21 @@
     return Math.round(completed / tasks.length * 100);
   }
 
+  // 将 milestones 合并到 tasks 中，按 sort_order 排序
+  function mergeMilestonesIntoTasks(tasks, milestones) {
+    if (!milestones || !milestones.length) return tasks || [];
+    // milestones 是平铺列表，每个作为顶层任务（无 children）合并
+    var merged = (tasks || []).slice();
+    milestones.forEach(function (m) {
+      var copy = deepClone(m);
+      copy.children = copy.children || [];
+      merged.push(copy);
+    });
+    // 按 sort_order 排序
+    merged.sort(function (a, b) { return (a.sort_order || 0) - (b.sort_order || 0); });
+    return merged;
+  }
+
   function buildTaskSummaryRows(tasks, depth) {
     depth = depth || 0;
     var rows = [];
@@ -702,7 +717,8 @@
     var d = state.data;
     var sp = d.sub_project;
     var ms = milestoneStats(d.milestones || []);
-    var prog = overallProgress(d.tasks || []);
+    var allTasksForSummary = mergeMilestonesIntoTasks(d.tasks || [], d.milestones || []);
+    var prog = overallProgress(allTasksForSummary);
     var teamN = (d.team_members || []).length;
     var periodDays = daysBetween(sp.planned_start_date, sp.planned_end_date);
     var goals = d.goals || [];
@@ -718,8 +734,8 @@
         '<td>' + esc(r.status) + '</td></tr>';
     }).join('');
 
-    // 渲染任务（带层级展开）
-    var taskRowsHtml = buildTaskSummaryRows(d.tasks || [], 0).join('');
+    // 渲染任务（带层级展开，包含里程碑任务）
+    var taskRowsHtml = buildTaskSummaryRows(allTasksForSummary, 0).join('');
 
     var teamRows = (d.team_members || []).map(function (t) {
       return '<tr><td><strong>' + esc(t.name) + '</strong></td><td>' + esc(t.team_column_name) +
