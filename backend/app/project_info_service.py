@@ -449,7 +449,7 @@ def save_project_info(
             task = Task(
                 sub_project_id=sub_project_id,
                 name=item.name.strip(),
-                phase=item.phase,
+                status=item.status,
                 assignee=(item.assignee or "").strip() or None,
                 start_date=item.start_date,
                 end_date=item.end_date,
@@ -463,7 +463,7 @@ def save_project_info(
             if task is None or task.sub_project_id != sub_project_id:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid task id")
             task.name = item.name.strip()
-            task.phase = item.phase
+            task.status = item.status
             task.assignee = (item.assignee or "").strip() or None
             task.start_date = item.start_date
             task.end_date = item.end_date

@@ -17,7 +17,14 @@
     overdue: '已延期'
   };
 
-  var TASK_PHASES = ['需求与设计', '开发实施', '测试验证', '部署上线'];
+  var TASK_STATUS = ['pending', 'in-progress', 'completed', 'overdue'];
+  var TASK_STATUS_LABELS = {
+    pending: '待开始',
+    'in-progress': '进行中',
+    completed: '已完成',
+    overdue: '已延期'
+  };
+
   var PARTICIPATION = ['核心成员', '兼职参与', '外部协作'];
   var RISK_CATEGORIES = ['质量', '进度', '成本', '范围'];
   var RISK_SOURCES = ['技术', '资源', '管理', '外部'];
@@ -678,7 +685,7 @@
     }).join('');
 
     var taskRows = (d.tasks || []).map(function (t) {
-      return '<tr><td><strong>' + esc(t.name) + '</strong></td><td>' + esc(t.phase) + '</td>' +
+      return '<tr><td><strong>' + esc(t.name) + '</strong></td><td>' + esc(TASK_STATUS_LABELS[t.status] || t.status) + '</td>' +
         '<td>' + esc(t.assignee || '—') + '</td><td>' + fmtDate(t.start_date) + '</td>' +
         '<td>' + fmtDate(t.end_date) + '</td><td>' + (Number(t.progress) || 0) + '%</td></tr>';
     }).join('');
@@ -737,7 +744,7 @@
         }).join('') + '</tbody></table></div></div>' : '') +
       '<div class="pi-card"><h3>里程碑</h3><div class="pi-ms-tl">' + (msHtml || '<span>暂无里程碑</span>') + '</div></div>' +
       '<div class="pi-card"><h3>任务清单</h3><div class="pi-table-wrap"><table class="pi-table"><thead><tr>' +
-      '<th>名称</th><th>阶段</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th></tr></thead><tbody>' +
+      '<th>名称</th><th>状态</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th></tr></thead><tbody>' +
       (taskRows || '<tr><td colspan="6">暂无任务</td></tr>') + '</tbody></table></div></div>' +
       '<div class="pi-card"><h3>团队与人力</h3><p class="pi-card-sub">单位：人月 · 个人容量 1.0/月 · 展示 ' + esc(d.period || state.period) + '</p>' +
       '<div class="pi-table-wrap"><table class="pi-table"><thead><tr><th>姓名</th><th>所属团队</th><th>角色</th><th>参与方式</th>' +
@@ -844,7 +851,7 @@
       '<button type="button" class="pi-btn" id="pi-add-goal">+ 添加目标</button></div>' +
       '<div class="pi-card"><h3>里程碑</h3><table class="pi-table" id="pi-tbl-milestones"><thead><tr><th></th><th>名称</th><th>计划日期</th><th>状态</th><th>描述</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-milestone">+ 添加里程碑</button></div>' +
-      '<div class="pi-card"><h3>任务</h3><table class="pi-table" id="pi-tbl-tasks"><thead><tr><th></th><th>名称</th><th>阶段</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
+      '<div class="pi-card"><h3>任务</h3><table class="pi-table" id="pi-tbl-tasks"><thead><tr><th></th><th>名称</th><th>状态</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-task">+ 添加任务</button></div>' +
       '<div class="pi-card"><h3>团队与人力</h3>' +
       '<div class="pi-toolbar"><label>月份</label><select id="pi-f-month"></select>' +
@@ -894,7 +901,7 @@
     });
     document.getElementById('pi-add-task').addEventListener('click', function () {
       e.tasks.push({
-        id: null, name: '新任务', phase: TASK_PHASES[0], assignee: '',
+        id: null, name: '新任务', status: 'pending', assignee: '',
         start_date: state.year + '-06-01', end_date: state.year + '-06-30',
         progress: 0, sort_order: e.tasks.length
       });
@@ -1161,7 +1168,9 @@
           return '<option value="' + g.id + '"' + selected + '>' + esc(g.name) + '</option>';
         }).join('');
       return '<tr data-idx="' + idx + '"><td class="pi-drag">⠿</td><td><input data-f="name" value="' + esc(t.name) + '"></td>' +
-        '<td><select data-f="phase">' + optHtml(TASK_PHASES, t.phase) + '</select></td>' +
+        '<td><select data-f="status">' + TASK_STATUS.map(function (s) {
+          return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + (TASK_STATUS_LABELS[s] || s) + '</option>';
+        }).join('') + '</select></td>' +
         '<td><input data-f="assignee" value="' + esc(t.assignee || '') + '"></td>' +
         '<td><input type="date" data-f="start_date" value="' + fmtDate(t.start_date) + '"></td>' +
         '<td><input type="date" data-f="end_date" value="' + fmtDate(t.end_date) + '"></td>' +
@@ -1399,7 +1408,7 @@
       deleted_milestone_ids: deletedIds(snap.milestones || [], e.milestones),
       tasks: e.tasks.map(function (t) {
         return {
-          id: t.id, name: t.name, phase: t.phase, assignee: t.assignee || null,
+          id: t.id, name: t.name, status: t.status, assignee: t.assignee || null,
           start_date: t.start_date, end_date: t.end_date, progress: t.progress || 0, sort_order: t.sort_order,
           goal_ids: t.goal_ids || []
         };
