@@ -9,14 +9,6 @@
     archived: { label: '已归档', cls: 'pi-tag-archived' }
   };
 
-  var MILESTONE_STATUS = ['pending', 'in-progress', 'completed', 'overdue'];
-  var MILESTONE_LABELS = {
-    pending: '待开始',
-    'in-progress': '进行中',
-    completed: '已完成',
-    overdue: '已延期'
-  };
-
   var TASK_STATUS = ['pending', 'in-progress', 'completed', 'overdue'];
   var TASK_STATUS_LABELS = {
     pending: '待开始',
@@ -408,6 +400,23 @@
     return Math.round(sum / tasks.length);
   }
 
+  function buildTaskSummaryRows(tasks, depth) {
+    depth = depth || 0;
+    var rows = [];
+    tasks.forEach(function (t) {
+      var indent = depth > 0 ? '<span style="display:inline-block;width:' + (depth * 20) + 'px"></span>└ ' : '';
+      var milestoneBadge = t.is_milestone ? ' <span style="font-size:10px;background:#e8f0fe;color:#1E6FFF;padding:1px 6px;border-radius:3px">里程碑</span>' : '';
+      rows.push('<tr><td>' + indent + '<strong>' + esc(t.name) + '</strong>' + milestoneBadge + '</td><td>' +
+        esc(TASK_STATUS_LABELS[t.status] || t.status) + '</td>' +
+        '<td>' + esc(t.assignee || '—') + '</td><td>' + fmtDate(t.start_date) + '</td>' +
+        '<td>' + fmtDate(t.end_date) + '</td><td>' + (Number(t.progress) || 0) + '%</td></tr>');
+      if (t.children && t.children.length) {
+        rows = rows.concat(buildTaskSummaryRows(t.children, depth + 1));
+      }
+    });
+    return rows;
+  }
+
   function milestoneStats(ms) {
     var total = ms.length;
     var done = ms.filter(function (m) { return m.status === 'completed'; }).length;
@@ -418,10 +427,10 @@
 
   function buildMilestoneGroupedHtml(milestones) {
     if (!milestones.length) return '<span>暂无里程碑</span>';
-    // 按 planned_date 分组
+    // 按 end_date 分组（里程碑的达成日期）
     var groups = {};
     milestones.forEach(function (m) {
-      var key = m.planned_date || '无日期';
+      var key = m.end_date || '无日期';
       if (!groups[key]) groups[key] = [];
       groups[key].push(m);
     });
@@ -436,7 +445,7 @@
         return '<div class="pi-ms-item">' +
           '<div class="pi-ms-dot" style="background:' + color + '"></div>' +
           '<div class="pi-ms-item-body"><div class="pi-ms-item-name">' + esc(m.name) + '</div>' +
-          '<div class="pi-ms-item-status">' + esc(MILESTONE_LABELS[m.status] || m.status) + '</div></div></div>';
+          '<div class="pi-ms-item-status">' + esc(TASK_STATUS_LABELS[m.status] || m.status) + '</div></div></div>';
       }).join('');
       return '<div class="pi-ms-col">' +
         (ki > 0 ? '<div class="pi-ms-arrow">→</div>' : '') +
@@ -709,11 +718,8 @@
         '<td>' + esc(r.status) + '</td></tr>';
     }).join('');
 
-    var taskRows = (d.tasks || []).map(function (t) {
-      return '<tr><td><strong>' + esc(t.name) + '</strong></td><td>' + esc(TASK_STATUS_LABELS[t.status] || t.status) + '</td>' +
-        '<td>' + esc(t.assignee || '—') + '</td><td>' + fmtDate(t.start_date) + '</td>' +
-        '<td>' + fmtDate(t.end_date) + '</td><td>' + (Number(t.progress) || 0) + '%</td></tr>';
-    }).join('');
+    // 渲染任务（带层级展开）
+    var taskRowsHtml = buildTaskSummaryRows(d.tasks || [], 0).join('');
 
     var teamRows = (d.team_members || []).map(function (t) {
       return '<tr><td><strong>' + esc(t.name) + '</strong></td><td>' + esc(t.team_column_name) +
@@ -770,7 +776,7 @@
       '<div class="pi-card"><h3>里程碑</h3><div class="pi-ms-tl">' + (msHtml || '<span>暂无里程碑</span>') + '</div></div>' +
       '<div class="pi-card"><h3>任务清单</h3><div class="pi-table-wrap"><table class="pi-table"><thead><tr>' +
       '<th>名称</th><th>状态</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th></tr></thead><tbody>' +
-      (taskRows || '<tr><td colspan="6">暂无任务</td></tr>') + '</tbody></table></div></div>' +
+      (taskRowsHtml || '<tr><td colspan="6">暂无任务</td></tr>') + '</tbody></table></div></div>' +
       '<div class="pi-card"><h3>团队与人力</h3><p class="pi-card-sub">单位：人月 · 个人容量 1.0/月 · 展示 ' + esc(d.period || state.period) + '</p>' +
       '<div class="pi-table-wrap"><table class="pi-table"><thead><tr><th>姓名</th><th>所属团队</th><th>角色</th><th>参与方式</th>' +
       '<th>本月投入</th><th>个人合计</th><th>饱和度</th><th>备注</th></tr></thead><tbody>' +
@@ -788,10 +794,23 @@
   function buildEditState() {
     var d = state.data;
     state.snapshot = deepClone(d);
+    // 编辑时把所有任务展平（包括里程碑任务和普通任务）
+    var allTasks = [];
+    function flattenTasks(tasks) {
+      tasks.forEach(function (t) {
+        var copy = deepClone(t);
+        copy.goal_ids = copy.goal_ids || [];
+        allTasks.push(copy);
+        if (t.children && t.children.length) {
+          flattenTasks(t.children);
+        }
+      });
+    }
+    flattenTasks(d.milestones || []);
+    flattenTasks(d.tasks || []);
     state.edit = {
       sub_project: deepClone(d.sub_project),
-      milestones: deepClone(d.milestones || []),
-      tasks: deepClone(d.tasks || []),
+      tasks: allTasks,
       team_members: deepClone(d.team_members || []),
       risks: deepClone(d.risks || []),
       manpower: deepClone(d.manpower || { period: state.period, cells: [] }),
@@ -874,9 +893,7 @@
       '<div class="pi-form-group"><label>实际结束</label><input type="date" id="pi-f-ae" value="' + (sp.actual_end_date ? fmtDate(sp.actual_end_date) : '') + '"></div></div></div>' +
       '<div class="pi-card"><h3>🎯 项目目标</h3><table class="pi-table" id="pi-tbl-goals"><thead><tr><th style="width:32px">#</th><th style="width:180px">目标名称</th><th style="width:80px">单位</th><th style="width:100px">期初目标</th><th style="width:100px">期中调整</th><th style="width:100px">当前值</th><th style="width:80px">方向</th><th style="width:80px">状态</th><th style="width:80px">操作</th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-goal">+ 添加目标</button></div>' +
-      '<div class="pi-card"><h3>里程碑</h3><table class="pi-table" id="pi-tbl-milestones"><thead><tr><th></th><th>名称</th><th>计划日期</th><th>状态</th><th>描述</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
-      '<button type="button" class="pi-btn" id="pi-add-milestone">+ 添加里程碑</button></div>' +
-      '<div class="pi-card"><h3>任务</h3><table class="pi-table" id="pi-tbl-tasks"><thead><tr><th></th><th>名称</th><th>状态</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
+      '<div class="pi-card"><h3>任务</h3><table class="pi-table" id="pi-tbl-tasks"><thead><tr><th></th><th>名称</th><th>状态</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th><th>里程碑</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-task">+ 添加任务</button></div>' +
       '<div class="pi-card"><h3>团队与人力</h3>' +
       '<div class="pi-toolbar"><label>月份</label><select id="pi-f-month"></select>' +
@@ -899,7 +916,6 @@
     bindEditInput('#pi-f-ae', function (el) { e.sub_project.actual_end_date = el.value || null; });
 
     renderGoalRows();
-    renderMilestoneRows();
     renderTaskRows();
     renderManpowerMonthSelect();
     renderTeamManpowerRows();
@@ -916,19 +932,11 @@
       markDirty();
       renderGoalRows();
     });
-    document.getElementById('pi-add-milestone').addEventListener('click', function () {
-      e.milestones.push({
-        id: null, name: '新里程碑', planned_date: state.year + '-06-01',
-        status: 'pending', description: '', sort_order: e.milestones.length
-      });
-      markDirty();
-      renderMilestoneRows();
-    });
     document.getElementById('pi-add-task').addEventListener('click', function () {
       e.tasks.push({
         id: null, name: '新任务', status: 'pending', assignee: '',
         start_date: state.year + '-06-01', end_date: state.year + '-06-30',
-        progress: 0, sort_order: e.tasks.length
+        progress: 0, is_milestone: false, parent_id: null, sort_order: e.tasks.length
       });
       markDirty();
       renderTaskRows();
@@ -953,7 +961,6 @@
     });
 
     initSortable('pi-tbl-goals', 'goals');
-    initSortable('pi-tbl-milestones', 'milestones');
     initSortable('pi-tbl-tasks', 'tasks');
     initSortable('pi-tbl-team', 'team_members');
   }
@@ -1113,58 +1120,72 @@
     });
   }
 
-  function renderMilestoneRows() {
-    var tbody = document.querySelector('#pi-tbl-milestones tbody');
-    if (!tbody) return;
-    var e = state.edit;
-    var goals = e.goals || [];
-    tbody.innerHTML = e.milestones.map(function (m, idx) {
-      return '<tr data-idx="' + idx + '"><td class="pi-drag">⠿</td><td><input data-f="name" value="' + esc(m.name) + '"></td>' +
-        '<td><input type="date" data-f="planned_date" value="' + fmtDate(m.planned_date) + '"></td>' +
-        '<td><select data-f="status">' + MILESTONE_STATUS.map(function (s) {
-          return '<option value="' + s + '"' + (m.status === s ? ' selected' : '') + '>' + (MILESTONE_LABELS[s] || s) + '</option>';
-        }).join('') + '</select></td>' +
-        '<td><input data-f="description" value="' + esc(m.description || '') + '"></td>' +
-        '<td><div class="pi-multi-check" data-ms-goal="true" data-mi="' + idx + '"></div></td>' +
-        '<td><button type="button" class="pi-btn" data-del="ms">删</button></td></tr>';
-    }).join('');
-    wireRowInputs(tbody, e.milestones);
-    // 关联目标多选（自定义 checkbox 下拉）
-    tbody.querySelectorAll('.pi-multi-check[data-ms-goal]').forEach(function (container) {
-      var mi = parseInt(container.getAttribute('data-mi'), 10);
-      createMultiCheckDropdown(container, goals, e.milestones[mi].goal_ids || [], function (ids) {
-        e.milestones[mi].goal_ids = ids;
-        markDirty();
-      });
-    });
-    tbody.querySelectorAll('[data-del="ms"]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var idx = parseInt(btn.closest('tr').getAttribute('data-idx'), 10);
-        e.milestones.splice(idx, 1);
-        markDirty();
-        renderMilestoneRows();
-      });
-    });
-  }
-
   function renderTaskRows() {
     var tbody = document.querySelector('#pi-tbl-tasks tbody');
     if (!tbody) return;
     var e = state.edit;
     var goals = e.goals || [];
-    tbody.innerHTML = e.tasks.map(function (t, idx) {
-      return '<tr data-idx="' + idx + '"><td class="pi-drag">⠿</td><td><input data-f="name" value="' + esc(t.name) + '"></td>' +
+    // 先按 parent_id 排序：顶层任务在前，子任务在后
+    var sortedTasks = [];
+    var taskMap = {};
+    e.tasks.forEach(function (t, i) { t._idx = i; taskMap[t.id] = t; });
+    e.tasks.forEach(function (t) {
+      if (!t.parent_id || !taskMap[t.parent_id]) {
+        sortedTasks.push(t);
+        // 添加子任务
+        e.tasks.forEach(function (child) {
+          if (child.parent_id === t.id) sortedTasks.push(child);
+        });
+      }
+    });
+    // 没有被 parent 引用的独立任务也加入
+    e.tasks.forEach(function (t) {
+      if (sortedTasks.indexOf(t) === -1) sortedTasks.push(t);
+    });
+
+    // 构建 parent_id 选项
+    var parentOptions = e.tasks.filter(function (t) { return !t.parent_id; }).map(function (t) {
+      return '<option value="' + (t.id || 'new_' + t._idx) + '">' + esc(t.name || '(未命名)') + '</option>';
+    }).join('');
+
+    tbody.innerHTML = sortedTasks.map(function (t) {
+      var idx = t._idx;
+      var isChild = t.parent_id != null;
+      var indent = isChild ? '<span style="display:inline-block;width:20px"></span>└ ' : '';
+      // parent_id select
+      var parentSel = '<select data-f="parent_id" style="width:100%;font-size:11px">' +
+        '<option value="">— 顶层 —</option>' + parentOptions.replace(
+          'value="' + (t.parent_id || '') + '"',
+          'value="' + (t.parent_id || '') + '" selected'
+        ) + '</select>';
+      return '<tr data-idx="' + idx + '"><td class="pi-drag">⠿</td>' +
+        '<td>' + indent + '<input data-f="name" value="' + esc(t.name) + '" style="width:100%"></td>' +
         '<td><select data-f="status">' + TASK_STATUS.map(function (s) {
           return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + (TASK_STATUS_LABELS[s] || s) + '</option>';
         }).join('') + '</select></td>' +
         '<td><input data-f="assignee" value="' + esc(t.assignee || '') + '"></td>' +
         '<td><input type="date" data-f="start_date" value="' + fmtDate(t.start_date) + '"></td>' +
         '<td><input type="date" data-f="end_date" value="' + fmtDate(t.end_date) + '"></td>' +
-        '<td><input type="number" min="0" max="100" step="1" data-f="progress" value="' + (t.progress || 0) + '" style="width:70px"> %</td>' +
+        '<td><input type="number" min="0" max="100" step="1" data-f="progress" value="' + (t.progress || 0) + '" style="width:60px"> %</td>' +
+        '<td><button type="button" class="pi-btn' + (t.is_milestone ? ' pi-btn-primary' : '') + '" data-toggle-ms="' + idx + '" style="font-size:11px;padding:2px 8px;white-space:nowrap">' + (t.is_milestone ? '是' : '否') + '</button></td>' +
         '<td><div class="pi-multi-check" data-task-goal="true" data-ti="' + idx + '"></div></td>' +
-        '<td><button type="button" class="pi-btn" data-del="task">删</button></td></tr>';
+        '<td style="white-space:nowrap"><button type="button" class="pi-btn" data-del="task" style="font-size:12px;padding:4px 10px">删除</button></td></tr>';
     }).join('');
-    wireRowInputs(tbody, e.tasks);
+    wireRowInputs(tbody, e.tasks, function (el, row, field) {
+      if (field === 'parent_id') {
+        var val = el.value;
+        row.parent_id = val ? parseInt(val, 10) : null;
+      }
+    });
+    // 里程碑切换按钮
+    tbody.querySelectorAll('[data-toggle-ms]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var i = parseInt(btn.getAttribute('data-toggle-ms'), 10);
+        e.tasks[i].is_milestone = !e.tasks[i].is_milestone;
+        markDirty();
+        renderTaskRows();
+      });
+    });
     // 关联目标多选（自定义 checkbox 下拉）
     tbody.querySelectorAll('.pi-multi-check[data-task-goal]').forEach(function (container) {
       var ti = parseInt(container.getAttribute('data-ti'), 10);
@@ -1342,7 +1363,6 @@
         state.edit[key] = order;
         markDirty();
         if (key === 'goals') renderGoalRows();
-        if (key === 'milestones') renderMilestoneRows();
         if (key === 'tasks') renderTaskRows();
         if (key === 'team_members') renderTeamManpowerRows();
       }
@@ -1371,19 +1391,12 @@
         actual_start_date: e.sub_project.actual_start_date || null,
         actual_end_date: e.sub_project.actual_end_date || null
       },
-      milestones: e.milestones.map(function (m) {
-        return {
-          id: m.id, name: m.name, planned_date: m.planned_date,
-          status: m.status, description: m.description || null, sort_order: m.sort_order,
-          goal_ids: m.goal_ids || []
-        };
-      }),
-      deleted_milestone_ids: deletedIds(snap.milestones || [], e.milestones),
       tasks: e.tasks.map(function (t) {
         return {
           id: t.id, name: t.name, status: t.status, assignee: t.assignee || null,
-          start_date: t.start_date, end_date: t.end_date, progress: t.progress || 0, sort_order: t.sort_order,
-          goal_ids: t.goal_ids || []
+          start_date: t.start_date, end_date: t.end_date, progress: t.progress || 0,
+          is_milestone: !!t.is_milestone, parent_id: t.parent_id || null,
+          sort_order: t.sort_order, goal_ids: t.goal_ids || []
         };
       }),
       deleted_task_ids: deletedIds(snap.tasks || [], e.tasks),

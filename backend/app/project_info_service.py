@@ -16,7 +16,6 @@ from app.models_relational import (
     GoalLink,
     ManpowerCell,
     ManpowerColumn,
-    Milestone,
     ProjectRisk,
     SubProgram,
     SubProject,
@@ -30,7 +29,6 @@ from app.schemas_relational import (
     GoalDerivedProgress,
     GoalLinkOut,
     GoalOut,
-    MilestoneOut,
     ProjectInfoBreadcrumb,
     ProjectInfoGetResponse,
     ProjectInfoManpowerOut,
@@ -145,20 +143,17 @@ def build_project_info_response(
     p = assert_period_matches_year(period, y)
     sp = _load_sub_project(db, sub_project_id, y)
 
-    milestones = list(
-        db.scalars(
-            select(Milestone)
-            .where(Milestone.sub_project_id == sub_project_id)
-            .order_by(Milestone.sort_order, Milestone.id)
-        ).all()
-    )
-    tasks = list(
+    all_tasks = list(
         db.scalars(
             select(Task)
             .where(Task.sub_project_id == sub_project_id)
             .order_by(Task.sort_order, Task.id)
         ).all()
     )
+    # 里程碑 = is_milestone=True 的顶层任务
+    milestone_tasks = [t for t in all_tasks if t.is_milestone]
+    # 普通任务：is_milestone=False 的顶层任务（parent_id IS NULL）
+    normal_tasks = [t for t in all_tasks if not t.is_milestone]
     risks = list(
         db.scalars(
             select(ProjectRisk)
@@ -219,18 +214,16 @@ def build_project_info_response(
             overall_status=overall,
         ))
 
-    # 给里程碑/任务填充 goal_ids
-    milestones_out: list[MilestoneOut] = []
-    for m in milestones:
-        ms_out = MilestoneOut.model_validate(m)
-        ms_out.goal_ids = reverse_links.get(("milestone", m.id), [])
-        milestones_out.append(ms_out)
-
-    tasks_out: list[TaskOut] = []
-    for t in tasks:
+    # 给任务填充 goal_ids（所有任务/里程碑统一用 task 类型）
+    def _build_task_out(t: Task) -> TaskOut:
         tk_out = TaskOut.model_validate(t)
         tk_out.goal_ids = reverse_links.get(("task", t.id), [])
-        tasks_out.append(tk_out)
+        # 构建子任务
+        tk_out.children = [_build_task_out(c) for c in t.children]
+        return tk_out
+
+    milestones_out: list[TaskOut] = [_build_task_out(t) for t in milestone_tasks]
+    tasks_out: list[TaskOut] = [_build_task_out(t) for t in normal_tasks]
 
     return ProjectInfoGetResponse(
         year=y,
@@ -386,59 +379,13 @@ def save_project_info(
     sp.actual_start_date = body.sub_project.actual_start_date
     sp.actual_end_date = body.sub_project.actual_end_date
 
-    _assert_owned_ids(db, Milestone, sub_project_id, body.deleted_milestone_ids, "milestone")
-    for mid in body.deleted_milestone_ids:
-        db.delete(db.get(Milestone, mid))
-
-    # ========== 清理被删里程碑/任务的 goal_links ==========
+    # ========== 清理被删任务的 goal_links ==========
     from sqlalchemy import delete as sa_delete
-    for mid in body.deleted_milestone_ids:
-        db.execute(sa_delete(GoalLink).where(
-            GoalLink.target_type == "milestone",
-            GoalLink.target_id == mid,
-        ))
     for tid in body.deleted_task_ids:
         db.execute(sa_delete(GoalLink).where(
             GoalLink.target_type == "task",
             GoalLink.target_id == tid,
         ))
-
-    for item in body.milestones:
-        if item.id is None:
-            milestone = Milestone(
-                sub_project_id=sub_project_id,
-                name=item.name.strip(),
-                planned_date=item.planned_date,
-                status=item.status,
-                description=(item.description or "").strip() or None,
-                sort_order=item.sort_order,
-            )
-            db.add(milestone)
-            db.flush()
-        else:
-            milestone = db.get(Milestone, item.id)
-            if milestone is None or milestone.sub_project_id != sub_project_id:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid milestone id")
-            milestone.name = item.name.strip()
-            milestone.planned_date = item.planned_date
-            milestone.status = item.status
-            milestone.description = (item.description or "").strip() or None
-            milestone.sort_order = item.sort_order
-
-        # 同步该里程碑的 goal 关联
-        db.execute(sa_delete(GoalLink).where(
-            GoalLink.target_type == "milestone",
-            GoalLink.target_id == milestone.id,
-        ))
-        for gid in item.goal_ids:
-            goal = db.get(Goal, gid)
-            if goal is None or goal.sub_project_id != sub_project_id:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"invalid goal id {gid}")
-            db.add(GoalLink(
-                goal_id=gid,
-                target_type="milestone",
-                target_id=milestone.id,
-            ))
 
     _assert_owned_ids(db, Task, sub_project_id, body.deleted_task_ids, "task")
     for tid in body.deleted_task_ids:
@@ -454,6 +401,8 @@ def save_project_info(
                 start_date=item.start_date,
                 end_date=item.end_date,
                 progress=item.progress,
+                is_milestone=item.is_milestone,
+                parent_id=item.parent_id,
                 sort_order=item.sort_order,
             )
             db.add(task)
@@ -468,6 +417,8 @@ def save_project_info(
             task.start_date = item.start_date
             task.end_date = item.end_date
             task.progress = item.progress
+            task.is_milestone = item.is_milestone
+            task.parent_id = item.parent_id
             task.sort_order = item.sort_order
 
         # 同步该任务的 goal 关联

@@ -98,9 +98,6 @@ class SubProject(Base):
     project_risks: Mapped[list[ProjectRisk]] = relationship(
         back_populates="sub_project", cascade="all, delete-orphan"
     )
-    milestones: Mapped[list[Milestone]] = relationship(
-        back_populates="sub_project", cascade="all, delete-orphan"
-    )
     tasks: Mapped[list[Task]] = relationship(back_populates="sub_project", cascade="all, delete-orphan")
     goals: Mapped[list[Goal]] = relationship(
         back_populates="sub_project", cascade="all, delete-orphan"
@@ -216,24 +213,6 @@ class ProjectRisk(Base):
     sub_project: Mapped[SubProject] = relationship(back_populates="project_risks")
 
 
-class Milestone(Base):
-    __tablename__ = "milestones"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    sub_project_id: Mapped[int] = mapped_column(
-        ForeignKey("sub_projects.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    planned_date: Mapped[date] = mapped_column(Date, nullable=False)
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
-
-    sub_project: Mapped[SubProject] = relationship(back_populates="milestones")
-
-
 class Task(Base):
     __tablename__ = "tasks"
 
@@ -247,11 +226,17 @@ class Task(Base):
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[date] = mapped_column(Date, nullable=False)
     progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_milestone: Mapped[bool] = mapped_column(default=False, nullable=False)
+    parent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(default=_utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(default=_utcnow, onupdate=_utcnow, nullable=False)
 
     sub_project: Mapped[SubProject] = relationship(back_populates="tasks")
+    parent: Mapped[Task | None] = relationship(back_populates="children", remote_side=[id])
+    children: Mapped[list[Task]] = relationship(back_populates="parent")
 
 
 class TeamMember(Base):

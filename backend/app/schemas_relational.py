@@ -405,39 +405,8 @@ class ProjectRiskDetailOut(ProjectRiskOut):
 # --- 项目信息（聚合读写） ---
 
 _PROJECT_STATUSES = frozenset({"active", "archived"})
-_MILESTONE_STATUSES = frozenset({"pending", "in-progress", "completed", "overdue"})
-_TASK_STATUSES = _MILESTONE_STATUSES  # 任务状态与里程碑状态共用同一组可选值
+_TASK_STATUSES = frozenset({"pending", "in-progress", "completed", "overdue"})
 _PARTICIPATION = frozenset({"核心成员", "兼职参与", "外部协作"})
-
-
-class MilestoneOut(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    name: str
-    planned_date: date
-    status: str
-    description: str | None = None
-    sort_order: int = 0
-    goal_ids: list[int] = Field(default_factory=list)
-
-
-class MilestoneIn(BaseModel):
-    id: int | None = None
-    name: str = Field(min_length=1, max_length=200)
-    planned_date: date
-    status: str = Field(max_length=20)
-    description: str | None = None
-    sort_order: int = Field(ge=0)
-    goal_ids: list[int] = Field(default_factory=list)
-
-    @field_validator("status")
-    @classmethod
-    def valid_status(cls, v: str) -> str:
-        s = v.strip()
-        if s not in _MILESTONE_STATUSES:
-            raise ValueError("invalid milestone status")
-        return s
 
 
 class TaskOut(BaseModel):
@@ -450,8 +419,11 @@ class TaskOut(BaseModel):
     start_date: date
     end_date: date
     progress: int = 0
+    is_milestone: bool = False
+    parent_id: int | None = None
     sort_order: int = 0
     goal_ids: list[int] = Field(default_factory=list)
+    children: list[TaskOut] = Field(default_factory=list)
 
 
 class TaskIn(BaseModel):
@@ -462,6 +434,8 @@ class TaskIn(BaseModel):
     start_date: date
     end_date: date
     progress: int = Field(default=0, ge=0, le=100)
+    is_milestone: bool = False
+    parent_id: int | None = None
     sort_order: int = Field(ge=0)
     goal_ids: list[int] = Field(default_factory=list)
 
@@ -601,8 +575,6 @@ class ProjectInfoSubProjectIn(BaseModel):
 
 class ProjectInfoPutBody(BaseModel):
     sub_project: ProjectInfoSubProjectIn
-    milestones: list[MilestoneIn] = Field(default_factory=list)
-    deleted_milestone_ids: list[int] = Field(default_factory=list)
     tasks: list[TaskIn] = Field(default_factory=list)
     deleted_task_ids: list[int] = Field(default_factory=list)
     team_members: list[TeamMemberIn] = Field(default_factory=list)
@@ -618,7 +590,7 @@ class ProjectInfoGetResponse(BaseModel):
     year: int
     period: str
     sub_project: SubProjectDetailOut
-    milestones: list[MilestoneOut]
+    milestones: list[TaskOut]  # 里程碑 = is_milestone=True 的 tasks
     tasks: list[TaskOut]
     team_members: list[TeamMemberOut]
     risks: list[ProjectRiskDetailOut]
@@ -661,7 +633,7 @@ class GoalLinkOut(BaseModel):
 
 
 class GoalLinkIn(BaseModel):
-    target_type: Literal["milestone", "task"]
+    target_type: Literal["task"]
     target_id: int = Field(ge=1)
 
 

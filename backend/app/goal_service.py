@@ -6,7 +6,7 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.models_relational import Goal, GoalLink, Milestone, Task
+from app.models_relational import Goal, GoalLink, Task
 
 
 def _period_for_date(d: date) -> str:
@@ -20,20 +20,18 @@ def _quarter_for_date(d: date) -> str:
     return f"{d.year:04d}-Q{q}"
 
 
-def _collect_linked_items(db: Session, goal: Goal) -> tuple[list[Milestone], list[Task]]:
-    """获取一个目标关联的所有里程碑和任务。"""
-    milestones: list[Milestone] = []
-    tasks: list[Task] = []
+def _collect_linked_items(db: Session, goal: Goal) -> tuple[list[Task], list[Task]]:
+    """获取一个目标关联的所有里程碑任务和普通任务。"""
+    milestone_tasks: list[Task] = []
+    normal_tasks: list[Task] = []
     for link in goal.links:
-        if link.target_type == "milestone":
-            m = db.get(Milestone, link.target_id)
-            if m and m.sub_project_id == goal.sub_project_id:
-                milestones.append(m)
-        elif link.target_type == "task":
-            t = db.get(Task, link.target_id)
-            if t and t.sub_project_id == goal.sub_project_id:
-                tasks.append(t)
-    return milestones, tasks
+        t = db.get(Task, link.target_id)
+        if t and t.sub_project_id == goal.sub_project_id:
+            if t.is_milestone:
+                milestone_tasks.append(t)
+            else:
+                normal_tasks.append(t)
+    return milestone_tasks, normal_tasks
 
 
 def derive_goal_progress(
@@ -56,9 +54,9 @@ def derive_goal_progress(
         ...
     ]
     """
-    milestones, tasks = _collect_linked_items(db, goal)
+    milestone_tasks, normal_tasks = _collect_linked_items(db, goal)
 
-    if not milestones and not tasks:
+    if not milestone_tasks and not normal_tasks:
         # 无关联 → 无推导数据，返回空列表
         return []
 
@@ -66,19 +64,19 @@ def derive_goal_progress(
     quarter_items: dict[str, list[dict]] = {}
     month_items: dict[str, list[dict]] = {}
 
-    for m in milestones:
-        q = _quarter_for_date(m.planned_date)
-        mo = _period_for_date(m.planned_date)
+    for m in milestone_tasks:
+        q = _quarter_for_date(m.end_date)
+        mo = _period_for_date(m.end_date)
         item = {
             "name": m.name,
             "type": "milestone",
-            "status": m.status,  # 'pending' / 'in-progress' / 'completed' / 'overdue'
-            "date": m.planned_date,
+            "status": m.status,
+            "date": m.end_date,
         }
         quarter_items.setdefault(q, []).append(item)
         month_items.setdefault(mo, []).append(item)
 
-    for t in tasks:
+    for t in normal_tasks:
         # 任务按 start_date 所在的时间窗口聚合
         q = _quarter_for_date(t.start_date)
         mo = _period_for_date(t.start_date)
@@ -206,12 +204,7 @@ def build_phase_monthly_data(
     返回自动填充的阶段交付目标文本和目标达成状态。
     前端只在 phase_assessments 对应字段为 NULL 时使用这些数据。
     """
-    # 1. 获取本月相关的里程碑和任务
-    milestones = list(db.scalars(
-        select(Milestone)
-        .where(Milestone.sub_project_id == sub_project_id)
-    ).all())
-
+    # 1. 获取本月相关的任务
     tasks = list(db.scalars(
         select(Task)
         .where(Task.sub_project_id == sub_project_id)
@@ -222,13 +215,13 @@ def build_phase_monthly_data(
     month_end = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
 
     lines = []
-    for m in milestones:
-        if m.planned_date.year == year and m.planned_date.month == month:
-            lines.append(f"📌 {m.name}（{m.planned_date.isoformat()}）")
-
     for t in tasks:
-        if t.start_date < month_end and t.end_date >= month_start:
-            lines.append(f"📋 {t.name}（进度 {t.progress}%）")
+        if t.is_milestone:
+            if t.end_date.year == year and t.end_date.month == month:
+                lines.append(f"📌 {t.name}（{t.end_date.isoformat()}）")
+        else:
+            if t.start_date < month_end and t.end_date >= month_start:
+                lines.append(f"📋 {t.name}（进度 {t.progress}%）")
 
     auto_goal_text = "\n".join(lines) if lines else ""
 
