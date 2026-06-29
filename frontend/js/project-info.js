@@ -416,6 +416,34 @@
     return { total: total, done: done, prog: prog, pending: pending };
   }
 
+  function buildMilestoneGroupedHtml(milestones) {
+    if (!milestones.length) return '<span>暂无里程碑</span>';
+    // 按 planned_date 分组
+    var groups = {};
+    milestones.forEach(function (m) {
+      var key = m.planned_date || '无日期';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(m);
+    });
+    // 按日期排序
+    var keys = Object.keys(groups).sort();
+    return keys.map(function (dateKey) {
+      var items = groups[dateKey];
+      var dateLabel = dateKey === '无日期' ? '未设置日期' : dateKey;
+      var groupMs = items.map(function (m) {
+        var color = m.status === 'completed' ? '#34a853' : (m.status === 'in-progress' ? '#1E6FFF' : '#ddd');
+        return '<div class="pi-ms-item"><div class="pi-ms-dot" style="background:' + color + '"></div>' +
+          '<div><strong>' + esc(m.name) + '</strong></div>' +
+          '<div>' + esc(MILESTONE_LABELS[m.status] || m.status) + '</div></div>';
+      }).join('');
+      var done = items.filter(function (m) { return m.status === 'completed'; }).length;
+      return '<div class="pi-ms-group"><div class="pi-ms-group-head">' +
+        '<span class="pi-ms-group-date">' + esc(dateLabel) + '</span>' +
+        '<span class="pi-ms-group-progress">' + done + '/' + items.length + ' 已完成</span>' +
+        '</div>' + groupMs + '</div>';
+    }).join('');
+  }
+
   function renderEmptyState() {
     var box = document.getElementById('pi-empty-state');
     if (!box) return;
@@ -668,12 +696,7 @@
     var periodDays = daysBetween(sp.planned_start_date, sp.planned_end_date);
     var goals = d.goals || [];
 
-    var msHtml = (d.milestones || []).map(function (m) {
-      var color = m.status === 'completed' ? '#34a853' : (m.status === 'in-progress' ? '#1E6FFF' : '#ddd');
-      return '<div class="pi-ms-item"><div class="pi-ms-dot" style="background:' + color + '"></div>' +
-        '<div><strong>' + esc(m.name) + '</strong></div><div>' + fmtDate(m.planned_date) + '</div>' +
-        '<div>' + esc(MILESTONE_LABELS[m.status] || m.status) + '</div></div>';
-    }).join('');
+    var msHtml = buildMilestoneGroupedHtml(d.milestones || []);
 
     var riskRows = (d.risks || []).map(function (r) {
       return '<tr><td>' + esc(r.risk_category) + '</td><td>' + esc(r.risk_source) + '</td>' +
@@ -731,7 +754,7 @@
       '<div class="pi-meta-row"><span class="pi-meta-k">实际结束</span><span class="pi-meta-v">' + fmtDate(sp.actual_end_date) + '</span></div></div>' +
       '<div class="pi-meta-col pi-meta-col--desc"><h4>项目描述</h4><p class="pi-meta-desc">' +
       esc(sp.description || '（暂无描述）') + '</p></div></div></div>' +
-      (goals.length > 0 ? '<div class="pi-card"><h3>🎯 目标跟踪</h3>' +
+      (goals.length > 0 ? '<div class="pi-card"><h3>🎯 项目目标</h3>' +
         '<div class="pi-table-wrap"><table class="pi-table pi-summary-table"><thead><tr>' +
         '<th>目标</th><th>单位</th><th>目标值</th><th>当前值</th><th>状态</th>' +
         '</tr></thead><tbody>' + goals.map(function (g) {
@@ -847,7 +870,7 @@
       '<div class="pi-form-group"><label>计划结束 *</label><input type="date" id="pi-f-pe" value="' + fmtDate(sp.planned_end_date) + '"></div>' +
       '<div class="pi-form-group"><label>实际开始</label><input type="date" id="pi-f-as" value="' + (sp.actual_start_date ? fmtDate(sp.actual_start_date) : '') + '"></div>' +
       '<div class="pi-form-group"><label>实际结束</label><input type="date" id="pi-f-ae" value="' + (sp.actual_end_date ? fmtDate(sp.actual_end_date) : '') + '"></div></div></div>' +
-      '<div class="pi-card"><h3>🎯 目标跟踪</h3><table class="pi-table" id="pi-tbl-goals"><thead><tr><th style="width:32px">#</th><th style="width:180px">目标名称</th><th style="width:80px">单位</th><th style="width:100px">期初目标</th><th style="width:100px">期中调整</th><th style="width:100px">当前值</th><th style="width:80px">方向</th><th style="width:80px">状态</th><th style="width:120px">操作</th></tr></thead><tbody></tbody></table>' +
+      '<div class="pi-card"><h3>🎯 项目目标</h3><table class="pi-table" id="pi-tbl-goals"><thead><tr><th style="width:32px">#</th><th style="width:180px">目标名称</th><th style="width:80px">单位</th><th style="width:100px">期初目标</th><th style="width:100px">期中调整</th><th style="width:100px">当前值</th><th style="width:80px">方向</th><th style="width:80px">状态</th><th style="width:80px">操作</th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-goal">+ 添加目标</button></div>' +
       '<div class="pi-card"><h3>里程碑</h3><table class="pi-table" id="pi-tbl-milestones"><thead><tr><th></th><th>名称</th><th>计划日期</th><th>状态</th><th>描述</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-milestone">+ 添加里程碑</button></div>' +
@@ -942,7 +965,7 @@
     return 0;
   }
 
-  // ========== 目标跟踪 ==========
+  // ========== 项目目标 ==========
 
   var GOAL_DIRECTION_LABELS = {
     higher_better: '越大越好',
@@ -1035,18 +1058,6 @@
       // 操作列
       var td9 = document.createElement('td');
       td9.style.whiteSpace = 'nowrap';
-      if (gi > 0) {
-        var upBtn = document.createElement('button');
-        upBtn.type = 'button'; upBtn.className = 'pi-btn'; upBtn.setAttribute('data-goal-action', 'move-up'); upBtn.setAttribute('data-gi', gi); upBtn.title = '上移';
-        upBtn.textContent = '上移'; upBtn.style.cssText = 'font-size:12px;padding:4px 10px;margin-right:4px';
-        td9.appendChild(upBtn);
-      }
-      if (gi < goals.length - 1) {
-        var downBtn = document.createElement('button');
-        downBtn.type = 'button'; downBtn.className = 'pi-btn'; downBtn.setAttribute('data-goal-action', 'move-down'); downBtn.setAttribute('data-gi', gi); downBtn.title = '下移';
-        downBtn.textContent = '下移'; downBtn.style.cssText = 'font-size:12px;padding:4px 10px;margin-right:4px';
-        td9.appendChild(downBtn);
-      }
       var delBtn = document.createElement('button');
       delBtn.type = 'button'; delBtn.className = 'pi-btn pi-btn-danger'; delBtn.setAttribute('data-goal-action', 'delete'); delBtn.setAttribute('data-gi', gi); delBtn.title = '删除';
       delBtn.textContent = '删除'; delBtn.style.cssText = 'font-size:12px;padding:4px 10px';
@@ -1081,7 +1092,7 @@
       markDirty();
     });
 
-    // 点击事件（删除 + 上移/下移）
+    // 点击事件（删除）
     tbody.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-goal-action]');
       if (!btn) return;
@@ -1092,16 +1103,6 @@
       if (action === 'delete') {
         if (!confirm('确认删除该目标？关联关系将同步清除。')) return;
         state.edit.goals.splice(gi, 1);
-      } else if (action === 'move-up' && gi > 0) {
-        var goals = state.edit.goals;
-        var tmp = goals[gi - 1];
-        goals[gi - 1] = goals[gi];
-        goals[gi] = tmp;
-      } else if (action === 'move-down' && gi < state.edit.goals.length - 1) {
-        var goals = state.edit.goals;
-        var tmp = goals[gi + 1];
-        goals[gi + 1] = goals[gi];
-        goals[gi] = tmp;
       }
       // 重新编号 sort_order
       state.edit.goals.forEach(function (g, i) { g.sort_order = i; });

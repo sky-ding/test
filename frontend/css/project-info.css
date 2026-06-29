@@ -243,16 +243,42 @@
 
 #panel-project-info .pi-ms-tl {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
+  flex-direction: column;
+  gap: 12px;
   padding: 8px 0;
 }
 
-#panel-project-info .pi-ms-item {
-  flex: 1;
-  min-width: 100px;
+#panel-project-info .pi-ms-group {
+}
+
+#panel-project-info .pi-ms-group-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #E8EAED;
+}
+
+#panel-project-info .pi-ms-group-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1d1f23;
+}
+
+#panel-project-info .pi-ms-group-progress {
+  font-size: 11px;
+  color: #8a8d91;
+}
+
+#panel-project-info .pi-ms-group .pi-ms-item {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
   font-size: 12px;
+  min-width: 100px;
+  padding: 4px 10px;
 }
 
 #panel-project-info .pi-ms-dot {
