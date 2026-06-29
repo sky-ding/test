@@ -396,8 +396,8 @@
 
   function overallProgress(tasks) {
     if (!tasks || !tasks.length) return 0;
-    var sum = tasks.reduce(function (a, t) { return a + (Number(t.progress) || 0); }, 0);
-    return Math.round(sum / tasks.length);
+    var completed = tasks.filter(function (t) { return t.status === 'completed'; }).length;
+    return Math.round(completed / tasks.length * 100);
   }
 
   function buildTaskSummaryRows(tasks, depth) {
@@ -409,7 +409,7 @@
       rows.push('<tr><td>' + indent + '<strong>' + esc(t.name) + '</strong>' + milestoneBadge + '</td><td>' +
         esc(TASK_STATUS_LABELS[t.status] || t.status) + '</td>' +
         '<td>' + esc(t.assignee || '—') + '</td><td>' + fmtDate(t.start_date) + '</td>' +
-        '<td>' + fmtDate(t.end_date) + '</td><td>' + (Number(t.progress) || 0) + '%</td></tr>');
+        '<td>' + fmtDate(t.end_date) + '</td></tr>');
       if (t.children && t.children.length) {
         rows = rows.concat(buildTaskSummaryRows(t.children, depth + 1));
       }
@@ -775,8 +775,8 @@
         }).join('') + '</tbody></table></div></div>' : '') +
       '<div class="pi-card"><h3>里程碑</h3><div class="pi-ms-tl">' + (msHtml || '<span>暂无里程碑</span>') + '</div></div>' +
       '<div class="pi-card"><h3>任务清单</h3><div class="pi-table-wrap"><table class="pi-table"><thead><tr>' +
-      '<th>名称</th><th>状态</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th></tr></thead><tbody>' +
-      (taskRowsHtml || '<tr><td colspan="6">暂无任务</td></tr>') + '</tbody></table></div></div>' +
+      '<th>名称</th><th>状态</th><th>负责人</th><th>开始</th><th>结束</th></tr></thead><tbody>' +
+      (taskRowsHtml || '<tr><td colspan="5">暂无任务</td></tr>') + '</tbody></table></div></div>' +
       '<div class="pi-card"><h3>团队与人力</h3><p class="pi-card-sub">单位：人月 · 个人容量 1.0/月 · 展示 ' + esc(d.period || state.period) + '</p>' +
       '<div class="pi-table-wrap"><table class="pi-table"><thead><tr><th>姓名</th><th>所属团队</th><th>角色</th><th>参与方式</th>' +
       '<th>本月投入</th><th>个人合计</th><th>饱和度</th><th>备注</th></tr></thead><tbody>' +
@@ -893,7 +893,7 @@
       '<div class="pi-form-group"><label>实际结束</label><input type="date" id="pi-f-ae" value="' + (sp.actual_end_date ? fmtDate(sp.actual_end_date) : '') + '"></div></div></div>' +
       '<div class="pi-card"><h3>🎯 项目目标</h3><table class="pi-table" id="pi-tbl-goals"><thead><tr><th style="width:32px">#</th><th style="width:180px">目标名称</th><th style="width:80px">单位</th><th style="width:100px">期初目标</th><th style="width:100px">期中调整</th><th style="width:100px">当前值</th><th style="width:80px">方向</th><th style="width:80px">状态</th><th style="width:80px">操作</th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-goal">+ 添加目标</button></div>' +
-      '<div class="pi-card"><h3>任务</h3><table class="pi-table" id="pi-tbl-tasks"><thead><tr><th></th><th>名称</th><th>父任务</th><th>状态</th><th>负责人</th><th>开始</th><th>结束</th><th>进度</th><th>里程碑</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
+      '<div class="pi-card"><h3>任务</h3><table class="pi-table" id="pi-tbl-tasks"><thead><tr><th></th><th>名称</th><th>状态</th><th>负责人</th><th>开始</th><th>结束</th><th>里程碑</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-task">+ 添加任务</button></div>' +
       '<div class="pi-card"><h3>团队与人力</h3>' +
       '<div class="pi-toolbar"><label>月份</label><select id="pi-f-month"></select>' +
@@ -1143,46 +1143,66 @@
       if (sortedTasks.indexOf(t) === -1) sortedTasks.push(t);
     });
 
-    // 构建 parent_id 选项
-    var parentOptions = e.tasks.filter(function (t) { return !t.parent_id; }).map(function (t) {
-      return '<option value="' + (t.id || 'new_' + t._idx) + '">' + esc(t.name || '(未命名)') + '</option>';
-    }).join('');
+    // 找到每个任务在 sortedTasks 中上面最近的顶层任务索引
+    function findPrevParent(currentIdx) {
+      for (var i = currentIdx - 1; i >= 0; i--) {
+        if (!sortedTasks[i].parent_id) return sortedTasks[i];
+      }
+      return null;
+    }
 
-    tbody.innerHTML = sortedTasks.map(function (t) {
+    tbody.innerHTML = sortedTasks.map(function (t, sortedIdx) {
       var idx = t._idx;
       var isChild = t.parent_id != null;
       var indent = isChild ? '<span style="display:inline-block;width:20px"></span>└ ' : '';
-      // parent_id select
-      var parentSel = '<select data-f="parent_id" style="width:100%;font-size:11px">' +
-        '<option value="">— 顶层 —</option>' + parentOptions.replace(
-          'value="' + (t.parent_id || '') + '"',
-          'value="' + (t.parent_id || '') + '" selected'
-        ) + '</select>';
+      // 降级/升级按钮
+      var demoteBtn = '';
+      if (!isChild) {
+        demoteBtn = '<button type="button" class="pi-btn" data-demote="' + idx + '" style="font-size:12px;padding:4px 10px">降级</button>';
+      } else {
+        demoteBtn = '<button type="button" class="pi-btn" data-upgrade="' + idx + '" style="font-size:12px;padding:4px 10px">升级</button>';
+      }
       return '<tr data-idx="' + idx + '"><td class="pi-drag">⠿</td>' +
         '<td>' + indent + '<input data-f="name" value="' + esc(t.name) + '" style="width:100%"></td>' +
-        '<td>' + parentSel + '</td>' +
         '<td><select data-f="status">' + TASK_STATUS.map(function (s) {
           return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + (TASK_STATUS_LABELS[s] || s) + '</option>';
         }).join('') + '</select></td>' +
         '<td><input data-f="assignee" value="' + esc(t.assignee || '') + '"></td>' +
         '<td><input type="date" data-f="start_date" value="' + fmtDate(t.start_date) + '"></td>' +
         '<td><input type="date" data-f="end_date" value="' + fmtDate(t.end_date) + '"></td>' +
-        '<td><input type="number" min="0" max="100" step="1" data-f="progress" value="' + (t.progress || 0) + '" style="width:60px"> %</td>' +
         '<td><button type="button" class="pi-btn' + (t.is_milestone ? ' pi-btn-primary' : '') + '" data-toggle-ms="' + idx + '" style="font-size:11px;padding:2px 8px;white-space:nowrap">' + (t.is_milestone ? '是' : '否') + '</button></td>' +
         '<td><div class="pi-multi-check" data-task-goal="true" data-ti="' + idx + '"></div></td>' +
-        '<td style="white-space:nowrap"><button type="button" class="pi-btn" data-del="task" style="font-size:12px;padding:4px 10px">删除</button></td></tr>';
+        '<td style="white-space:nowrap">' + demoteBtn + '<button type="button" class="pi-btn" data-del="task" style="font-size:12px;padding:4px 10px">删除</button></td></tr>';
     }).join('');
-    wireRowInputs(tbody, e.tasks, function (el, row, field) {
-      if (field === 'parent_id') {
-        var val = el.value;
-        row.parent_id = val ? parseInt(val, 10) : null;
-      }
-    });
+    wireRowInputs(tbody, e.tasks);
     // 里程碑切换按钮
     tbody.querySelectorAll('[data-toggle-ms]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var i = parseInt(btn.getAttribute('data-toggle-ms'), 10);
         e.tasks[i].is_milestone = !e.tasks[i].is_milestone;
+        markDirty();
+        renderTaskRows();
+      });
+    });
+    // 降级按钮
+    tbody.querySelectorAll('[data-demote]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var i = parseInt(btn.getAttribute('data-demote'), 10);
+        var prevParent = findPrevParent(sortedTasks.indexOf(e.tasks[i]));
+        if (!prevParent) {
+          alert('已是第一个任务，上方没有可归属的父任务');
+          return;
+        }
+        e.tasks[i].parent_id = prevParent.id || null;
+        markDirty();
+        renderTaskRows();
+      });
+    });
+    // 升级按钮
+    tbody.querySelectorAll('[data-upgrade]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var i = parseInt(btn.getAttribute('data-upgrade'), 10);
+        e.tasks[i].parent_id = null;
         markDirty();
         renderTaskRows();
       });
