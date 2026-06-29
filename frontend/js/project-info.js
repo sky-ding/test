@@ -240,8 +240,8 @@
 
   function fmtManMonth(v) {
     var n = Number(v);
-    if (isNaN(n)) return '0.00';
-    return n.toFixed(2);
+    if (isNaN(n)) return '0.0';
+    return n.toFixed(1);
   }
 
   function saturationBadge(level, rate) {
@@ -847,7 +847,7 @@
       '<div class="pi-form-group"><label>计划结束 *</label><input type="date" id="pi-f-pe" value="' + fmtDate(sp.planned_end_date) + '"></div>' +
       '<div class="pi-form-group"><label>实际开始</label><input type="date" id="pi-f-as" value="' + (sp.actual_start_date ? fmtDate(sp.actual_start_date) : '') + '"></div>' +
       '<div class="pi-form-group"><label>实际结束</label><input type="date" id="pi-f-ae" value="' + (sp.actual_end_date ? fmtDate(sp.actual_end_date) : '') + '"></div></div></div>' +
-      '<div class="pi-card"><h3>🎯 目标跟踪</h3><table class="pi-table" id="pi-tbl-goals"><thead><tr><th style="width:32px">#</th><th style="width:180px">目标名称</th><th style="width:80px">单位</th><th style="width:100px">期初目标</th><th style="width:100px">期中调整</th><th style="width:100px">当前值</th><th style="width:80px">方向</th><th style="width:80px">状态</th><th style="width:80px">关联项</th><th style="width:80px">操作</th></tr></thead><tbody></tbody></table>' +
+      '<div class="pi-card"><h3>🎯 目标跟踪</h3><table class="pi-table" id="pi-tbl-goals"><thead><tr><th style="width:32px">#</th><th style="width:180px">目标名称</th><th style="width:80px">单位</th><th style="width:100px">期初目标</th><th style="width:100px">期中调整</th><th style="width:100px">当前值</th><th style="width:80px">方向</th><th style="width:80px">状态</th><th style="width:120px">操作</th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-goal">+ 添加目标</button></div>' +
       '<div class="pi-card"><h3>里程碑</h3><table class="pi-table" id="pi-tbl-milestones"><thead><tr><th></th><th>名称</th><th>计划日期</th><th>状态</th><th>描述</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-milestone">+ 添加里程碑</button></div>' +
@@ -1032,29 +1032,26 @@
       td8.textContent = GOAL_STATUS_MAP[g.overall_status] || '⏳ 未开始';
       tr.appendChild(td8);
 
-      // 关联项统计
-      var td9 = document.createElement('td');
-      td9.style.cssText = 'font-size:12px;color:var(--text-secondary)';
-      td9.textContent = '由里程碑/任务管理';
-      tr.appendChild(td9);
-
       // 操作列
-      var td10 = document.createElement('td');
-      td10.style.whiteSpace = 'nowrap';
+      var td9 = document.createElement('td');
+      td9.style.whiteSpace = 'nowrap';
       if (gi > 0) {
         var upBtn = document.createElement('button');
-        upBtn.type = 'button'; upBtn.className = 'pi-btn-icon'; upBtn.setAttribute('data-goal-action', 'move-up'); upBtn.setAttribute('data-gi', gi); upBtn.title = '上移';
-        upBtn.textContent = '↑'; td10.appendChild(upBtn);
+        upBtn.type = 'button'; upBtn.className = 'pi-btn'; upBtn.setAttribute('data-goal-action', 'move-up'); upBtn.setAttribute('data-gi', gi); upBtn.title = '上移';
+        upBtn.textContent = '上移'; upBtn.style.cssText = 'font-size:12px;padding:4px 10px;margin-right:4px';
+        td9.appendChild(upBtn);
       }
       if (gi < goals.length - 1) {
         var downBtn = document.createElement('button');
-        downBtn.type = 'button'; downBtn.className = 'pi-btn-icon'; downBtn.setAttribute('data-goal-action', 'move-down'); downBtn.setAttribute('data-gi', gi); downBtn.title = '下移';
-        downBtn.textContent = '↓'; td10.appendChild(downBtn);
+        downBtn.type = 'button'; downBtn.className = 'pi-btn'; downBtn.setAttribute('data-goal-action', 'move-down'); downBtn.setAttribute('data-gi', gi); downBtn.title = '下移';
+        downBtn.textContent = '下移'; downBtn.style.cssText = 'font-size:12px;padding:4px 10px;margin-right:4px';
+        td9.appendChild(downBtn);
       }
       var delBtn = document.createElement('button');
-      delBtn.type = 'button'; delBtn.className = 'pi-btn-icon pi-btn-danger'; delBtn.setAttribute('data-goal-action', 'delete'); delBtn.setAttribute('data-gi', gi); delBtn.title = '删除';
-      delBtn.textContent = '×'; td10.appendChild(delBtn);
-      tr.appendChild(td10);
+      delBtn.type = 'button'; delBtn.className = 'pi-btn pi-btn-danger'; delBtn.setAttribute('data-goal-action', 'delete'); delBtn.setAttribute('data-gi', gi); delBtn.title = '删除';
+      delBtn.textContent = '删除'; delBtn.style.cssText = 'font-size:12px;padding:4px 10px';
+      td9.appendChild(delBtn);
+      tr.appendChild(td9);
 
       tbody.appendChild(tr);
     });
@@ -1174,8 +1171,7 @@
         '<td><input data-f="assignee" value="' + esc(t.assignee || '') + '"></td>' +
         '<td><input type="date" data-f="start_date" value="' + fmtDate(t.start_date) + '"></td>' +
         '<td><input type="date" data-f="end_date" value="' + fmtDate(t.end_date) + '"></td>' +
-        '<td><input type="range" min="0" max="100" data-f="progress" value="' + (t.progress || 0) + '"> ' +
-        (t.progress || 0) + '%</td>' +
+        '<td><input type="number" min="0" max="100" step="1" data-f="progress" value="' + (t.progress || 0) + '" style="width:70px"> %</td>' +
         '<td><select class="pi-select-multi" multiple data-task-goal="true" data-ti="' + idx + '" style="min-height:48px;max-width:160px">' + myGoalOpts + '</select></td>' +
         '<td><button type="button" class="pi-btn" data-del="task">删</button></td></tr>';
     }).join('');
@@ -1189,14 +1185,6 @@
           if (opt.value) ids.push(parseInt(opt.value, 10));
         });
         e.tasks[ti].goal_ids = ids;
-        markDirty();
-      });
-    });
-    tbody.querySelectorAll('input[data-f="progress"]').forEach(function (el) {
-      el.addEventListener('input', function () {
-        var idx = parseInt(el.closest('tr').getAttribute('data-idx'), 10);
-        e.tasks[idx].progress = parseInt(el.value, 10) || 0;
-        el.nextSibling.textContent = e.tasks[idx].progress + '%';
         markDirty();
       });
     });
@@ -1251,7 +1239,7 @@
         '<td><select data-f="team_column_id">' + columnOptions(t.team_column_id) + '</select></td>' +
         '<td><input data-f="role" value="' + esc(t.role) + '"></td>' +
         '<td><select data-f="participation">' + optHtml(PARTICIPATION, t.participation) + '</select></td>' +
-        '<td><input type="number" step="0.01" min="0" max="1" data-f="monthly_allocation" value="' +
+        '<td><input type="number" step="0.1" min="0" max="1" data-f="monthly_allocation" value="' +
         fmtManMonth(t.monthly_allocation != null ? t.monthly_allocation : 0) + '"></td>' +
         '<td><input data-f="remark" value="' + esc(t.remark || '') + '"></td>' +
         '<td><button type="button" class="pi-btn" data-del="team">删</button></td></tr>';
