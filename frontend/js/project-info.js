@@ -1177,7 +1177,7 @@
         demoteBtn = '<button type="button" class="pi-btn" data-upgrade="' + idx + '" style="font-size:12px;padding:4px 10px">升级</button>';
       }
       return '<tr data-idx="' + idx + '"><td class="pi-drag">⠿</td>' +
-        '<td><div style="display:flex;align-items:center">' + indent + '<input data-f="name" value="' + esc(t.name) + '" style="flex:1"></div></td>' +
+        '<td style="display:flex;align-items:center;gap:4px;min-width:0">' + indent + '<input data-f="name" value="' + esc(t.name) + '" style="flex:1;min-width:0"></td>' +
         '<td><select data-f="status">' + TASK_STATUS.map(function (s) {
           return '<option value="' + s + '"' + (t.status === s ? ' selected' : '') + '>' + (TASK_STATUS_LABELS[s] || s) + '</option>';
         }).join('') + '</select></td>' +
