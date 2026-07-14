@@ -2199,6 +2199,178 @@
       max-height: 70vh;
     }
 
+    /* ── 项目月度人力分析 · 单月增强 ── */
+
+    .manpower-overview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .manpower-overview-card {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 18px 20px;
+    }
+
+    .manpower-overview-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: #9ca3af;
+      margin-bottom: 4px;
+    }
+
+    .manpower-overview-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a2e;
+      display: inline;
+      line-height: 1.2;
+    }
+
+    .manpower-overview-unit {
+      font-size: 13px;
+      color: #6b7280;
+      margin-left: 4px;
+      display: inline;
+    }
+
+    .manpower-overview-meta {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #6b7280;
+      display: flex;
+      gap: 16px;
+    }
+
+    /* 项目集排名列表 */
+    .manpower-set-rank-list {
+      padding: 0;
+      list-style: none;
+    }
+
+    .manpower-set-rank-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .manpower-set-rank-item:last-child { border-bottom: none; }
+
+    .manpower-set-rank-badge {
+      width: 26px; height: 26px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .manpower-set-rank-badge.gold { background: #f59e0b; }
+    .manpower-set-rank-badge.silver { background: #9ca3af; }
+    .manpower-set-rank-badge.bronze { background: #d97706; }
+    .manpower-set-rank-badge.normal { background: #e5e7eb; color: #6b7280; }
+
+    .manpower-set-rank-info {
+      margin-left: 12px;
+      flex: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .manpower-set-rank-name { font-size: 14px; font-weight: 500; }
+    .manpower-set-rank-stats { font-size: 13px; color: #6b7280; }
+    .manpower-set-rank-pct { font-size: 13px; font-weight: 500; color: #1a1a2e; }
+
+    /* 子项目排名表格 */
+    .manpower-proj-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .manpower-proj-table th {
+      text-align: left;
+      font-weight: 500;
+      color: #9ca3af;
+      font-size: 12px;
+      padding: 6px 8px 8px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .manpower-proj-table td {
+      padding: 7px 8px 7px 0;
+      border-bottom: 1px solid #f9fafb;
+    }
+    .manpower-proj-table .col-idx { width: 28px; color: #9ca3af; }
+    .manpower-proj-table .col-num { width: 60px; text-align: right; font-weight: 500; }
+    .manpower-proj-table .col-pct { width: 60px; text-align: right; color: #6b7280; }
+
+    /* 自动分析洞察 */
+    .manpower-insight-section {
+      margin-top: 20px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+
+    .manpower-insight-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e5e7eb;
+      color: #1a1a2e;
+    }
+
+    .manpower-insight-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .manpower-insight-item {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #374151;
+    }
+
+    .manpower-insight-item .insight-label {
+      font-weight: 600;
+      color: #1a1a2e;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .manpower-insight-item .insight-hl {
+      color: #2563eb;
+      font-weight: 500;
+    }
+
+    .manpower-insight-item .insight-warn {
+      color: #dc2626;
+      font-weight: 500;
+    }
+
+    .manpower-analysis-subsection {
+      margin-top: 14px;
+    }
+
+    .manpower-analysis-subsection h4 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .manpower-analysis-set-pie-section .manpower-analysis-chart-wrap {
+      max-width: none;
+      height: 260px;
+      margin: 0;
+    }
+
     .modal-box {
       background: var(--surface);
       color: var(--text);
@@ -2756,18 +2928,41 @@
       </div>
       <div class="manpower-analysis-body" id="manpower-analysis-body">
         <p id="manpower-analysis-empty" class="manpower-analysis-empty" hidden>当月各项目人力合计为 0，暂无分析图表。</p>
-        <section class="manpower-analysis-section" id="manpower-analysis-section-sets">
-          <h3>当月项目集人力占比</h3>
-          <div class="manpower-analysis-chart-wrap"><canvas id="manpower-chart-set-pie" aria-label="项目集人力占比饼图"></canvas></div>
+        <!-- 概览卡片 -->
+        <div id="manpower-analysis-overview" class="manpower-overview-grid"></div>
+        <!-- 项目集饼图 + 排名 -->
+        <section class="manpower-analysis-section manpower-analysis-set-pie-section" id="manpower-analysis-section-sets">
+          <div class="manpower-chart-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div id="manpower-chart-set-pie-wrap">
+              <h3>当月项目集人力占比</h3>
+              <div class="manpower-analysis-chart-wrap"><canvas id="manpower-chart-set-pie" aria-label="项目集人力占比饼图"></canvas></div>
+            </div>
+            <div id="manpower-set-rank-wrap">
+              <h3>项目集排名</h3>
+              <div id="manpower-set-rank-list"></div>
+            </div>
+          </div>
         </section>
         <section class="manpower-analysis-section">
           <h3>各项目集内子项目人力占比</h3>
           <div id="manpower-analysis-set-pies-grid" class="manpower-analysis-pies-grid"></div>
         </section>
+        <!-- 子项目排名表格 -->
+        <section class="manpower-analysis-section" id="manpower-analysis-section-proj-table">
+          <h3>子项目人力排名</h3>
+          <div class="manpower-analysis-subsection">
+            <table class="manpower-proj-table">
+              <thead><tr><th class="col-idx">#</th><th>子项目</th><th>所属项目集</th><th class="col-num">人力</th><th class="col-pct">占比</th></tr></thead>
+              <tbody id="manpower-proj-table-body"></tbody>
+            </table>
+          </div>
+        </section>
         <section class="manpower-analysis-section">
           <h3>子项目人力排行（全部汇总）</h3>
           <div class="manpower-analysis-bar-wrap"><canvas id="manpower-chart-proj-bar" aria-label="子项目人力排行条形图"></canvas></div>
         </section>
+        <!-- 自动分析洞察 -->
+        <div id="manpower-analysis-insights" class="manpower-insight-section"></div>
       </div>
     </div>
   </div>
@@ -3750,6 +3945,210 @@
       mask.setAttribute('aria-hidden', 'true');
     }
 
+    // ── 项目月度人力分析 · 单月增强 ──
+
+    function renderManpowerAnalysisOverview(stats) {
+      var el = document.getElementById('manpower-analysis-overview');
+      if (!el) return;
+      if (!stats || stats.grand <= 0) {
+        el.innerHTML = '<div class="manpower-overview-card" style="grid-column:1/-1;text-align:center">' +
+          '<div class="manpower-overview-label">当月人力合计</div>' +
+          '<div class="manpower-overview-value" style="font-size:18px;color:#9ca3af">无数据</div>' +
+          '<div class="manpower-overview-unit">当月各项目人力合计为 0</div>' +
+          '</div>';
+        el.style.display = '';
+        return;
+      }
+      el.style.display = '';
+
+      var grand = Number(stats.grand.toFixed(1));
+      var topSet = stats.setRows.length > 0 ? stats.setRows[0] : null;
+      var topSetPct = topSet && grand > 0 ? ((topSet.total / grand) * 100).toFixed(1) : '0.0';
+      var topProj = stats.allProj.length > 0 ? stats.allProj[0] : null;
+
+      el.innerHTML =
+        '<div class="manpower-overview-card">' +
+          '<div class="manpower-overview-label">当月人力合计</div>' +
+          '<div class="manpower-overview-value">' + grand + '</div>' +
+          '<div class="manpower-overview-unit">人月</div>' +
+          '<div class="manpower-overview-meta">' +
+            '<span>项目集 ' + stats.setRows.length + '</span>' +
+            '<span>子项目 ' + stats.allProj.length + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="manpower-overview-card">' +
+          '<div class="manpower-overview-label">最大项目集占比</div>' +
+          '<div class="manpower-overview-value">' + topSetPct + '%</div>' +
+          '<div class="manpower-overview-unit">' + escapeHtml(topSet ? topSet.name : '—') + '</div>' +
+          '<div class="manpower-overview-meta">' +
+            (topProj ? '<span>Top1 子项目 ' + escapeHtml(topProj.label) + ' ' + Number(topProj.total.toFixed(1)) + ' 人月</span>' : '') +
+          '</div>' +
+        '</div>';
+    }
+
+    function renderManpowerAnalysisRankings(stats) {
+      // 1. 项目集排名列表
+      var listEl = document.getElementById('manpower-set-rank-list');
+      if (listEl) {
+        if (!stats || !stats.setRows || stats.setRows.length === 0) {
+          listEl.innerHTML = '<div class="manpower-analysis-empty" style="padding:12px 0">暂无项目集数据</div>';
+        } else {
+          var grand = stats.grand || 1;
+          var badges = ['gold', 'silver', 'bronze'];
+          listEl.innerHTML = stats.setRows.map(function (r, i) {
+            var pct = grand > 0 ? ((r.total / grand) * 100).toFixed(1) + '%' : '—';
+            var badgeCls = i < 3 ? badges[i] : 'normal';
+            return '<div class="manpower-set-rank-item">' +
+              '<div class="manpower-set-rank-badge ' + badgeCls + '">' + (i + 1) + '</div>' +
+              '<div class="manpower-set-rank-info">' +
+                '<span class="manpower-set-rank-name">' + escapeHtml(r.name) + '</span>' +
+                '<span class="manpower-set-rank-stats">' + Number(r.total.toFixed(1)) + ' 人月</span>' +
+                '<span class="manpower-set-rank-pct">' + pct + '</span>' +
+              '</div>' +
+            '</div>';
+          }).join('');
+        }
+      }
+
+      // 2. 子项目排名表格
+      var tbody = document.getElementById('manpower-proj-table-body');
+      if (!tbody) return;
+
+      if (!stats || !stats.allProj || stats.allProj.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:16px">暂无数据</td></tr>';
+        return;
+      }
+
+      var grandT = stats.grand || 1;
+      tbody.innerHTML = stats.allProj.map(function (p, i) {
+        var parts = p.label.split(' · ');
+        var projName = parts.length >= 2 ? parts[parts.length - 1] : p.label;
+        var setName = parts.length >= 3 ? parts[0] : (parts.length === 2 ? parts[0] : '—');
+        var pct = grandT > 0 ? ((p.total / grandT) * 100).toFixed(1) + '%' : '—';
+        return '<tr>' +
+          '<td class="col-idx">' + (i + 1) + '</td>' +
+          '<td>' + escapeHtml(projName) + '</td>' +
+          '<td>' + escapeHtml(setName) + '</td>' +
+          '<td class="col-num">' + Number(p.total.toFixed(1)) + '</td>' +
+          '<td class="col-pct">' + pct + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    function buildManpowerAnalysisInsights(stats) {
+      if (!stats || stats.grand <= 0) return [];
+
+      var grand = stats.grand;
+      var setRows = stats.setRows || [];
+      var allProj = stats.allProj || [];
+      var insights = [];
+
+      // 1. 项目集层面：Top1 占比
+      if (setRows.length > 0) {
+        var topSet = setRows[0];
+        var topPct = ((topSet.total / grand) * 100).toFixed(1);
+        var topMsg = 'Top1 项目集「' + escapeHtml(topSet.name) + '」' + Number(topSet.total.toFixed(1)) +
+          ' 人月，占比 ' + topPct + '%';
+        if (parseFloat(topPct) > 50) {
+          topMsg += '——超过半数';
+        }
+        insights.push({ label: '项目集层面', text: topMsg });
+
+        // 内部结构
+        if (topSet.projects && topSet.projects.length > 0) {
+          var sorted = topSet.projects.slice().sort(function (a, b) { return b.total - a.total; });
+          if (sorted.length > 0) {
+            var topProjInSet = sorted[0];
+            var inPct = topSet.total > 0 ? ((topProjInSet.total / topSet.total) * 100).toFixed(1) : '0.0';
+            insights.push({ label: '', text: '其中「' + escapeHtml(topProjInSet.name) + '」' +
+              Number(topProjInSet.total.toFixed(1)) + ' 人月，占该集 ' + inPct + '%' });
+          }
+        }
+      }
+
+      // 2. 子项目层面：Top N 合计占比
+      var TOP_N = 3;
+      if (allProj.length >= TOP_N) {
+        var topSum = 0;
+        for (var i = 0; i < TOP_N; i++) topSum += allProj[i].total;
+        var topNPct = ((topSum / grand) * 100).toFixed(1);
+        insights.push({ label: '子项目层面', text: 'Top' + TOP_N + ' 子项目合计 ' + Number(topSum.toFixed(1)) +
+          ' 人月，占当月总人力的 ' + topNPct + '%' });
+      }
+
+      // 3. 人力集中度
+      if (allProj.length > 0) {
+        var over10Count = allProj.filter(function (p) { return p.total > 10; }).length;
+        var halfCount = 0, halfSum = 0;
+        for (var j = 0; j < allProj.length; j++) {
+          halfSum += allProj[j].total;
+          halfCount++;
+          if (halfSum / grand >= 0.5) break;
+        }
+        var parts = [];
+        if (over10Count > 0) parts.push(over10Count + ' 个子项目当月人力超过 10 人月');
+        if (halfCount <= allProj.length && allProj.length > 0) {
+          parts.push('前 ' + halfCount + ' 个子项目合计超过总人力 50%');
+        }
+        if (parts.length > 0) {
+          insights.push({ label: '人力集中度', text: parts.join('，') });
+        }
+      }
+
+      // 4. 关注点
+      if (setRows.length > 0) {
+        var bottomSet = setRows[setRows.length - 1];
+        var bottomPct = ((bottomSet.total / grand) * 100).toFixed(1);
+        var msg = '项目集「' + escapeHtml(bottomSet.name) + '」当月人力 ' +
+          Number(bottomSet.total.toFixed(1)) + ' 人月，占比 ' + bottomPct + '%';
+        if (allProj.length > 1) {
+          var last = allProj[allProj.length - 1];
+          if (last.total > 0) {
+            msg += '，最低子项目仅 ' + Number(last.total.toFixed(1)) + ' 人月';
+          }
+        }
+        insights.push({ label: '关注点', text: msg });
+      }
+
+      return insights;
+    }
+
+    function renderManpowerAnalysisInsights(insights) {
+      var el = document.getElementById('manpower-analysis-insights');
+      if (!el) return;
+
+      if (!insights || insights.length === 0) {
+        el.style.display = 'none';
+        return;
+      }
+      el.style.display = '';
+
+      var html = '<div class="manpower-insight-title">自动分析洞察</div><div class="manpower-insight-grid">';
+
+      // 合并相邻 insights（同 label 的子句）
+      var merged = [];
+      for (var i = 0; i < insights.length; i++) {
+        if (insights[i].label && insights[i].label !== '') {
+          var item = { label: insights[i].label, texts: [insights[i].text] };
+          while (i + 1 < insights.length && (!insights[i + 1].label || insights[i + 1].label === '')) {
+            i++;
+            item.texts.push(insights[i].text);
+          }
+          merged.push(item);
+        }
+      }
+
+      merged.forEach(function (item) {
+        html += '<div class="manpower-insight-item">';
+        html += '<span class="insight-label">' + escapeHtml(item.label) + '</span>';
+        html += item.texts.map(function (t) { return '<p style="margin:2px 0">' + t + '</p>'; }).join('');
+        html += '</div>';
+      });
+
+      html += '</div>';
+      el.innerHTML = html;
+    }
+
     function renderManpowerAnalysisCharts(stats) {
       var ChartLib = typeof Chart !== 'undefined' ? Chart : null;
       if (!ChartLib || !stats) return;
@@ -3935,16 +4334,24 @@
       var stats = buildManpowerMonthAnalysisStats();
       var sections = body.querySelectorAll('.manpower-analysis-section');
 
+      // 概览卡片始终渲染（包含空数据状态）
+      renderManpowerAnalysisOverview(stats);
+
       if (stats.grand <= 0) {
         if (emptyEl) {
           emptyEl.hidden = false;
           emptyEl.textContent = '当月各项目人力合计为 0，暂无分析图表。';
         }
         sections.forEach(function (sec) { sec.style.display = 'none'; });
+        var insightsEl = document.getElementById('manpower-analysis-insights');
+        if (insightsEl) insightsEl.style.display = 'none';
       } else {
         if (emptyEl) emptyEl.hidden = true;
         sections.forEach(function (sec) { sec.style.display = ''; });
         renderManpowerAnalysisCharts(stats);
+        renderManpowerAnalysisRankings(stats);
+        var insights = buildManpowerAnalysisInsights(stats);
+        renderManpowerAnalysisInsights(insights);
       }
 
       mask.classList.add('active');
