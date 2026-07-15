@@ -2707,7 +2707,7 @@
   <div class="app-wrap">
   <div class="tabs-sticky">
     <div class="app-brand" aria-label="ProjectGuard 系统标识">
-      <img src="projectguard-logo.png" alt="ProjectGuard" decoding="async">
+      <img src="projectguard-logo.webp" alt="ProjectGuard" decoding="async">
     </div>
     <div class="tabs-nav-center">
       <div class="tabs" role="tablist" aria-label="功能切换">
@@ -6777,28 +6777,19 @@
       return v;
     }
 
-    function riskDisplayText(value, extraClass, multiline) {
-      var td = document.createElement('td');
-      td.className = 'risk-display-cell' + (extraClass ? ' ' + extraClass : '') + (multiline ? ' risk-display-multiline' : '');
+    function riskDisplayTextHtml(value, extraClass, multiline) {
+      var cls = 'risk-display-cell' + (extraClass ? ' ' + extraClass : '') + (multiline ? ' risk-display-multiline' : '');
       var text = value != null ? String(value).trim() : '';
-      td.textContent = text || '—';
-      return td;
+      return '<td class="' + cls + '">' + escapeHtml(text || '—') + '</td>';
     }
 
-    function riskDisplayTag(field, value, extraClass) {
-      var td = document.createElement('td');
-      td.className = 'risk-display-cell' + (extraClass ? ' ' + extraClass : '');
+    function riskDisplayTagHtml(field, value, extraClass) {
+      var cls = 'risk-display-cell' + (extraClass ? ' ' + extraClass : '');
       var raw = value != null ? String(value).trim() : '';
-      if (!raw) {
-        td.textContent = '—';
-        return td;
-      }
-      var span = document.createElement('span');
-      span.className = 'risk-tag';
-      span.textContent = field === 'status' ? formatRiskStatus(raw) : raw;
-      applyRiskTagColor(span, field, raw);
-      td.appendChild(span);
-      return td;
+      if (!raw) return '<td class="' + cls + '">—</td>';
+      var colorCls = riskSelectColorClass(field, raw);
+      var displayText = field === 'status' ? formatRiskStatus(raw) : raw;
+      return '<td class="' + cls + '"><span class="risk-tag' + (colorCls ? ' ' + colorCls : '') + '">' + escapeHtml(displayText) + '</span></td>';
     }
 
     function renderRiskThead() {
@@ -6849,18 +6840,10 @@
     function renderRiskTable() {
       if (riskSortState.key) applyRiskSort();
       renderRiskThead();
-      const tb = document.getElementById('risk-table-body');
+      var tb = document.getElementById('risk-table-body');
       if (!tb) return;
-      tb.innerHTML = '';
       if (riskRows.length === 0) {
-        const tr = document.createElement('tr');
-        const td = document.createElement('td');
-        td.colSpan = RISK_TABLE_COL_COUNT;
-        td.className = 'center-cell';
-        td.style.padding = '24px';
-        td.textContent = '暂无风险记录，请前往「项目信息登记」页维护。';
-        tr.appendChild(td);
-        tb.appendChild(tr);
+        tb.innerHTML = '<tr><td class="center-cell" colspan="' + RISK_TABLE_COL_COUNT + '" style="padding:24px">暂无风险记录，请前往「项目信息登记」页维护。</td></tr>';
         return;
       }
       var filteredIndices = [];
@@ -6868,48 +6851,38 @@
         if (riskRowMatchesFilters(riskRows[fi])) filteredIndices.push(fi);
       }
       if (filteredIndices.length === 0) {
-        const tr = document.createElement('tr');
-        const td = document.createElement('td');
-        td.colSpan = RISK_TABLE_COL_COUNT;
-        td.className = 'center-cell';
-        td.style.padding = '24px';
-        td.textContent = '当前筛选条件下无匹配记录，请调整级别或状态下拉，或选择「全部」。';
-        tr.appendChild(td);
-        tb.appendChild(tr);
+        tb.innerHTML = '<tr><td class="center-cell" colspan="' + RISK_TABLE_COL_COUNT + '" style="padding:24px">当前筛选条件下无匹配记录，请调整级别或状态下拉，或选择「全部」。</td></tr>';
         return;
       }
+      var html = '';
       filteredIndices.forEach(function (idx, visPos) {
-        const row = riskRows[idx];
-        const tr = document.createElement('tr');
+        var row = riskRows[idx];
+        html += '<tr>';
 
-        const tdSeq = document.createElement('td');
-        tdSeq.className = 'main seq';
-        tdSeq.textContent = String(visPos + 1);
-        tr.appendChild(tdSeq);
+        html += '<td class="main seq">' + String(visPos + 1) + '</td>';
 
-        tr.appendChild(riskDisplayTag('category', row.category, 'risk-cell-tag'));
-        tr.appendChild(riskDisplayTag('source', row.source, 'risk-cell-tag'));
+        html += riskDisplayTagHtml('category', row.category, 'risk-cell-tag');
+        html += riskDisplayTagHtml('source', row.source, 'risk-cell-tag');
 
-        var tdProj = document.createElement('td');
-        tdProj.className = 'risk-display-cell risk-cell-project';
         var fullPath = row.project || '';
         var displayValue = riskProjectDisplayValue(row);
-        tdProj.textContent = displayValue || '—';
-        if (fullPath || displayValue) tdProj.title = fullPath || displayValue;
-        tr.appendChild(tdProj);
+        var projVal = displayValue || '—';
+        var titleAttr = (fullPath || displayValue) ? ' title="' + escapeHtml(fullPath || displayValue) + '"' : '';
+        html += '<td class="risk-display-cell risk-cell-project"' + titleAttr + '>' + escapeHtml(projVal) + '</td>';
 
-        tr.appendChild(riskDisplayText(row.issue, 'risk-cell-textwide', true));
-        tr.appendChild(riskDisplayText(row.solution, 'risk-cell-textwide', true));
-        tr.appendChild(riskDisplayTag('level', row.level, 'risk-cell-level'));
-        tr.appendChild(riskDisplayText(row.owner, 'risk-cell-owner'));
+        html += riskDisplayTextHtml(row.issue, 'risk-cell-textwide', true);
+        html += riskDisplayTextHtml(row.solution, 'risk-cell-textwide', true);
+        html += riskDisplayTagHtml('level', row.level, 'risk-cell-level');
+        html += riskDisplayTextHtml(row.owner, 'risk-cell-owner');
 
         var regDisplay = row.regTime ? String(row.regTime).slice(0, 10) : '';
-        tr.appendChild(riskDisplayText(regDisplay, 'risk-cell-date'));
-        tr.appendChild(riskDisplayText(row.closeTime, 'risk-cell-date'));
-        tr.appendChild(riskDisplayTag('status', row.status, 'risk-cell-status'));
+        html += riskDisplayTextHtml(regDisplay, 'risk-cell-date');
+        html += riskDisplayTextHtml(row.closeTime, 'risk-cell-date');
+        html += riskDisplayTagHtml('status', row.status, 'risk-cell-status');
 
-        tb.appendChild(tr);
+        html += '</tr>';
       });
+      tb.innerHTML = html;
     }
 
     function syncPhaseProjectSetFilterOptions() {
