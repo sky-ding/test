@@ -3481,7 +3481,22 @@
      * 部门项目人力登记 data 与项目阶段状态 phaseData 对齐：项目集/项目以阶段表为准；
      * 同集内旧新项目数一致则按下标合并 manpowerByMonth，否则按项目名称从旧行池中匹配。
      */
+    // ── 轻量 manpowerByMonth 浅拷贝，替代 JSON.parse(JSON.stringify()) ──
+    function copyManpowerByMonth(src) {
+      if (!src || typeof src !== 'object') return {};
+      var out = {};
+      for (var k in src) {
+        if (Object.prototype.hasOwnProperty.call(src, k)) {
+          var arr = src[k];
+          out[k] = Array.isArray(arr) ? arr.slice() : [];
+        }
+      }
+      return out;
+    }
+
     function syncManpowerStructureFromPhase() {
+      if (!window._pmStructureDirty) return;
+      window._pmStructureDirty = false;
       if (!Array.isArray(phaseData)) phaseData = [];
       if (!Array.isArray(data)) data = [];
       var oldData = data.map(function (set) {
@@ -3493,11 +3508,9 @@
               name: projectSet && projectSet.name != null ? String(projectSet.name) : '子项目集',
               subProjects: getSubProjects(projectSet).map(function (p) {
                 if (!p) return { name: '新子项目', manpowerByMonth: {} };
-                var mb = (p.manpowerByMonth && typeof p.manpowerByMonth === 'object')
-                  ? JSON.parse(JSON.stringify(p.manpowerByMonth)) : {};
                 return {
                   name: p.name != null ? String(p.name) : '新子项目',
-                  manpowerByMonth: mb,
+                  manpowerByMonth: copyManpowerByMonth(p.manpowerByMonth),
                   _subProjectId: p._subProjectId
                 };
               })
@@ -3523,8 +3536,7 @@
             for (var j = 0; j < newLen; j++) {
               var phP = phProjs[j];
               var oldP = oldProjs[j];
-              var mb = (oldP && oldP.manpowerByMonth && typeof oldP.manpowerByMonth === 'object')
-                ? JSON.parse(JSON.stringify(oldP.manpowerByMonth)) : {};
+              var mb = copyManpowerByMonth(oldP && oldP.manpowerByMonth);
               mergedProjs.push({
                 name: phP && phP.name != null ? String(phP.name) : '新子项目',
                 manpowerByMonth: mb,
@@ -3535,8 +3547,7 @@
             var pool = oldProjs.map(function (op) {
               return {
                 nm: op && op.name != null ? String(op.name) : '',
-                manpowerByMonth: (op && op.manpowerByMonth && typeof op.manpowerByMonth === 'object')
-                  ? JSON.parse(JSON.stringify(op.manpowerByMonth)) : {},
+                manpowerByMonth: copyManpowerByMonth(op && op.manpowerByMonth),
                 _subProjectId: op && op._subProjectId
               };
             });
@@ -6367,6 +6378,7 @@
           fixManpowerInData(data);
           phaseData = phaseStructureNamesFromData(data);
           fixPhaseInData(phaseData);
+          window._pmStructureDirty = true;
           syncManpowerStructureFromPhase();
           return;
         }
@@ -6400,6 +6412,7 @@
         phaseData = phaseStructureNamesFromData(data);
       }
       fixPhaseInData(phaseData);
+      window._pmStructureDirty = true;
       syncManpowerStructureFromPhase();
     }
 
@@ -6429,6 +6442,7 @@
         phaseData = phaseStructureNamesFromData(data);
       }
       fixPhaseInData(phaseData);
+      window._pmStructureDirty = true;
       syncManpowerStructureFromPhase();
     }
 
@@ -6462,6 +6476,7 @@
         pmApplyStoredPeriodPrefsForYear(pmDataYear);
         updateManpowerToolbarInputs();
         syncWorkYearDisplays();
+        window._pmStructureDirty = true;
         syncManpowerStructureFromPhase();
         fixPhaseInData(phaseData);
         fixManpowerInData(data);
@@ -7717,148 +7732,169 @@
       tr.appendChild(tdProj);
     }
 
+    // ── 三张人力表统一用 innerHTML 字符串拼接，替代逐行 createElement（对应 B4/B7/B9）──
+
+    function buildManpowerRowHtml(opts) {
+      // opts: setIdx, setRowSpan, setRendered, projectSetIdx, psRowSpan, psRendered, projIdx, setName, projectSetName, projName
+      // 返回 { html: rowOpenHtml, nameCellsSpan: nameCellsRendered } 和更新 opts
+      var rowHtml = '<tr data-mp-set="' + opts.setIdx + '" data-mp-project-set="' + opts.projectSetIdx + '" data-mp-proj="' + opts.projIdx + '"';
+      if (opts.setIdx % 2 === 1) rowHtml += ' class="manpower-set-stripe-b"';
+      rowHtml += '>';
+      if (!opts.setRendered) {
+        rowHtml += '<td class="main col-set pin-col-1" rowspan="' + String(opts.setRowSpan) + '"><div class="cell-head-inline"><span>' + escapeHtml(opts.setName) + '</span></div></td>';
+        opts.setRendered = true;
+      }
+      if (!opts.psRendered) {
+        rowHtml += '<td class="sub col-set pin-col-2" rowspan="' + String(opts.psRowSpan) + '"><div class="cell-head-inline"><span>' + escapeHtml(opts.projectSetName) + '</span></div></td>';
+        opts.psRendered = true;
+      }
+      rowHtml += '<td class="sub col-proj pin-col-3"><div class="cell-head-inline"><span>' + escapeHtml(opts.projName) + '</span></div></td>';
+      return rowHtml;
+    }
+
     function renderMonthTableBody() {
-      const $body = document.getElementById('table-body');
+      var $body = document.getElementById('table-body');
       if (!$body) return;
-      $body.innerHTML = '';
-      const nCols = deptFlatCount();
+      var nCols = deptFlatCount();
       var monthGrandTotal = 0;
-      data.forEach(function (set) {
-        getProgramProjectSets(set).forEach(function (projectSet) {
-          getSubProjects(projectSet).forEach(function (proj) {
-            var rowSum = 0;
-            for (let i = 0; i < nCols; ++i) {
-              var v = proj.manpower[i] != null ? Number(proj.manpower[i]) : 0;
-              if (!isNaN(v)) rowSum += v;
-            }
-            monthGrandTotal += rowSum;
-          });
-        });
-      });
-      const admin = canEditPanel('manpower');
+      var rowData = [];
+
       data.forEach(function (set, setIdx) {
-        getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
-          getSubProjects(projectSet).forEach(function (proj, projIdx) {
-            const tr = document.createElement('tr');
-            tr.setAttribute('data-mp-set', String(setIdx));
-            tr.setAttribute('data-mp-project-set', String(projectSetIdx));
-            tr.setAttribute('data-mp-proj', String(projIdx));
-            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
-            appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, false, false);
+        var projSets = getProgramProjectSets(set);
+        var setRowSpan = countSubProjectsInSet(set) || 1;
+        var setRendered = false;
+
+        projSets.forEach(function (projectSet, projectSetIdx) {
+          var projs = getSubProjects(projectSet);
+          var psRowSpan = projs.length || 1;
+          var psRendered = false;
+
+          projs.forEach(function (proj, projIdx) {
+            var rowHtml = buildManpowerRowHtml({
+              setIdx: setIdx, setRowSpan: setRowSpan, setRendered: setRendered, setName: set.name,
+              projectSetIdx: projectSetIdx, psRowSpan: psRowSpan, psRendered: psRendered, projectSetName: projectSet.name,
+              projIdx: projIdx, projName: proj.name
+            });
+            setRendered = true; psRendered = true;
+
             var rowTotal = 0;
-            for (let i = 0; i < nCols; ++i) {
-              const tdC = document.createElement('td');
-              tdC.className = 'center-cell col-mp manpower-readonly-cell';
-              const v = proj.manpower[i] != null ? proj.manpower[i] : 0;
+            for (var i = 0; i < nCols; i++) {
+              var v = proj.manpower[i] != null ? proj.manpower[i] : 0;
               var vn = Number(v);
               if (!isNaN(vn)) rowTotal += vn;
-              tdC.innerHTML = '<span>' + escapeHtml(formatManpowerValue(v)) + '</span>';
-              tr.appendChild(tdC);
+              rowHtml += '<td class="center-cell col-mp manpower-readonly-cell"><span>' + escapeHtml(formatManpowerValue(v)) + '</span></td>';
             }
-            const tdSum = document.createElement('td');
-            tdSum.className = 'center-cell col-sum';
-            tdSum.textContent = formatManpowerValue(rowTotal);
-            tr.appendChild(tdSum);
-            const tdRatio = document.createElement('td');
-            tdRatio.className = 'center-cell col-ratio';
-            tdRatio.textContent = formatManpowerRatio(rowTotal, monthGrandTotal);
-            tr.appendChild(tdRatio);
-            $body.appendChild(tr);
+            monthGrandTotal += rowTotal;
+            rowHtml += '<td class="center-cell col-sum">' + formatManpowerValue(rowTotal) + '</td>';
+            rowHtml += '<td class="center-cell col-ratio"><!--RATIO--></td>';
+            rowHtml += '</tr>';
+            rowData.push({ html: rowHtml, total: rowTotal });
           });
         });
       });
+
+      // 二次遍历仅做字符串 replace（极快）
+      var finalHtml = '';
+      for (var ri = 0; ri < rowData.length; ri++) {
+        finalHtml += rowData[ri].html.replace('<!--RATIO-->', formatManpowerRatio(rowData[ri].total, monthGrandTotal));
+      }
+      $body.innerHTML = finalHtml;
     }
 
     function renderSeasonTableBody() {
-      const $body = document.getElementById('register-season-body');
+      var $body = document.getElementById('register-season-body');
       if (!$body) return;
-      $body.innerHTML = '';
-      const nCols = deptFlatCount();
-      const y = manpowerSelYear;
+      var nCols = deptFlatCount();
+      var y = manpowerSelYear;
       var seasonGrandTotal = 0;
-      data.forEach(function (set) {
-        getProgramProjectSets(set).forEach(function (projectSet) {
-          getSubProjects(projectSet).forEach(function (proj) {
-            var rowSum = 0;
-            for (let i = 0; i < nCols; ++i) rowSum += sumQuarterDept(proj, y, manpowerSelQuarter, i);
-            seasonGrandTotal += rowSum;
-          });
-        });
-      });
-      const admin = canEditPanel('manpower');
+      var rowData = [];
+
       data.forEach(function (set, setIdx) {
-        getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
-          getSubProjects(projectSet).forEach(function (proj, projIdx) {
-            const tr = document.createElement('tr');
-            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
-            appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, false, false);
+        var projSets = getProgramProjectSets(set);
+        var setRowSpan = countSubProjectsInSet(set) || 1;
+        var setRendered = false;
+
+        projSets.forEach(function (projectSet, projectSetIdx) {
+          var projs = getSubProjects(projectSet);
+          var psRowSpan = projs.length || 1;
+          var psRendered = false;
+
+          projs.forEach(function (proj, projIdx) {
+            var rowHtml = buildManpowerRowHtml({
+              setIdx: setIdx, setRowSpan: setRowSpan, setRendered: setRendered, setName: set.name,
+              projectSetIdx: projectSetIdx, psRowSpan: psRowSpan, psRendered: psRendered, projectSetName: projectSet.name,
+              projIdx: projIdx, projName: proj.name
+            });
+            setRendered = true; psRendered = true;
+
             var rowTotal = 0;
-            for (let i = 0; i < nCols; ++i) {
-              const tdC = document.createElement('td');
-              tdC.className = 'center-cell col-mp manpower-readonly-cell';
+            for (var i = 0; i < nCols; i++) {
               var v = sumQuarterDept(proj, y, manpowerSelQuarter, i);
               rowTotal += v;
-              tdC.textContent = formatManpowerValue(v);
-              tr.appendChild(tdC);
+              rowHtml += '<td class="center-cell col-mp manpower-readonly-cell">' + formatManpowerValue(v) + '</td>';
             }
-            const tdSum = document.createElement('td');
-            tdSum.className = 'center-cell col-sum manpower-readonly-cell';
-            tdSum.textContent = formatManpowerValue(rowTotal);
-            tr.appendChild(tdSum);
-            const tdRatio = document.createElement('td');
-            tdRatio.className = 'center-cell col-ratio manpower-readonly-cell';
-            tdRatio.textContent = formatManpowerRatio(rowTotal, seasonGrandTotal);
-            tr.appendChild(tdRatio);
-            $body.appendChild(tr);
+            seasonGrandTotal += rowTotal;
+            rowHtml += '<td class="center-cell col-sum manpower-readonly-cell">' + formatManpowerValue(rowTotal) + '</td>';
+            rowHtml += '<td class="center-cell col-ratio manpower-readonly-cell"><!--RATIO--></td>';
+            rowHtml += '</tr>';
+            rowData.push({ html: rowHtml, total: rowTotal });
           });
         });
       });
+
+      var finalHtml = '';
+      for (var ri = 0; ri < rowData.length; ri++) {
+        finalHtml += rowData[ri].html.replace('<!--RATIO-->', formatManpowerRatio(rowData[ri].total, seasonGrandTotal));
+      }
+      $body.innerHTML = finalHtml;
     }
 
     function renderYearTableBody() {
-      const $body = document.getElementById('register-year-body');
+      var $body = document.getElementById('register-year-body');
       if (!$body) return;
-      $body.innerHTML = '';
-      const nCols = deptFlatCount();
-      const y = manpowerSelYear;
+      var nCols = deptFlatCount();
+      var y = manpowerSelYear;
       var yearGrandTotal = 0;
-      data.forEach(function (set) {
-        getProgramProjectSets(set).forEach(function (projectSet) {
-          getSubProjects(projectSet).forEach(function (proj) {
-            var rowSum = 0;
-            for (let i = 0; i < nCols; ++i) rowSum += sumYearDept(proj, y, i);
-            yearGrandTotal += rowSum;
-          });
-        });
-      });
-      const admin = canEditPanel('manpower');
+      var rowData = [];
+
       data.forEach(function (set, setIdx) {
-        getProgramProjectSets(set).forEach(function (projectSet, projectSetIdx) {
-          getSubProjects(projectSet).forEach(function (proj, projIdx) {
-            const tr = document.createElement('tr');
-            if (setIdx % 2 === 1) tr.classList.add('manpower-set-stripe-b');
-            appendManpowerRowNameCells(tr, set, setIdx, projectSet, projectSetIdx, proj, projIdx, admin, false, false);
+        var projSets = getProgramProjectSets(set);
+        var setRowSpan = countSubProjectsInSet(set) || 1;
+        var setRendered = false;
+
+        projSets.forEach(function (projectSet, projectSetIdx) {
+          var projs = getSubProjects(projectSet);
+          var psRowSpan = projs.length || 1;
+          var psRendered = false;
+
+          projs.forEach(function (proj, projIdx) {
+            var rowHtml = buildManpowerRowHtml({
+              setIdx: setIdx, setRowSpan: setRowSpan, setRendered: setRendered, setName: set.name,
+              projectSetIdx: projectSetIdx, psRowSpan: psRowSpan, psRendered: psRendered, projectSetName: projectSet.name,
+              projIdx: projIdx, projName: proj.name
+            });
+            setRendered = true; psRendered = true;
+
             var rowTotal = 0;
-            for (let i = 0; i < nCols; ++i) {
-              const tdC = document.createElement('td');
-              tdC.className = 'center-cell col-mp manpower-readonly-cell';
+            for (var i = 0; i < nCols; i++) {
               var v = sumYearDept(proj, y, i);
               rowTotal += v;
-              tdC.textContent = formatManpowerValue(v);
-              tr.appendChild(tdC);
+              rowHtml += '<td class="center-cell col-mp manpower-readonly-cell">' + formatManpowerValue(v) + '</td>';
             }
-            const tdSum = document.createElement('td');
-            tdSum.className = 'center-cell col-sum manpower-readonly-cell';
-            tdSum.textContent = formatManpowerValue(rowTotal);
-            tr.appendChild(tdSum);
-            const tdRatio = document.createElement('td');
-            tdRatio.className = 'center-cell col-ratio manpower-readonly-cell';
-            tdRatio.textContent = formatManpowerRatio(rowTotal, yearGrandTotal);
-            tr.appendChild(tdRatio);
-            $body.appendChild(tr);
+            yearGrandTotal += rowTotal;
+            rowHtml += '<td class="center-cell col-sum manpower-readonly-cell">' + formatManpowerValue(rowTotal) + '</td>';
+            rowHtml += '<td class="center-cell col-ratio manpower-readonly-cell"><!--RATIO--></td>';
+            rowHtml += '</tr>';
+            rowData.push({ html: rowHtml, total: rowTotal });
           });
         });
       });
+
+      var finalHtml = '';
+      for (var ri = 0; ri < rowData.length; ri++) {
+        finalHtml += rowData[ri].html.replace('<!--RATIO-->', formatManpowerRatio(rowData[ri].total, yearGrandTotal));
+      }
+      $body.innerHTML = finalHtml;
     }
 
     // 渲染表格主体
@@ -7908,6 +7944,7 @@
         }
         set.name = name.trim();
         renderPhaseTable();
+        window._pmStructureDirty = true;
         renderTable();
       }
     }
@@ -8003,6 +8040,7 @@
         }
         fixPhaseInData(phaseData);
         renderPhaseTable();
+        window._pmStructureDirty = true;
         renderTable();
       }
     }
@@ -8034,6 +8072,7 @@
         projectSet.subProjects.push(newProj);
         fixPhaseInData(phaseData);
         renderPhaseTable();
+        window._pmStructureDirty = true;
         renderTable();
       }
     }
@@ -8139,6 +8178,7 @@
       }
       closeModal();
       if (kind === 'set' || kind === 'projectSet' || kind === 'project') {
+        window._pmStructureDirty = true;
         renderPhaseTable();
         renderTable();
       } else {
