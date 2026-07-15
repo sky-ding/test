@@ -3013,8 +3013,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" crossorigin="anonymous" defer></script>
   <script src="js/project-info.js"></script>
   <script>
     // 基础数据结构
@@ -4307,12 +4306,32 @@
       }
     }
 
-    function openManpowerAnalysisModal() {
+    // ── 按需懒加载 Chart.js（仅人力分析/风险分析弹窗触发） ──
+    function ensureChartJs() {
+      if (window._chartJsPromise) return window._chartJsPromise;
+      window._chartJsPromise = new Promise(function (resolve, reject) {
+        if (typeof Chart !== 'undefined') return resolve();
+        var s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+        s.crossOrigin = 'anonymous';
+        s.onload = function () { resolve(); };
+        s.onerror = function () {
+          window._chartJsPromise = null;
+          reject(new Error('Chart.js 加载失败'));
+        };
+        document.head.appendChild(s);
+      });
+      return window._chartJsPromise;
+    }
+
+    async function openManpowerAnalysisModal() {
       if (manpowerSubView !== 'month') {
         alert('请切换到「月度」页面后查看人力分析。');
         return;
       }
-      if (typeof Chart === 'undefined') {
+      try {
+        await ensureChartJs();
+      } catch (e) {
         alert('图表组件加载失败，请检查网络后刷新页面。');
         return;
       }
@@ -5920,8 +5939,10 @@
       mask.setAttribute('aria-hidden', 'true');
     }
 
-    function openRiskAnalysisModal() {
-      if (typeof Chart === 'undefined') {
+    async function openRiskAnalysisModal() {
+      try {
+        await ensureChartJs();
+      } catch (e) {
         alert('图表组件加载失败，请检查网络后刷新页面。');
         return;
       }
@@ -6447,17 +6468,17 @@
 
         var pkey = ymKey(phaseSelYear, phaseSelMonth);
         var mkey = ymKey(manpowerSelYear, manpowerSelMonth);
-        var pr = await pmFetch(
-          '/api/v1/phase-assessments?year=' + pmDataYear + '&period=' + encodeURIComponent(pkey),
-          { method: 'GET' }
-        );
-        var prBody = [];
-        if (pr.ok) {
-          prBody = await pr.json();
-          mergePhaseRowsIntoPhaseData(prBody, pkey);
-        }
 
-        var mxAuth = await tryMergeManpowerMatrixForYearPeriod(pmDataYear, mkey);
+        // 3 次独立请求并发（不依赖彼此结果）
+        var results = await Promise.all([
+          pmFetch('/api/v1/phase-assessments?year=' + pmDataYear + '&period=' + encodeURIComponent(pkey), { method: 'GET' }),
+          tryMergeManpowerMatrixForYearPeriod(pmDataYear, mkey),
+          pmFetch('/api/v1/project-risks?year=' + pmDataYear, { method: 'GET' })
+        ]);
+        var pr = results[0];
+        var mxAuth = results[1];
+        var rr = results[2];
+
         if (mxAuth === null) {
           window.__pmAuthRedirecting = true;
           window.location.href = 'login.html';
@@ -6467,7 +6488,12 @@
           throw new Error('manpower matrix HTTP failed');
         }
 
-        var rr = await pmFetch('/api/v1/project-risks?year=' + pmDataYear, { method: 'GET' });
+        var prBody = [];
+        if (pr.ok) {
+          prBody = await pr.json();
+          mergePhaseRowsIntoPhaseData(prBody, pkey);
+        }
+
         if (!rr.ok) {
           throw new Error('project-risks HTTP ' + rr.status);
         }
