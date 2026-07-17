@@ -8526,11 +8526,7 @@
           if (isSetExpanded && isSelf) {
             html += '<tr class="row-project">' +
               '<td class="col-sp">' +
-              '<span class="kps-toggle-btn" data-action="toggle-set"' +
-              ' data-dir="' + escapeHtml(dirName) + '"' +
-              ' data-set="' + escapeHtml(ps.name) + '">▾</span>' +
               '<span>' + escapeHtml(ps.name) + '</span>' +
-              '<span class="kps-dir-meta">(1)</span>' +
               '</td>' +
               '<td class="col-proj">' + escapeHtml(projs[0].name) + '</td>' +
               buildKpsStatusCell(projs[0]) +
@@ -8549,7 +8545,6 @@
               ' data-dir="' + escapeHtml(dirName) + '"' +
               ' data-set="' + escapeHtml(ps.name) + '">▸</span>' +
               '<span>' + escapeHtml(ps.name) + '</span>' +
-              '<span class="kps-dir-meta">(' + projs.length + ')</span>' +
               '</td><td class="col-proj"></td><td></td><td></td><td></td><td></td><td></td>' +
               '</tr>';
             return;
@@ -8561,7 +8556,6 @@
             ' data-dir="' + escapeHtml(dirName) + '"' +
             ' data-set="' + escapeHtml(ps.name) + '">▾</span>' +
             '<span>' + escapeHtml(ps.name) + '</span>' +
-            '<span class="kps-dir-meta">(' + projs.length + ')</span>' +
             '</td><td class="col-proj"></td><td></td><td></td><td></td><td></td><td></td>' +
             '</tr>';
 
