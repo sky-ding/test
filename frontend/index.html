@@ -8535,7 +8535,11 @@
           var isSetExpanded = kpsState.expandedSets[dirName] &&
             kpsState.expandedSets[dirName][ps.name] !== false;
 
-          if (isSetExpanded && projs.length === 1 && projs[0].name === ps.name) {
+          // 本级项目：子项目集=子项目且唯一，无需点击展开，直接显示合并行
+          var isSelf = projs.length === 1 && projs[0].name === ps.name;
+          if (isSelf) isSetExpanded = true;
+
+          if (isSetExpanded && isSelf) {
             html += '<tr class="row-project">' +
               '<td class="col-sp">' +
               '<span class="kps-toggle-btn" data-action="toggle-set"' +
@@ -8544,8 +8548,7 @@
               '<span>' + escapeHtml(ps.name) + '</span>' +
               '<span class="kps-dir-meta">(1)</span>' +
               '</td>' +
-              '<td class="col-proj">' + escapeHtml(projs[0].name) +
-              ' <span class="kps-badge-self">本级</span></td>' +
+              '<td class="col-proj">' + escapeHtml(projs[0].name) + '</td>' +
               buildKpsStatusCell(projs[0]) +
               buildKpsPersonCell(projs[0].project_lead) +
               buildKpsPersonCell(projs[0].project_manager) +
