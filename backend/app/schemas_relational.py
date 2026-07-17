@@ -557,6 +557,8 @@ class ProjectInfoSubProjectIn(BaseModel):
     description: str | None = None
     key_goal: str | None = None
     automation_rate_goal: str | None = Field(default=None, max_length=50)
+    project_lead: str | None = Field(default=None, max_length=100)
+    project_manager: str | None = Field(default=None, max_length=100)
     planned_start_date: date
     planned_end_date: date
     actual_start_date: date | None = None
