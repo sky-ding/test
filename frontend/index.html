@@ -2734,31 +2734,13 @@
     }
     #panel-key-projects .pi-btn:hover { border-color: #1E6FFF; color: #1E6FFF; }
 
-    /* KPS body：撑满剩余高度 + 滚动 */
+    /* KPS body：flex 容器，内部滚动交给 table-shell */
     #panel-key-projects .pi-body {
       flex: 1 1 auto;
       min-height: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-color: rgba(15, 23, 42, 0.16) transparent;
-      scrollbar-width: thin;
-    }
-    #panel-key-projects .pi-body::-webkit-scrollbar {
-      width: 10px;
-    }
-    #panel-key-projects .pi-body::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    #panel-key-projects .pi-body::-webkit-scrollbar-thumb {
-      background: rgba(15, 23, 42, 0.16);
-      border-radius: 5px;
-      border: 2px solid transparent;
-      background-clip: padding-box;
-    }
-    #panel-key-projects .pi-body::-webkit-scrollbar-thumb:hover {
-      background: rgba(15, 23, 42, 0.28);
-      background-clip: padding-box;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
     /* 统计卡片行 */
@@ -2788,6 +2770,8 @@
 
     /* 表格容器 */
     .kps-table-shell {
+      flex: 1 1 auto;
+      min-height: 0;
       border: 1px solid var(--border-light);
       border-radius: 8px;
       overflow: auto;
@@ -8446,7 +8430,7 @@
     }
 
     function buildKpsPersonCell(val) {
-      return '<td>' + (val ? escapeHtml(val) : '—') + '</td>';
+      return '<td>' + (val ? escapeHtml(val) : '') + '</td>';
     }
 
     function buildKpsStats(treeData) {
@@ -8566,7 +8550,7 @@
               ' data-set="' + escapeHtml(ps.name) + '">▸</span>' +
               '<span>' + escapeHtml(ps.name) + '</span>' +
               '<span class="kps-dir-meta">(' + projs.length + ')</span>' +
-              '</td><td class="col-proj">—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>' +
+              '</td><td class="col-proj"></td><td></td><td></td><td></td><td></td><td></td>' +
               '</tr>';
             return;
           }
@@ -8578,12 +8562,12 @@
             ' data-set="' + escapeHtml(ps.name) + '">▾</span>' +
             '<span>' + escapeHtml(ps.name) + '</span>' +
             '<span class="kps-dir-meta">(' + projs.length + ')</span>' +
-            '</td><td class="col-proj">—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>' +
+            '</td><td class="col-proj"></td><td></td><td></td><td></td><td></td><td></td>' +
             '</tr>';
 
           projs.forEach(function (p) {
             html += '<tr class="row-project">' +
-              '<td class="col-sp">—</td>' +
+              '<td class="col-sp"></td>' +
               '<td class="col-proj">' + escapeHtml(p.name) + '</td>' +
               buildKpsStatusCell(p) +
               buildKpsPersonCell(p.project_lead) +
