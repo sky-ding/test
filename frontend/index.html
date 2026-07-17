@@ -8578,7 +8578,7 @@
 
     function loadKpsTree(year) {
       year = year || (document.getElementById('kps-year-select') && document.getElementById('kps-year-select').value) || pmDataYear;
-      fetch(PM_API_BASE + '/programs/tree?year=' + year)
+      pmFetch('/api/v1/programs/tree?year=' + year)
         .then(function (r) { return r.json(); })
         .then(function (resp) {
           kpsState.treeData = resp.programs || [];
