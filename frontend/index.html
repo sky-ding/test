@@ -2704,10 +2704,67 @@
 
     /* ========== 部门重点项目列表 ========== */
 
+    /* KPS 面板布局 */
+    #panel-key-projects .pi-toolbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+      flex-shrink: 0;
+    }
+    #panel-key-projects .pi-selectors {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    #panel-key-projects .pi-selectors label { font-weight: 600; font-size: 14px; }
+    #panel-key-projects .pi-selector-hint { font-size: 12px; color: var(--text-muted); }
+    #panel-key-projects .pi-btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border-light);
+      background: var(--surface);
+      color: #5f6368;
+    }
+    #panel-key-projects .pi-btn:hover { border-color: #1E6FFF; color: #1E6FFF; }
+
+    /* KPS body：撑满剩余高度 + 滚动 */
+    #panel-key-projects .pi-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-color: rgba(15, 23, 42, 0.16) transparent;
+      scrollbar-width: thin;
+    }
+    #panel-key-projects .pi-body::-webkit-scrollbar {
+      width: 10px;
+    }
+    #panel-key-projects .pi-body::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    #panel-key-projects .pi-body::-webkit-scrollbar-thumb {
+      background: rgba(15, 23, 42, 0.16);
+      border-radius: 5px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    #panel-key-projects .pi-body::-webkit-scrollbar-thumb:hover {
+      background: rgba(15, 23, 42, 0.28);
+      background-clip: padding-box;
+    }
+
     /* 统计卡片行 */
     .pi-cards.kps-stats {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 10px;
       margin-bottom: 14px;
     }
@@ -2734,6 +2791,24 @@
       border: 1px solid var(--border-light);
       border-radius: 8px;
       overflow: auto;
+      scrollbar-color: rgba(15, 23, 42, 0.16) transparent;
+      scrollbar-width: thin;
+    }
+    .kps-table-shell::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+    .kps-table-shell::-webkit-scrollbar-track {
+      background: var(--header-bg);
+      border-radius: 10px;
+    }
+    .kps-table-shell::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%);
+      border-radius: 10px;
+      border: 2px solid var(--header-bg);
+    }
+    .kps-table-shell::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
     }
 
     /* 表格基础 */
@@ -2882,8 +2957,6 @@
         <label>年度：</label>
         <select id="kps-year-select"></select>
         <span class="pi-selector-hint">当前工作年度</span>
-      </div>
-      <div class="pi-structure-tools">
         <button type="button" class="pi-btn" id="btn-kps-expand-all">全部展开</button>
         <button type="button" class="pi-btn" id="btn-kps-collapse-all" style="margin-left:4px;">全部折叠</button>
       </div>
@@ -8366,7 +8439,9 @@
       if (p.status === 'active')      { label = '进行中'; bg = '#e3f2fd'; fg = '#1565c0'; }
       else if (p.status === 'completed') { label = '已完成'; bg = '#e8f5e9'; fg = '#2e7d32'; }
       else if (p.status === 'paused')    { label = '已暂停'; bg = '#fff3e0'; fg = '#e65100'; }
-      else { label = p.status; bg = '#f3f4f6'; fg = '#6B7280'; }
+      else if (p.status === 'archived')  { label = '已完成'; bg = '#e8f5e9'; fg = '#2e7d32'; }
+      else if (p.status === 'cancelled') { label = '已取消/中止'; bg = '#fce4ec'; fg = '#c62828'; }
+      else { label = p.status || '未知'; bg = '#f3f4f6'; fg = '#6B7280'; }
       return '<td><span class="kps-tag" style="background:' + bg + ';color:' + fg + '">' + label + '</span></td>';
     }
 
@@ -8375,7 +8450,7 @@
     }
 
     function buildKpsStats(treeData) {
-      var stats = { total: 0, active: 0, done: 0, pause: 0, setCount: 0 };
+      var stats = { total: 0, active: 0, done: 0, pause: 0, cancelled: 0, setCount: 0 };
       var setNames = {};
       treeData.forEach(function (dir) {
         getKpsProjectSets(dir).forEach(function (ps) {
@@ -8386,7 +8461,9 @@
             stats.total++;
             if (p.status === 'active')   stats.active++;
             else if (p.status === 'completed') stats.done++;
+            else if (p.status === 'archived')  stats.done++;
             else if (p.status === 'paused')    stats.pause++;
+            else if (p.status === 'cancelled') stats.cancelled++;
           });
         });
       });
@@ -8418,17 +8495,19 @@
           stats.done + '</div></div>' +
         '<div class="pi-stat"><div class="pi-stat-lbl">已暂停</div><div class="pi-stat-val" style="color:#e65100">' +
           stats.pause + '</div></div>' +
+        '<div class="pi-stat"><div class="pi-stat-lbl">已取消/中止</div><div class="pi-stat-val" style="color:#c62828">' +
+          stats.cancelled + '</div></div>' +
         '</div>';
 
       html += '<div class="kps-table-shell"><table id="kps-table">' +
         '<thead><tr>' +
-        '<th class="col-sp" style="width:18%;">子项目集</th>' +
-        '<th class="col-proj" style="width:24%;">子项目</th>' +
+        '<th class="col-sp" style="width:12%;">子项目集</th>' +
+        '<th class="col-proj" style="width:16%;">子项目</th>' +
         '<th style="width:7%;">状态</th>' +
-        '<th style="width:9%;">项目负责人</th>' +
-        '<th style="width:9%;">项目经理</th>' +
-        '<th class="col-desc" style="width:16%;">项目简介</th>' +
-        '<th class="col-goal" style="width:17%;">项目目标</th>' +
+        '<th style="width:8%;">项目负责人</th>' +
+        '<th style="width:8%;">项目经理</th>' +
+        '<th class="col-desc" style="width:24%;">项目简介</th>' +
+        '<th class="col-goal" style="width:25%;">项目目标</th>' +
         '</tr></thead><tbody>';
 
       treeData.forEach(function (dir) {
