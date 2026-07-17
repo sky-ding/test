@@ -776,12 +776,12 @@
       esc(sp.description || '（暂无描述）') + '</p></div></div></div>' +
       (goals.length > 0 ? '<div class="pi-card"><h3>🎯 项目目标</h3>' +
         '<div class="pi-table-wrap"><table class="pi-table pi-summary-table"><thead><tr>' +
-        '<th>目标</th><th>单位</th><th>目标值</th><th>当前值</th><th>状态</th>' +
+        '<th>目标</th><th>目标值</th><th>当前值</th><th>状态</th>' +
         '</tr></thead><tbody>' + goals.map(function (g) {
           var target = g.mid_term_target || g.initial_target;
           var cv = g.current_value || '-';
           var st = GOAL_STATUS_MAP[g.overall_status] || '⏳ 未开始';
-          return '<tr><td>' + esc(g.name) + '</td><td>' + esc(g.metric_unit || '') +
+          return '<tr><td>' + esc(g.name) +
             '</td><td>' + esc(target) + '</td><td>' + esc(cv) +
             '</td><td>' + st + '</td></tr>';
         }).join('') + '</tbody></table></div></div>' : '') +
@@ -905,7 +905,7 @@
       '<div class="pi-form-group pi-full"><label>项目描述</label><textarea id="pi-f-desc" rows="4">' + esc(sp.description || '') + '</textarea></div>' +
       '<div class="pi-form-group pi-full"><label>关键目标</label>' +
       '<textarea id="pi-f-goal" rows="5" placeholder="每行可填写一个目标，支持多行登记">' + esc(sp.key_goal || '') + '</textarea></div></div></div>' +
-      '<div class="pi-card"><h3>🎯 项目目标</h3><table class="pi-table" id="pi-tbl-goals"><thead><tr><th style="width:32px">#</th><th style="width:180px">目标名称</th><th style="width:80px">单位</th><th style="width:100px">期初目标</th><th style="width:100px">期中调整</th><th style="width:100px">当前值</th><th style="width:80px">方向</th><th style="width:80px">状态</th><th style="width:80px">操作</th></tr></thead><tbody></tbody></table>' +
+      '<div class="pi-card"><h3>🎯 项目目标</h3><table class="pi-table" id="pi-tbl-goals"><thead><tr><th style="width:32px">#</th><th style="width:180px">目标名称</th><th style="width:100px">期初目标</th><th style="width:100px">期中调整</th><th style="width:100px">当前值</th><th style="width:80px">方向</th><th style="width:80px">状态</th><th style="width:80px">操作</th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-goal">+ 添加目标</button></div>' +
       '<div class="pi-card"><h3>任务</h3><table class="pi-table" id="pi-tbl-tasks"><thead><tr><th></th><th>名称</th><th>状态</th><th>负责人</th><th>开始</th><th>结束</th><th>里程碑</th><th>关联目标</th><th></th></tr></thead><tbody></tbody></table>' +
       '<button type="button" class="pi-btn" id="pi-add-task">+ 添加任务</button></div>' +
@@ -1030,13 +1030,6 @@
       inpName.type = 'text'; inpName.className = 'pi-input';
       inpName.value = g.name || ''; inpName.setAttribute('data-goal-field', 'name'); inpName.setAttribute('data-gi', gi);
       td2.appendChild(inpName); tr.appendChild(td2);
-
-      // 度量单位
-      var td3 = document.createElement('td');
-      var inpUnit = document.createElement('input');
-      inpUnit.type = 'text'; inpUnit.className = 'pi-input pi-input-sm';
-      inpUnit.value = g.metric_unit || ''; inpUnit.setAttribute('data-goal-field', 'metric_unit'); inpUnit.setAttribute('data-gi', gi);
-      td3.appendChild(inpUnit); tr.appendChild(td3);
 
       // 期初目标
       var td4 = document.createElement('td');
