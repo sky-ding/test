@@ -2701,6 +2701,153 @@
       border-color: var(--danger);
       color: var(--danger);
     }
+
+    /* ========== 部门重点项目列表 ========== */
+
+    /* 统计卡片行 */
+    .pi-cards.kps-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .pi-cards.kps-stats .pi-stat {
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+    }
+    .pi-cards.kps-stats .pi-stat .pi-stat-lbl {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 3px;
+    }
+    .pi-cards.kps-stats .pi-stat .pi-stat-val {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* 表格容器 */
+    .kps-table-shell {
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      overflow: auto;
+    }
+
+    /* 表格基础 */
+    #kps-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      min-width: 960px;
+    }
+
+    #kps-table thead th {
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      color: var(--text-secondary);
+      font-weight: 600;
+      padding: 10px 12px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      white-space: nowrap;
+    }
+
+    #kps-table tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      color: var(--text);
+      vertical-align: middle;
+      text-align: center;
+    }
+
+    #kps-table tbody tr:hover td {
+      background: var(--table-row-hover);
+    }
+
+    /* 第一列（子项目集）文本左对齐 + 浅灰背景 */
+    #kps-table td.col-sp {
+      text-align: left;
+      background: #fafbfc;
+      font-weight: 500;
+    }
+
+    /* 第二列（子项目）文本左对齐 */
+    #kps-table td.col-proj {
+      text-align: left;
+    }
+
+    /* 项目简介/项目目标列内容靠左对齐 */
+    #kps-table td.col-desc,
+    #kps-table td.col-goal {
+      text-align: left;
+    }
+
+    /* 方向分隔栏（蓝色整行） */
+    .kps-dir-row td {
+      background: #f0f4ff !important;
+      border-top: 1px solid var(--border) !important;
+      padding: 0 !important;
+    }
+    .kps-dir-row .kps-dir-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      cursor: pointer;
+    }
+    .kps-dir-row .kps-dir-name {
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .kps-dir-row .kps-dir-meta {
+      font-size: 11px;
+      color: #9AA0A6;
+      margin-left: 4px;
+    }
+
+    /* 折叠按钮 */
+    .kps-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      font-size: 10px;
+      color: #6B7280;
+      cursor: pointer;
+      user-select: none;
+      margin-right: 4px;
+    }
+    .kps-toggle-btn:hover { color: #1E6FFF; }
+
+    /* 状态标签 */
+    .kps-tag {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .kps-tag-active { background: #e3f2fd; color: #1565c0; }
+    .kps-tag-done   { background: #e8f5e9; color: #2e7d32; }
+    .kps-tag-pause  { background: #fff3e0; color: #e65100; }
+
+    /* 本级标记（子项目集名 == 子项目名） */
+    .kps-badge-self {
+      display: inline-block;
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: #e8eaed;
+      color: #6B7280;
+      font-weight: 500;
+      margin-left: 4px;
+    }
   </style>
 </head>
 <body>
@@ -2711,7 +2858,8 @@
     </div>
     <div class="tabs-nav-center">
       <div class="tabs" role="tablist" aria-label="功能切换">
-        <button type="button" class="tab active" role="tab" aria-selected="true" data-target="panel-phase">项目阶段复盘</button>
+        <button type="button" class="tab active" role="tab" aria-selected="true" data-target="panel-key-projects">部门重点项目列表</button>
+        <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-phase">项目阶段复盘</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-manpower">部门项目人力</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-risk">项目风险</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-project-info">项目信息登记</button>
@@ -2728,7 +2876,24 @@
     </div>
   </div>
 
-  <div id="panel-phase" class="tab-panel active" role="tabpanel" aria-label="项目阶段复盘">
+  <div id="panel-key-projects" class="tab-panel active" role="tabpanel" aria-label="部门重点项目列表">
+    <div class="pi-toolbar-row">
+      <div class="pi-selectors">
+        <label>年度：</label>
+        <select id="kps-year-select"></select>
+        <span class="pi-selector-hint">当前工作年度</span>
+      </div>
+      <div class="pi-structure-tools">
+        <button type="button" class="pi-btn" id="btn-kps-expand-all">全部展开</button>
+        <button type="button" class="pi-btn" id="btn-kps-collapse-all" style="margin-left:4px;">全部折叠</button>
+      </div>
+    </div>
+    <div class="pi-body" id="panel-key-projects-body">
+      <!-- 由 JS 渲染 -->
+    </div>
+  </div>
+
+  <div id="panel-phase" class="tab-panel" role="tabpanel" aria-label="项目阶段复盘">
     <div class="manpower-toolbar">
       <label>年度 <span class="pm-year-readonly" data-pm-year-display>—</span></label>
       <label>月份 <select id="phase-month-select" aria-label="阶段状态月份"></select></label>
@@ -3250,6 +3415,13 @@
         renderRiskTable();
         if (window.ProjectInfoModule && window.ProjectInfoModule.onYearChanged) {
           window.ProjectInfoModule.onYearChanged(y);
+        }
+        if (kpsState.rendered) {
+          loadKpsTree(y);
+        }
+        var kpsYearSel = document.getElementById('kps-year-select');
+        if (kpsYearSel && document.activeElement !== kpsYearSel) {
+          kpsYearSel.value = String(y);
         }
       });
     }
@@ -5059,6 +5231,14 @@
     var pmLastLoadedRiskIds = new Set();
     /** 已从 /api/v1/programs/tree 加载（已登录且非离线） */
     var pmUsesRelationalRegistry = false;
+
+    /** 部门重点项目列表状态 */
+    var kpsState = {
+      expandedDirections: {},
+      expandedSets: {},
+      rendered: false,
+      treeData: null
+    };
 
     function buildSkeletonFromProgramTree(treeJson) {
       var programs = (treeJson && treeJson.programs) || [];
@@ -8158,6 +8338,311 @@
         renderTable();
       }
     }
+
+    /* ========== 部门重点项目列表 · 辅助函数 ========== */
+
+    function getSubProjects(ps) {
+      return ps.sub_projects || ps._subProjects || [];
+    }
+
+    function getProjectSets(dir) {
+      return dir.sub_programs || dir._projectSets || [];
+    }
+
+    function computeDirStats(dir) {
+      var setCount = 0, projCount = 0;
+      getProjectSets(dir).forEach(function (ps) {
+        var projs = getSubProjects(ps);
+        if (projs && projs.length > 0) {
+          setCount++;
+          projCount += projs.length;
+        }
+      });
+      return { setCount: setCount, projCount: projCount };
+    }
+
+    function buildKpsStatusCell(p) {
+      var label, bg, fg;
+      if (p.status === 'active')      { label = '进行中'; bg = '#e3f2fd'; fg = '#1565c0'; }
+      else if (p.status === 'completed') { label = '已完成'; bg = '#e8f5e9'; fg = '#2e7d32'; }
+      else if (p.status === 'paused')    { label = '已暂停'; bg = '#fff3e0'; fg = '#e65100'; }
+      else { label = p.status; bg = '#f3f4f6'; fg = '#6B7280'; }
+      return '<td><span class="kps-tag" style="background:' + bg + ';color:' + fg + '">' + label + '</span></td>';
+    }
+
+    function buildKpsPersonCell(val) {
+      return '<td>' + (val ? escapeHtml(val) : '—') + '</td>';
+    }
+
+    function buildKpsStats(treeData) {
+      var stats = { total: 0, active: 0, done: 0, pause: 0, setCount: 0 };
+      var setNames = {};
+      treeData.forEach(function (dir) {
+        getProjectSets(dir).forEach(function (ps) {
+          var projs = getSubProjects(ps);
+          if (!projs || projs.length === 0) return;
+          setNames[ps.name] = true;
+          projs.forEach(function (p) {
+            stats.total++;
+            if (p.status === 'active')   stats.active++;
+            else if (p.status === 'completed') stats.done++;
+            else if (p.status === 'paused')    stats.pause++;
+          });
+        });
+      });
+      stats.setCount = Object.keys(setNames).length;
+      return stats;
+    }
+
+    /* ========== 部门重点项目列表 · 主渲染 ========== */
+
+    function renderKpsTable() {
+      var body = document.getElementById('panel-key-projects-body');
+      if (!body) return;
+
+      var treeData = kpsState.treeData;
+      if (!treeData || treeData.length === 0) {
+        body.innerHTML = '<div class="pi-empty-state">' +
+          '<div class="pi-empty-card"><h3>暂无项目数据</h3>' +
+          '<p>请先选择年度或检查是否已创建项目结构。</p></div></div>';
+        return;
+      }
+
+      var stats = buildKpsStats(treeData);
+      var html = '<div class="pi-cards kps-stats">' +
+        '<div class="pi-stat"><div class="pi-stat-lbl">重点项目总计</div><div class="pi-stat-val">' +
+          stats.total + '</div></div>' +
+        '<div class="pi-stat"><div class="pi-stat-lbl">进行中</div><div class="pi-stat-val" style="color:#1565c0">' +
+          stats.active + '</div></div>' +
+        '<div class="pi-stat"><div class="pi-stat-lbl">已完成</div><div class="pi-stat-val" style="color:#2e7d32">' +
+          stats.done + '</div></div>' +
+        '<div class="pi-stat"><div class="pi-stat-lbl">已暂停</div><div class="pi-stat-val" style="color:#e65100">' +
+          stats.pause + '</div></div>' +
+        '</div>';
+
+      html += '<div class="kps-table-shell"><table id="kps-table">' +
+        '<thead><tr>' +
+        '<th class="col-sp" style="width:18%;">子项目集</th>' +
+        '<th class="col-proj" style="width:24%;">子项目</th>' +
+        '<th style="width:7%;">状态</th>' +
+        '<th style="width:9%;">项目负责人</th>' +
+        '<th style="width:9%;">项目经理</th>' +
+        '<th class="col-desc" style="width:16%;">项目简介</th>' +
+        '<th class="col-goal" style="width:17%;">项目目标</th>' +
+        '</tr></thead><tbody>';
+
+      treeData.forEach(function (dir) {
+        var dirName = dir.name;
+        var isDirExpanded = kpsState.expandedDirections[dirName] !== false;
+        var dirStats = computeDirStats(dir);
+
+        html += '<tr class="kps-dir-row"><td colspan="7">' +
+          '<div class="kps-dir-header" data-action="toggle-dir" data-dir="' +
+          escapeHtml(dirName) + '">' +
+          '<span class="kps-toggle-btn" style="color:' +
+          (isDirExpanded ? '#1E6FFF' : '#6B7280') + '">' +
+          (isDirExpanded ? '▾' : '▸') + '</span>' +
+          '<span class="kps-dir-name">' + escapeHtml(dirName) + '</span>' +
+          '<span class="kps-dir-meta">' + dirStats.setCount +
+          ' 个子项目集 · ' + dirStats.projCount + ' 个子项目</span>' +
+          '</div></td></tr>';
+
+        if (!isDirExpanded) return;
+
+        getProjectSets(dir).forEach(function (ps) {
+          var projs = getSubProjects(ps);
+          if (!projs || projs.length === 0) return;
+
+          var isSetExpanded = kpsState.expandedSets[dirName] &&
+            kpsState.expandedSets[dirName][ps.name] !== false;
+
+          if (isSetExpanded && projs.length === 1 && projs[0].name === ps.name) {
+            html += '<tr class="row-project">' +
+              '<td class="col-sp">' +
+              '<span class="kps-toggle-btn" data-action="toggle-set"' +
+              ' data-dir="' + escapeHtml(dirName) + '"' +
+              ' data-set="' + escapeHtml(ps.name) + '">▾</span>' +
+              '<span>' + escapeHtml(ps.name) + '</span>' +
+              '<span class="kps-dir-meta">(1)</span>' +
+              '</td>' +
+              '<td class="col-proj">' + escapeHtml(projs[0].name) +
+              ' <span class="kps-badge-self">本级</span></td>' +
+              buildKpsStatusCell(projs[0]) +
+              buildKpsPersonCell(projs[0].project_lead) +
+              buildKpsPersonCell(projs[0].project_manager) +
+              '<td class="col-desc">' + escapeHtml(projs[0].description || '') + '</td>' +
+              '<td class="col-goal">' + escapeHtml(projs[0].key_goal || '') + '</td>' +
+              '</tr>';
+            return;
+          }
+
+          if (!isSetExpanded) {
+            html += '<tr class="row-project">' +
+              '<td class="col-sp">' +
+              '<span class="kps-toggle-btn" data-action="toggle-set"' +
+              ' data-dir="' + escapeHtml(dirName) + '"' +
+              ' data-set="' + escapeHtml(ps.name) + '">▸</span>' +
+              '<span>' + escapeHtml(ps.name) + '</span>' +
+              '<span class="kps-dir-meta">(' + projs.length + ')</span>' +
+              '</td><td class="col-proj">—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>' +
+              '</tr>';
+            return;
+          }
+
+          html += '<tr class="row-project">' +
+            '<td class="col-sp">' +
+            '<span class="kps-toggle-btn" data-action="toggle-set"' +
+            ' data-dir="' + escapeHtml(dirName) + '"' +
+            ' data-set="' + escapeHtml(ps.name) + '">▾</span>' +
+            '<span>' + escapeHtml(ps.name) + '</span>' +
+            '<span class="kps-dir-meta">(' + projs.length + ')</span>' +
+            '</td><td class="col-proj">—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>' +
+            '</tr>';
+
+          projs.forEach(function (p) {
+            html += '<tr class="row-project">' +
+              '<td class="col-sp">—</td>' +
+              '<td class="col-proj">' + escapeHtml(p.name) + '</td>' +
+              buildKpsStatusCell(p) +
+              buildKpsPersonCell(p.project_lead) +
+              buildKpsPersonCell(p.project_manager) +
+              '<td class="col-desc">' + escapeHtml(p.description || '') + '</td>' +
+              '<td class="col-goal">' + escapeHtml(p.key_goal || '') + '</td>' +
+              '</tr>';
+          });
+        });
+      });
+
+      html += '</tbody></table></div>';
+      body.innerHTML = html;
+    }
+
+    /* ========== 部门重点项目列表 · 折叠/展开 ========== */
+
+    function toggleKpsDirection(dirName) {
+      if (kpsState.expandedDirections[dirName] === false) {
+        kpsState.expandedDirections[dirName] = true;
+      } else {
+        kpsState.expandedDirections[dirName] = false;
+      }
+      renderKpsTable();
+      bindKpsEvents();
+    }
+
+    function toggleKpsSet(dirName, setName) {
+      if (!kpsState.expandedSets[dirName]) {
+        kpsState.expandedSets[dirName] = {};
+      }
+      if (kpsState.expandedSets[dirName][setName] === false) {
+        kpsState.expandedSets[dirName][setName] = true;
+      } else {
+        kpsState.expandedSets[dirName][setName] = false;
+      }
+      renderKpsTable();
+      bindKpsEvents();
+    }
+
+    function expandAllKps() {
+      var treeData = kpsState.treeData;
+      if (!treeData) return;
+      treeData.forEach(function (dir) {
+        kpsState.expandedDirections[dir.name] = true;
+        if (!kpsState.expandedSets[dir.name]) {
+          kpsState.expandedSets[dir.name] = {};
+        }
+        getProjectSets(dir).forEach(function (ps) {
+          kpsState.expandedSets[dir.name][ps.name] = true;
+        });
+      });
+      renderKpsTable();
+      bindKpsEvents();
+    }
+
+    function collapseAllKps() {
+      var treeData = kpsState.treeData;
+      if (!treeData) return;
+      treeData.forEach(function (dir) {
+        kpsState.expandedDirections[dir.name] = false;
+        if (!kpsState.expandedSets[dir.name]) {
+          kpsState.expandedSets[dir.name] = {};
+        }
+        getProjectSets(dir).forEach(function (ps) {
+          kpsState.expandedSets[dir.name][ps.name] = false;
+        });
+      });
+      renderKpsTable();
+      bindKpsEvents();
+    }
+
+    /* ========== 部门重点项目列表 · 数据获取 ========== */
+
+    function loadKpsTree(year) {
+      year = year || (document.getElementById('kps-year-select') && document.getElementById('kps-year-select').value) || pmDataYear;
+      fetch(PM_API_BASE + '/programs/tree?year=' + year)
+        .then(function (r) { return r.json(); })
+        .then(function (resp) {
+          kpsState.treeData = resp.programs || [];
+          if (kpsState.rendered) {
+            renderKpsTable();
+            bindKpsEvents();
+          }
+        })
+        .catch(function (err) {
+          console.error('加载重点项目树失败', err);
+        });
+    }
+
+    function initKpsYearSelect() {
+      var sel = document.getElementById('kps-year-select');
+      if (!sel || sel._kpsYearWired) return;
+      sel._kpsYearWired = true;
+
+      var curYear = new Date().getFullYear();
+      var opts = '';
+      for (var y = curYear - 3; y <= curYear + 3; y++) {
+        opts += '<option value="' + y + '"' + (y === pmDataYear ? ' selected' : '') + '>' + y + '</option>';
+      }
+      sel.innerHTML = opts;
+
+      sel.addEventListener('change', function () {
+        var v = parseInt(sel.value, 10);
+        if (isNaN(v) || v < 2000 || v > 2099) {
+          sel.value = String(pmDataYear);
+          return;
+        }
+        kpsState.rendered = true;
+        loadKpsTree(v);
+      });
+    }
+
+    /* ========== 部门重点项目列表 · 事件绑定 ========== */
+
+    function bindKpsEvents() {
+      var body = document.getElementById('panel-key-projects-body');
+      if (!body) return;
+
+      body.querySelectorAll('[data-action="toggle-dir"]').forEach(function (el) {
+        el.addEventListener('click', function () {
+          var dirName = el.getAttribute('data-dir');
+          toggleKpsDirection(dirName);
+        });
+      });
+
+      body.querySelectorAll('[data-action="toggle-set"]').forEach(function (el) {
+        el.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var dirName = el.getAttribute('data-dir');
+          var setName = el.getAttribute('data-set');
+          toggleKpsSet(dirName, setName);
+        });
+      });
+
+      var expandBtn = document.getElementById('btn-kps-expand-all');
+      var collapseBtn = document.getElementById('btn-kps-collapse-all');
+      if (expandBtn) expandBtn.addEventListener('click', expandAllKps);
+      if (collapseBtn) collapseBtn.addEventListener('click', collapseAllKps);
+    }
+
     async function pmBootstrap() {
       var me = await fetchAuthMe();
       if (me === null) return;
@@ -8189,6 +8674,12 @@
           if (target === 'panel-settings') {
             initSettingsPanelOnce();
             updateSettingsPanelRoleUi();
+          }
+          if (target === 'panel-key-projects') {
+            if (!kpsState.rendered) {
+              kpsState.rendered = true;
+              loadKpsTree(pmDataYear);
+            }
           }
           if (target === 'panel-phase') {
             renderPhaseTable();
@@ -8231,6 +8722,7 @@
         loadAppSettings();
         initManpowerTimeUi();
         initPhaseTimeUi();
+        initKpsYearSelect();
         initRiskAnalysisUi();
         initRiskFilterUi();
         renderTable();
@@ -8260,6 +8752,7 @@
           loadAppSettings();
           initManpowerTimeUi();
           initPhaseTimeUi();
+          initKpsYearSelect();
           initRiskAnalysisUi();
           initRiskFilterUi();
           renderTable();

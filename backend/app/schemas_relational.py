@@ -21,6 +21,10 @@ class SubProjectNode(BaseModel):
     name: str
     status: str = "active"
     sort_order: int = 0
+    project_lead: str | None = None
+    project_manager: str | None = None
+    description: str | None = None
+    key_goal: str | None = None
 
 
 class SubProgramNode(BaseModel):
