@@ -80,6 +80,8 @@ class SubProject(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     key_goal: Mapped[str | None] = mapped_column(Text, nullable=True)
     automation_rate_goal: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    project_lead: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    project_manager: Mapped[str | None] = mapped_column(String(100), nullable=True)
     planned_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     planned_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     actual_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)

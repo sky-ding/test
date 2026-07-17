@@ -896,6 +896,8 @@
       '<option value="archived"' + (sp.status === 'archived' ? ' selected' : '') + '>已归档</option></select></div>' +
       '<div class="pi-form-group"><label>计划结束 *</label><input type="date" id="pi-f-pe" value="' + fmtDate(sp.planned_end_date) + '"></div>' +
       '<div class="pi-form-group"><label>实际结束</label><input type="date" id="pi-f-ae" value="' + (sp.actual_end_date ? fmtDate(sp.actual_end_date) : '') + '"></div>' +
+      '<div class="pi-form-group"><label>项目负责人</label><input type="text" id="pi-f-lead" value="' + esc(sp.project_lead || '') + '"></div>' +
+      '<div class="pi-form-group"><label>项目经理</label><input type="text" id="pi-f-mgr" value="' + esc(sp.project_manager || '') + '"></div>' +
       '<div class="pi-form-group pi-full"><label>项目描述</label><textarea id="pi-f-desc" rows="4">' + esc(sp.description || '') + '</textarea></div>' +
       '<div class="pi-form-group pi-full"><label>关键目标</label>' +
       '<textarea id="pi-f-goal" rows="5" placeholder="每行可填写一个目标，支持多行登记">' + esc(sp.key_goal || '') + '</textarea></div></div></div>' +
@@ -922,6 +924,8 @@
     bindEditInput('#pi-f-pe', function (el) { e.sub_project.planned_end_date = el.value || null; });
     bindEditInput('#pi-f-as', function (el) { e.sub_project.actual_start_date = el.value || null; });
     bindEditInput('#pi-f-ae', function (el) { e.sub_project.actual_end_date = el.value || null; });
+    bindEditInput('#pi-f-lead', function (el) { e.sub_project.project_lead = el.value || null; });
+    bindEditInput('#pi-f-mgr', function (el) { e.sub_project.project_manager = el.value || null; });
 
     renderGoalRows();
     renderTaskRows();

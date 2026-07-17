@@ -385,6 +385,8 @@ def save_project_info(
     sp.description = (body.sub_project.description or "").strip() or None
     sp.key_goal = (body.sub_project.key_goal or "").strip() or None
     sp.automation_rate_goal = (body.sub_project.automation_rate_goal or "").strip() or None
+    sp.project_lead = (body.sub_project.project_lead or "").strip() or None
+    sp.project_manager = (body.sub_project.project_manager or "").strip() or None
     sp.planned_start_date = body.sub_project.planned_start_date
     sp.planned_end_date = body.sub_project.planned_end_date
     sp.actual_start_date = body.sub_project.actual_start_date
