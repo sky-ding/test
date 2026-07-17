@@ -1459,7 +1459,9 @@
         planned_start_date: e.sub_project.planned_start_date,
         planned_end_date: e.sub_project.planned_end_date,
         actual_start_date: e.sub_project.actual_start_date || null,
-        actual_end_date: e.sub_project.actual_end_date || null
+        actual_end_date: e.sub_project.actual_end_date || null,
+        project_lead: e.sub_project.project_lead || null,
+        project_manager: e.sub_project.project_manager || null
       },
       tasks: e.tasks.map(function (t) {
         return {
