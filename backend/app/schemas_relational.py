@@ -408,7 +408,7 @@ class ProjectRiskDetailOut(ProjectRiskOut):
 
 # --- 项目信息（聚合读写） ---
 
-_PROJECT_STATUSES = frozenset({"active", "archived"})
+_PROJECT_STATUSES = frozenset({"active", "archived", "paused", "cancelled"})
 _TASK_STATUSES = frozenset({"pending", "in-progress", "completed", "overdue"})
 _PARTICIPATION = frozenset({"核心成员", "兼职参与", "外部协作"})
 
@@ -569,7 +569,7 @@ class ProjectInfoSubProjectIn(BaseModel):
     def valid_status(cls, v: str) -> str:
         s = v.strip()
         if s not in _PROJECT_STATUSES:
-            raise ValueError("status must be active or archived")
+            raise ValueError("status must be active, archived, paused or cancelled")
         return s
 
     @model_validator(mode="after")

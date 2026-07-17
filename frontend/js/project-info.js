@@ -6,7 +6,9 @@
 
   var PROJECT_STATUS = {
     active: { label: '进行中', cls: 'pi-tag-active' },
-    archived: { label: '已归档', cls: 'pi-tag-archived' }
+    archived: { label: '已归档', cls: 'pi-tag-archived' },
+    paused: { label: '暂停', cls: 'pi-tag-paused' },
+    cancelled: { label: '中止/取消', cls: 'pi-tag-cancelled' }
   };
 
   var TASK_STATUS = ['pending', 'in-progress', 'completed', 'overdue'];
@@ -893,6 +895,8 @@
       '<div class="pi-form-group"><label>实际开始</label><input type="date" id="pi-f-as" value="' + (sp.actual_start_date ? fmtDate(sp.actual_start_date) : '') + '"></div>' +
       '<div class="pi-form-group pi-form-group--compact"><label>项目状态 *</label><select id="pi-f-status">' +
       '<option value="active"' + (sp.status === 'active' ? ' selected' : '') + '>进行中</option>' +
+      '<option value="paused"' + (sp.status === 'paused' ? ' selected' : '') + '>暂停</option>' +
+      '<option value="cancelled"' + (sp.status === 'cancelled' ? ' selected' : '') + '>中止/取消</option>' +
       '<option value="archived"' + (sp.status === 'archived' ? ' selected' : '') + '>已归档</option></select></div>' +
       '<div class="pi-form-group"><label>计划结束 *</label><input type="date" id="pi-f-pe" value="' + fmtDate(sp.planned_end_date) + '"></div>' +
       '<div class="pi-form-group"><label>实际结束</label><input type="date" id="pi-f-ae" value="' + (sp.actual_end_date ? fmtDate(sp.actual_end_date) : '') + '"></div>' +

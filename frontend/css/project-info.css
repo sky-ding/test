@@ -239,6 +239,8 @@
   font-weight: 600;
 }
 #panel-project-info .pi-tag-active { background: #E6F4EA; color: #34a853; }
+#panel-project-info .pi-tag-paused { background: #FEF7E0; color: #e37400; }
+#panel-project-info .pi-tag-cancelled { background: #FCE8E6; color: #c5221f; }
 #panel-project-info .pi-tag-archived { background: #F1F3F4; color: #5f6368; }
 
 #panel-project-info .pi-ms-tl {
