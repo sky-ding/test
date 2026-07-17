@@ -2711,7 +2711,7 @@
     </div>
     <div class="tabs-nav-center">
       <div class="tabs" role="tablist" aria-label="功能切换">
-        <button type="button" class="tab active" role="tab" aria-selected="true" data-target="panel-phase">项目阶段状态</button>
+        <button type="button" class="tab active" role="tab" aria-selected="true" data-target="panel-phase">项目阶段复盘</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-manpower">部门项目人力</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-risk">项目风险</button>
         <button type="button" class="tab" role="tab" aria-selected="false" data-target="panel-project-info">项目信息登记</button>
@@ -2728,12 +2728,12 @@
     </div>
   </div>
 
-  <div id="panel-phase" class="tab-panel active" role="tabpanel" aria-label="项目阶段状态">
+  <div id="panel-phase" class="tab-panel active" role="tabpanel" aria-label="项目阶段复盘">
     <div class="manpower-toolbar">
       <label>年度 <span class="pm-year-readonly" data-pm-year-display>—</span></label>
       <label>月份 <select id="phase-month-select" aria-label="阶段状态月份"></select></label>
       <label>项目集 <select id="phase-project-set-filter" aria-label="按项目集筛选" title="不改变年月数据范围，仅过滤当前视图"></select></label>
-      <button type="button" class="manpower-analysis-btn" id="btn-phase-analysis" title="按当前所选年月查看阶段状态分析（预留）">项目阶段状态分析</button>
+      <button type="button" class="manpower-analysis-btn" id="btn-phase-analysis" title="按当前所选年月查看阶段状态分析（预留）">项目阶段复盘分析</button>
     </div>
     <div class="table-shell">
       <table id="phase-table">
@@ -2971,7 +2971,7 @@
     <div class="modal-box manpower-analysis-dialog" role="dialog" aria-modal="true" aria-labelledby="phase-analysis-title">
       <div class="manpower-analysis-header">
         <div>
-          <h2 id="phase-analysis-title">项目阶段状态分析</h2>
+          <h2 id="phase-analysis-title">项目阶段复盘分析</h2>
           <p id="phase-analysis-period" class="manpower-analysis-period"></p>
         </div>
         <button type="button" class="cancel-btn manpower-analysis-close" id="phase-analysis-close">关闭</button>
@@ -3478,7 +3478,7 @@
     }
 
     /**
-     * 部门项目人力登记 data 与项目阶段状态 phaseData 对齐：项目集/项目以阶段表为准；
+     * 部门项目人力登记 data 与项目阶段复盘 phaseData 对齐：项目集/项目以阶段表为准；
      * 同集内旧新项目数一致则按下标合并 manpowerByMonth，否则按项目名称从旧行池中匹配。
      */
     // ── 轻量 manpowerByMonth 浅拷贝，替代 JSON.parse(JSON.stringify()) ──
