@@ -8341,18 +8341,18 @@
 
     /* ========== 部门重点项目列表 · 辅助函数 ========== */
 
-    function getSubProjects(ps) {
+    function getKpsSubProjects(ps) {
       return ps.sub_projects || ps._subProjects || [];
     }
 
-    function getProjectSets(dir) {
+    function getKpsProjectSets(dir) {
       return dir.sub_programs || dir._projectSets || [];
     }
 
     function computeDirStats(dir) {
       var setCount = 0, projCount = 0;
-      getProjectSets(dir).forEach(function (ps) {
-        var projs = getSubProjects(ps);
+      getKpsProjectSets(dir).forEach(function (ps) {
+        var projs = getKpsSubProjects(ps);
         if (projs && projs.length > 0) {
           setCount++;
           projCount += projs.length;
@@ -8378,8 +8378,8 @@
       var stats = { total: 0, active: 0, done: 0, pause: 0, setCount: 0 };
       var setNames = {};
       treeData.forEach(function (dir) {
-        getProjectSets(dir).forEach(function (ps) {
-          var projs = getSubProjects(ps);
+        getKpsProjectSets(dir).forEach(function (ps) {
+          var projs = getKpsSubProjects(ps);
           if (!projs || projs.length === 0) return;
           setNames[ps.name] = true;
           projs.forEach(function (p) {
@@ -8449,8 +8449,8 @@
 
         if (!isDirExpanded) return;
 
-        getProjectSets(dir).forEach(function (ps) {
-          var projs = getSubProjects(ps);
+        getKpsProjectSets(dir).forEach(function (ps) {
+          var projs = getKpsSubProjects(ps);
           if (!projs || projs.length === 0) return;
 
           var isSetExpanded = kpsState.expandedSets[dirName] &&
@@ -8550,7 +8550,7 @@
         if (!kpsState.expandedSets[dir.name]) {
           kpsState.expandedSets[dir.name] = {};
         }
-        getProjectSets(dir).forEach(function (ps) {
+        getKpsProjectSets(dir).forEach(function (ps) {
           kpsState.expandedSets[dir.name][ps.name] = true;
         });
       });
@@ -8566,7 +8566,7 @@
         if (!kpsState.expandedSets[dir.name]) {
           kpsState.expandedSets[dir.name] = {};
         }
-        getProjectSets(dir).forEach(function (ps) {
+        getKpsProjectSets(dir).forEach(function (ps) {
           kpsState.expandedSets[dir.name][ps.name] = false;
         });
       });
@@ -8723,6 +8723,10 @@
         initManpowerTimeUi();
         initPhaseTimeUi();
         initKpsYearSelect();
+        if (document.getElementById('panel-key-projects').classList.contains('active')) {
+          kpsState.rendered = true;
+          loadKpsTree(pmDataYear);
+        }
         initRiskAnalysisUi();
         initRiskFilterUi();
         renderTable();
