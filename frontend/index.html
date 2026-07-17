@@ -2743,29 +2743,33 @@
       overflow: hidden;
     }
 
-    /* 统计卡片行 */
-    .pi-cards.kps-stats {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 10px;
-      margin-bottom: 14px;
+    /* 统计条（工具栏右侧） */
+    .kps-stats-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      font-size: 13px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
     }
-    .pi-cards.kps-stats .pi-stat {
-      background: var(--surface);
-      border: 1px solid var(--border-light);
-      border-radius: 8px;
-      padding: 14px;
-      text-align: center;
+    .kps-stats-bar .kps-stat-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
     }
-    .pi-cards.kps-stats .pi-stat .pi-stat-lbl {
+    .kps-stats-bar .kps-stat-lbl {
       font-size: 12px;
       color: var(--text-muted);
-      margin-bottom: 3px;
     }
-    .pi-cards.kps-stats .pi-stat .pi-stat-val {
-      font-size: 24px;
+    .kps-stats-bar .kps-stat-val {
+      font-size: 14px;
       font-weight: 700;
-      color: var(--text);
+    }
+    .kps-stats-bar .kps-stat-sep {
+      margin: 0 8px;
+      color: var(--border);
+      font-weight: 300;
     }
 
     /* 表格容器 */
@@ -2799,7 +2803,7 @@
     #kps-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 12px;
       min-width: 960px;
     }
 
@@ -2807,6 +2811,7 @@
       background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
       color: var(--text-secondary);
       font-weight: 600;
+      font-size: 13px;
       padding: 10px 12px;
       text-align: center;
       border-bottom: 1px solid var(--border);
@@ -2944,6 +2949,7 @@
         <button type="button" class="pi-btn" id="btn-kps-expand-all">全部展开</button>
         <button type="button" class="pi-btn" id="btn-kps-collapse-all" style="margin-left:4px;">全部折叠</button>
       </div>
+      <div class="kps-stats-bar" id="kps-stats-bar"></div>
     </div>
     <div class="pi-body" id="panel-key-projects-body">
       <!-- 由 JS 渲染 -->
@@ -8461,8 +8467,11 @@
       var body = document.getElementById('panel-key-projects-body');
       if (!body) return;
 
+      var statsBar = document.getElementById('kps-stats-bar');
+
       var treeData = kpsState.treeData;
       if (!treeData || treeData.length === 0) {
+        if (statsBar) statsBar.innerHTML = '';
         body.innerHTML = '<div class="pi-empty-state">' +
           '<div class="pi-empty-card"><h3>暂无项目数据</h3>' +
           '<p>请先选择年度或检查是否已创建项目结构。</p></div></div>';
@@ -8470,20 +8479,32 @@
       }
 
       var stats = buildKpsStats(treeData);
-      var html = '<div class="pi-cards kps-stats">' +
-        '<div class="pi-stat"><div class="pi-stat-lbl">重点项目总计</div><div class="pi-stat-val">' +
-          stats.total + '</div></div>' +
-        '<div class="pi-stat"><div class="pi-stat-lbl">进行中</div><div class="pi-stat-val" style="color:#1565c0">' +
-          stats.active + '</div></div>' +
-        '<div class="pi-stat"><div class="pi-stat-lbl">已完成</div><div class="pi-stat-val" style="color:#2e7d32">' +
-          stats.done + '</div></div>' +
-        '<div class="pi-stat"><div class="pi-stat-lbl">已暂停</div><div class="pi-stat-val" style="color:#e65100">' +
-          stats.pause + '</div></div>' +
-        '<div class="pi-stat"><div class="pi-stat-lbl">已取消/中止</div><div class="pi-stat-val" style="color:#c62828">' +
-          stats.cancelled + '</div></div>' +
-        '</div>';
 
-      html += '<div class="kps-table-shell"><table id="kps-table">' +
+      // 工具栏右侧：紧凑统计条
+      if (statsBar) {
+        statsBar.innerHTML =
+          '<span class="kps-stat-item">' +
+          '<span class="kps-stat-lbl">总计</span>' +
+          '<span class="kps-stat-val">' + stats.total + '</span></span>' +
+          '<span class="kps-stat-sep">·</span>' +
+          '<span class="kps-stat-item">' +
+          '<span class="kps-stat-lbl">进行中</span>' +
+          '<span class="kps-stat-val" style="color:#1565c0">' + stats.active + '</span></span>' +
+          '<span class="kps-stat-sep">·</span>' +
+          '<span class="kps-stat-item">' +
+          '<span class="kps-stat-lbl">已完成</span>' +
+          '<span class="kps-stat-val" style="color:#2e7d32">' + stats.done + '</span></span>' +
+          '<span class="kps-stat-sep">·</span>' +
+          '<span class="kps-stat-item">' +
+          '<span class="kps-stat-lbl">已暂停</span>' +
+          '<span class="kps-stat-val" style="color:#e65100">' + stats.pause + '</span></span>' +
+          '<span class="kps-stat-sep">·</span>' +
+          '<span class="kps-stat-item">' +
+          '<span class="kps-stat-lbl">已取消/中止</span>' +
+          '<span class="kps-stat-val" style="color:#c62828">' + stats.cancelled + '</span></span>';
+      }
+
+      var html = '<div class="kps-table-shell"><table id="kps-table">' +
         '<thead><tr>' +
         '<th class="col-sp" style="width:12%;">子项目集</th>' +
         '<th class="col-proj" style="width:16%;">子项目</th>' +
