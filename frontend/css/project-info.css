@@ -238,6 +238,7 @@
   font-size: 11px;
   font-weight: 600;
 }
+#panel-project-info .pi-tag-planning { background: #F3E8FF; color: #7c3aed; }
 #panel-project-info .pi-tag-active { background: #E6F4EA; color: #34a853; }
 #panel-project-info .pi-tag-paused { background: #FEF7E0; color: #e37400; }
 #panel-project-info .pi-tag-cancelled { background: #FCE8E6; color: #c5221f; }

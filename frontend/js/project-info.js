@@ -5,6 +5,7 @@
   'use strict';
 
   var PROJECT_STATUS = {
+    planning: { label: '待立项', cls: 'pi-tag-planning' },
     active: { label: '进行中', cls: 'pi-tag-active' },
     archived: { label: '已归档', cls: 'pi-tag-archived' },
     paused: { label: '暂停', cls: 'pi-tag-paused' },
@@ -894,6 +895,7 @@
       '<div class="pi-form-group"><label>计划开始 *</label><input type="date" id="pi-f-ps" value="' + fmtDate(sp.planned_start_date) + '"></div>' +
       '<div class="pi-form-group"><label>实际开始</label><input type="date" id="pi-f-as" value="' + (sp.actual_start_date ? fmtDate(sp.actual_start_date) : '') + '"></div>' +
       '<div class="pi-form-group pi-form-group--compact"><label>项目状态 *</label><select id="pi-f-status">' +
+      '<option value="planning"' + (sp.status === 'planning' ? ' selected' : '') + '>待立项</option>' +
       '<option value="active"' + (sp.status === 'active' ? ' selected' : '') + '>进行中</option>' +
       '<option value="paused"' + (sp.status === 'paused' ? ' selected' : '') + '>暂停</option>' +
       '<option value="cancelled"' + (sp.status === 'cancelled' ? ' selected' : '') + '>中止/取消</option>' +

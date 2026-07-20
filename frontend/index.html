@@ -8430,7 +8430,8 @@
 
     function buildKpsStatusCell(p) {
       var label, bg, fg;
-      if (p.status === 'active')      { label = '进行中'; bg = '#e3f2fd'; fg = '#1565c0'; }
+      if (p.status === 'planning')     { label = '待立项'; bg = '#f3e8ff'; fg = '#7c3aed'; }
+      else if (p.status === 'active')  { label = '进行中'; bg = '#e3f2fd'; fg = '#1565c0'; }
       else if (p.status === 'completed') { label = '已完成'; bg = '#e8f5e9'; fg = '#2e7d32'; }
       else if (p.status === 'paused')    { label = '已暂停'; bg = '#fff3e0'; fg = '#e65100'; }
       else if (p.status === 'archived')  { label = '已完成'; bg = '#e8f5e9'; fg = '#2e7d32'; }
