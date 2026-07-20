@@ -8445,7 +8445,7 @@
     }
 
     function buildKpsStats(treeData) {
-      var stats = { total: 0, active: 0, done: 0, pause: 0, cancelled: 0, setCount: 0 };
+      var stats = { total: 0, active: 0, done: 0, pause: 0, cancelled: 0, planning: 0, setCount: 0 };
       var setNames = {};
       treeData.forEach(function (dir) {
         getKpsProjectSets(dir).forEach(function (ps) {
@@ -8459,6 +8459,7 @@
             else if (p.status === 'archived')  stats.done++;
             else if (p.status === 'paused')    stats.pause++;
             else if (p.status === 'cancelled') stats.cancelled++;
+            else if (p.status === 'planning')  stats.planning++;
           });
         });
       });
@@ -8491,6 +8492,10 @@
           '<span class="kps-stat-item">' +
           '<span class="kps-stat-lbl">总计</span>' +
           '<span class="kps-stat-val">' + stats.total + '</span></span>' +
+          '<span class="kps-stat-sep">·</span>' +
+          '<span class="kps-stat-item">' +
+          '<span class="kps-stat-lbl">待立项</span>' +
+          '<span class="kps-stat-val" style="color:#7c3aed">' + stats.planning + '</span></span>' +
           '<span class="kps-stat-sep">·</span>' +
           '<span class="kps-stat-item">' +
           '<span class="kps-stat-lbl">进行中</span>' +
