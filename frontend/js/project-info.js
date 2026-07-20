@@ -904,6 +904,10 @@
       '<div class="pi-form-group"><label>实际结束</label><input type="date" id="pi-f-ae" value="' + (sp.actual_end_date ? fmtDate(sp.actual_end_date) : '') + '"></div>' +
       '<div class="pi-form-group"><label>项目负责人</label><input type="text" id="pi-f-lead" value="' + esc(sp.project_lead || '') + '"></div>' +
       '<div class="pi-form-group"><label>项目经理</label><input type="text" id="pi-f-mgr" value="' + esc(sp.project_manager || '') + '"></div>' +
+      '<div class="pi-form-group"><label>项目优先级别</label><select id="pi-f-priority">' +
+      '<option value="第一优先级"' + (sp.priority_level === '第一优先级' ? ' selected' : '') + '>第一优先级</option>' +
+      '<option value="第二优先级"' + (sp.priority_level === '第二优先级' ? ' selected' : '') + '>第二优先级</option>' +
+      '<option value="第三优先级"' + (sp.priority_level === '第三优先级' || !sp.priority_level ? ' selected' : '') + '>第三优先级</option></select></div>' +
       '<div class="pi-form-group pi-full"><label>项目描述</label><textarea id="pi-f-desc" rows="4">' + esc(sp.description || '') + '</textarea></div>' +
       '<div class="pi-form-group pi-full"><label>关键目标</label>' +
       '<textarea id="pi-f-goal" rows="5" placeholder="每行可填写一个目标，支持多行登记">' + esc(sp.key_goal || '') + '</textarea></div></div></div>' +
@@ -932,6 +936,7 @@
     bindEditInput('#pi-f-ae', function (el) { e.sub_project.actual_end_date = el.value || null; });
     bindEditInput('#pi-f-lead', function (el) { e.sub_project.project_lead = el.value || null; });
     bindEditInput('#pi-f-mgr', function (el) { e.sub_project.project_manager = el.value || null; });
+    bindEditInput('#pi-f-priority', function (el) { e.sub_project.priority_level = el.value; });
 
     renderGoalRows();
     renderTaskRows();
@@ -1460,7 +1465,8 @@
         actual_start_date: e.sub_project.actual_start_date || null,
         actual_end_date: e.sub_project.actual_end_date || null,
         project_lead: e.sub_project.project_lead || null,
-        project_manager: e.sub_project.project_manager || null
+        project_manager: e.sub_project.project_manager || null,
+        priority_level: e.sub_project.priority_level || '第三优先级'
       },
       tasks: e.tasks.map(function (t) {
         return {

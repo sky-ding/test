@@ -391,6 +391,7 @@ def save_project_info(
     sp.planned_end_date = body.sub_project.planned_end_date
     sp.actual_start_date = body.sub_project.actual_start_date
     sp.actual_end_date = body.sub_project.actual_end_date
+    sp.priority_level = body.sub_project.priority_level
 
     # ========== 清理被删任务的 goal_links ==========
     from sqlalchemy import delete as sa_delete

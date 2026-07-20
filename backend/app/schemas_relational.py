@@ -25,6 +25,7 @@ class SubProjectNode(BaseModel):
     project_manager: str | None = None
     description: str | None = None
     key_goal: str | None = None
+    priority_level: str = "第三优先级"
 
 
 class SubProgramNode(BaseModel):
@@ -118,6 +119,7 @@ class SubProjectDetailOut(BaseModel):
     planned_end_date: date | None = None
     actual_start_date: date | None = None
     actual_end_date: date | None = None
+    priority_level: str = "第三优先级"
 
 
 # --- 阶段 ---
@@ -413,6 +415,7 @@ class ProjectRiskDetailOut(ProjectRiskOut):
 # --- 项目信息（聚合读写） ---
 
 _PROJECT_STATUSES = frozenset({"active", "archived", "paused", "cancelled", "planning"})
+_PRIORITY_LEVELS = frozenset({"第一优先级", "第二优先级", "第三优先级"})
 _TASK_STATUSES = frozenset({"pending", "in-progress", "completed", "overdue"})
 _PARTICIPATION = frozenset({"核心成员", "兼职参与", "外部协作"})
 
@@ -567,6 +570,7 @@ class ProjectInfoSubProjectIn(BaseModel):
     planned_end_date: date
     actual_start_date: date | None = None
     actual_end_date: date | None = None
+    priority_level: str = Field(default="第三优先级", max_length=20)
 
     @field_validator("status")
     @classmethod
@@ -574,6 +578,14 @@ class ProjectInfoSubProjectIn(BaseModel):
         s = v.strip()
         if s not in _PROJECT_STATUSES:
             raise ValueError("status must be active, archived, paused or cancelled")
+        return s
+
+    @field_validator("priority_level")
+    @classmethod
+    def valid_priority(cls, v: str) -> str:
+        s = v.strip()
+        if s not in _PRIORITY_LEVELS:
+            raise ValueError("priority_level must be 第一优先级, 第二优先级, or 第三优先级")
         return s
 
     @model_validator(mode="after")

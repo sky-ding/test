@@ -82,6 +82,7 @@ class SubProject(Base):
     automation_rate_goal: Mapped[str | None] = mapped_column(String(50), nullable=True)
     project_lead: Mapped[str | None] = mapped_column(String(100), nullable=True)
     project_manager: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    priority_level: Mapped[str] = mapped_column(String(20), nullable=False, default="第三优先级")
     planned_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     planned_end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     actual_start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
