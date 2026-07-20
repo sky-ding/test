@@ -2916,6 +2916,95 @@
       font-weight: 500;
       margin-left: 4px;
     }
+  /* ========== 风险分析增强样式 ========== */
+
+  /* 概览统计卡片 */
+  #risk-analysis-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  #risk-analysis-stats .pi-stat {
+    background: #f8f9fa;
+    border: 1px solid #E8EAED;
+    border-radius: 8px;
+    padding: 12px 8px;
+    text-align: center;
+  }
+  #risk-analysis-stats .pi-stat .pi-stat-lbl {
+    font-size: 11px;
+    color: #6B7280;
+    margin-bottom: 2px;
+  }
+  #risk-analysis-stats .pi-stat .pi-stat-val {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+
+  /* 严重级别分布 section 图表容器 */
+  #risk-analysis-section-level .manpower-analysis-chart-wrap {
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  /* 负责人分布表格 */
+  #risk-analysis-owner-table {
+    font-size: 13px;
+  }
+  .ra-owner-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .ra-owner-row {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .ra-owner-row:last-child {
+    border-bottom: none;
+  }
+  .ra-owner-name {
+    width: 80px;
+    font-weight: 500;
+    color: #1a1a2e;
+    flex-shrink: 0;
+  }
+  .ra-owner-bar-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ra-owner-bar-bg {
+    flex: 1;
+    height: 18px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .ra-owner-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s;
+  }
+  .ra-owner-count {
+    width: 60px;
+    text-align: right;
+    color: #6B7280;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .ra-owner-high {
+    width: 80px;
+    text-align: right;
+    color: #e65100;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
   </style>
 </head>
 <body>
@@ -3225,10 +3314,41 @@
       </div>
       <div class="manpower-analysis-body" id="risk-analysis-body">
         <p id="risk-analysis-empty" class="manpower-analysis-empty" hidden>暂无风险记录，无法生成分析。</p>
+
+        <!-- 概览统计卡片 -->
+        <section class="manpower-analysis-section" id="risk-analysis-section-overview">
+          <h3>概览</h3>
+          <div id="risk-analysis-stats">
+            <div class="pi-stat">
+              <div class="pi-stat-lbl">风险总计</div>
+              <div class="pi-stat-val" id="ra-stat-total">0</div>
+            </div>
+            <div class="pi-stat">
+              <div class="pi-stat-lbl">未解决</div>
+              <div class="pi-stat-val" style="color:#1565c0" id="ra-stat-open">0</div>
+            </div>
+            <div class="pi-stat">
+              <div class="pi-stat-lbl">高危以上</div>
+              <div class="pi-stat-val" style="color:#e65100" id="ra-stat-high">0</div>
+            </div>
+            <div class="pi-stat">
+              <div class="pi-stat-lbl">已关闭</div>
+              <div class="pi-stat-val" style="color:#2e7d32" id="ra-stat-closed">0</div>
+            </div>
+          </div>
+        </section>
+
         <section class="manpower-analysis-section" id="risk-analysis-section-status">
           <h3>目前状态分布</h3>
           <div class="manpower-analysis-chart-wrap"><canvas id="risk-chart-status-pie" aria-label="风险状态饼图"></canvas></div>
         </section>
+
+        <!-- 严重级别分布 -->
+        <section class="manpower-analysis-section" id="risk-analysis-section-level">
+          <h3>严重级别分布</h3>
+          <div class="manpower-analysis-chart-wrap"><canvas id="risk-chart-level-pie" aria-label="风险级别饼图"></canvas></div>
+        </section>
+
         <section class="manpower-analysis-section" id="risk-analysis-section-groups">
           <h3>各项目（事项）风险条数</h3>
           <p class="manpower-analysis-period" style="margin:-6px 0 10px;font-size:12px;">分组规则：优先按「项目」归类；若为空则取「问题&影响说明」首行。下方可切换按条数排序或按组内最高风险等级排序。</p>
@@ -3240,6 +3360,12 @@
             </div>
           </div>
           <div class="manpower-analysis-bar-wrap" id="risk-group-bar-wrap"><canvas id="risk-chart-group-bar" aria-label="各事项风险条数条形图"></canvas></div>
+        </section>
+
+        <!-- 按负责人分布 -->
+        <section class="manpower-analysis-section" id="risk-analysis-section-owner">
+          <h3>按负责人分布</h3>
+          <div id="risk-analysis-owner-table"></div>
         </section>
       </div>
     </div>
@@ -6021,6 +6147,13 @@
       if (!Array.isArray(rows)) rows = [];
       var statusMap = {};
       var groupMap = {};
+
+      // 新增统计维度
+      var levelMap = {};
+      var ownerMap = {};
+      var unresolved = 0;
+      var highCount = 0;
+
       rows.forEach(function (row) {
         var st = row.status != null ? String(row.status).trim() : '';
         if (!st) st = '（未填状态）';
@@ -6033,11 +6166,39 @@
         groupMap[gk].count += 1;
         var ln = riskLevelToNum(row.level);
         if (ln > groupMap[gk].maxLevel) groupMap[gk].maxLevel = ln;
+
+        // 严重级别分布
+        var lv = row.level != null ? String(row.level).trim() : '';
+        if (!lv) lv = '（未选）';
+        levelMap[lv] = (levelMap[lv] || 0) + 1;
+
+        // 负责人分布
+        var ow = row.owner != null ? String(row.owner).trim() : '';
+        if (ow) {
+          if (!ownerMap[ow]) ownerMap[ow] = { total: 0, high: 0 };
+          ownerMap[ow].total += 1;
+          if (lv === '高' || lv === '极高') {
+            ownerMap[ow].high += 1;
+          }
+        }
+
+        // 计数
+        if (st !== '已关闭' && st !== 'closed') unresolved++;
+        if (lv === '高' || lv === '极高') highCount++;
       });
+
       var groups = Object.keys(groupMap).map(function (k) {
         return groupMap[k];
       });
-      return { statusMap: statusMap, groups: groups };
+      return {
+        statusMap: statusMap,
+        groups: groups,
+        levelMap: levelMap,
+        ownerMap: ownerMap,
+        total: rows.length,
+        unresolved: unresolved,
+        highCount: highCount
+      };
     }
 
     function destroyRiskAnalysisCharts() {
@@ -6179,6 +6340,115 @@
       }));
     }
 
+    function renderRiskAnalysisOverview(stats) {
+      var totalEl = document.getElementById('ra-stat-total');
+      var openEl = document.getElementById('ra-stat-open');
+      var highEl = document.getElementById('ra-stat-high');
+      var closedEl = document.getElementById('ra-stat-closed');
+      if (totalEl) totalEl.textContent = stats.total;
+      if (openEl) openEl.textContent = stats.unresolved;
+      if (highEl) highEl.textContent = stats.highCount;
+      if (closedEl) {
+        var closed = (stats.statusMap['已关闭'] || stats.statusMap['closed'] || 0);
+        closedEl.textContent = closed;
+      }
+    }
+
+    function renderRiskAnalysisLevelPie(stats) {
+      if (!stats || typeof Chart === 'undefined') return;
+      var ctx = document.getElementById('risk-chart-level-pie');
+      if (!ctx) return;
+      var order = ['极高', '高', '中', '低', '（未选）'];
+      var labels = [];
+      var vals = [];
+      order.forEach(function (k) {
+        var v = stats.levelMap[k];
+        if (v && v > 0) {
+          labels.push(k);
+          vals.push(v);
+        }
+      });
+      var total = vals.reduce(function (a, b) { return a + b; }, 0);
+      if (labels.length === 0 || total <= 0) return;
+
+      var colorMap = {
+        '极高': '#d32f2f',
+        '高': '#e65100',
+        '中': '#f9a825',
+        '低': '#388e3c',
+        '（未选）': '#9e9e9e'
+      };
+      var bgColors = labels.map(function (lbl) { return colorMap[lbl] || '#9e9e9e'; });
+
+      riskAnalysisCharts.push(new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: vals,
+            backgroundColor: bgColors,
+            borderWidth: 1,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  var num = Number(context.raw);
+                  var pct = total > 0 ? ((num / total) * 100).toFixed(1) : '0.0';
+                  return context.label + ': ' + num + ' 条（' + pct + '%）';
+                }
+              }
+            }
+          }
+        }
+      }));
+    }
+
+    function renderRiskAnalysisOwnerTable(stats) {
+      var container = document.getElementById('risk-analysis-owner-table');
+      if (!container) return;
+      if (!stats.ownerMap || Object.keys(stats.ownerMap).length === 0) {
+        container.innerHTML = '<div style="color:#6B7280;font-size:13px;padding:8px 0;">暂无负责人数据。</div>';
+        return;
+      }
+
+      var sorted = Object.keys(stats.ownerMap).sort(function (a, b) {
+        if (stats.ownerMap[b].high !== stats.ownerMap[a].high) return stats.ownerMap[b].high - stats.ownerMap[a].high;
+        return stats.ownerMap[b].total - stats.ownerMap[a].total;
+      });
+
+      var maxCount = sorted.reduce(function (m, k) { return Math.max(m, stats.ownerMap[k].total); }, 0);
+      if (maxCount <= 0) {
+        container.innerHTML = '<div style="color:#6B7280;font-size:13px;padding:8px 0;">暂无负责人数据。</div>';
+        return;
+      }
+
+      var html = '<div class="ra-owner-grid">';
+      sorted.forEach(function (name) {
+        var item = stats.ownerMap[name];
+        var pct = (item.total / maxCount) * 100;
+        var barColor = item.high > 0 ? '#e65100' : '#1E6FFF';
+        html += '<div class="ra-owner-row">' +
+          '<div class="ra-owner-name">' + escapeHtml(name) + '</div>' +
+          '<div class="ra-owner-bar-wrap">' +
+            '<div class="ra-owner-bar-bg">' +
+              '<div class="ra-owner-bar-fill" style="width:' + pct.toFixed(0) + '%;background:' + barColor + '"></div>' +
+            '</div>' +
+            '<div class="ra-owner-count">' + item.total + ' 条</div>' +
+          '</div>' +
+          '<div class="ra-owner-high">' + (item.high > 0 ? '⚠ ' + item.high + ' 条高危' : '') + '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
     function redrawRiskAnalysisBarOnly() {
       if (!lastRiskAnalysisStats) return;
       destroyRiskAnalysisBarChartOnly();
@@ -6233,8 +6503,11 @@
         if (emptyEl) emptyEl.hidden = true;
         sections.forEach(function (sec) { sec.style.display = ''; });
         lastRiskAnalysisStats = buildRiskAnalysisStats(filteredRows);
+        renderRiskAnalysisOverview(lastRiskAnalysisStats);
         renderRiskAnalysisStatusPie(lastRiskAnalysisStats);
+        renderRiskAnalysisLevelPie(lastRiskAnalysisStats);
         renderRiskAnalysisGroupBar(lastRiskAnalysisStats);
+        renderRiskAnalysisOwnerTable(lastRiskAnalysisStats);
       }
 
       mask.classList.add('active');
