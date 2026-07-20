@@ -2293,6 +2293,7 @@
     /* 子项目排名表格 */
     .manpower-proj-table {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
       font-size: 13px;
     }
@@ -2307,10 +2308,15 @@
     .manpower-proj-table td {
       padding: 7px 8px 7px 0;
       border-bottom: 1px solid #f9fafb;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .manpower-proj-table .col-idx { width: 28px; color: #9ca3af; }
-    .manpower-proj-table .col-num { width: 60px; text-align: right; font-weight: 500; }
-    .manpower-proj-table .col-pct { width: 60px; text-align: right; color: #6b7280; }
+    .manpower-proj-table .col-idx { width: 32px; color: #9ca3af; }
+    .manpower-proj-table .col-name { width: 38%; }
+    .manpower-proj-table .col-set { width: 32%; }
+    .manpower-proj-table .col-num { width: 80px; text-align: right; font-weight: 500; }
+    .manpower-proj-table .col-pct { width: 72px; text-align: right; color: #6b7280; }
 
     /* 自动分析洞察 */
     .manpower-insight-section {
@@ -3273,7 +3279,7 @@
           <h3>子项目人力排名</h3>
           <div class="manpower-analysis-subsection">
             <table class="manpower-proj-table">
-              <thead><tr><th class="col-idx">#</th><th>子项目</th><th>所属项目集</th><th class="col-num">人力</th><th class="col-pct">占比</th></tr></thead>
+              <thead><tr><th class="col-idx">#</th><th class="col-name">子项目</th><th class="col-set">所属项目集</th><th class="col-num">人力</th><th class="col-pct">占比</th></tr></thead>
               <tbody id="manpower-proj-table-body"></tbody>
             </table>
           </div>
@@ -4402,8 +4408,8 @@
         var pct = grandT > 0 ? ((p.total / grandT) * 100).toFixed(1) + '%' : '—';
         return '<tr>' +
           '<td class="col-idx">' + (i + 1) + '</td>' +
-          '<td>' + escapeHtml(projName) + '</td>' +
-          '<td>' + escapeHtml(setName) + '</td>' +
+          '<td class="col-name">' + escapeHtml(projName) + '</td>' +
+          '<td class="col-set">' + escapeHtml(setName) + '</td>' +
           '<td class="col-num">' + Number(p.total.toFixed(1)) + '</td>' +
           '<td class="col-pct">' + pct + '</td>' +
         '</tr>';
