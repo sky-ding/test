@@ -2949,8 +2949,13 @@
     color: #1a1a2e;
   }
 
-  /* 严重级别分布 section 图表容器 */
-  #risk-analysis-section-level .manpower-analysis-chart-wrap {
+  /* 饼图并排布局 */
+  .risk-pies-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .risk-pie-col .manpower-analysis-chart-wrap {
     max-width: 320px;
     margin: 0 auto;
   }
@@ -3344,15 +3349,17 @@
           </div>
         </section>
 
-        <section class="manpower-analysis-section" id="risk-analysis-section-status">
-          <h3>目前状态分布</h3>
-          <div class="manpower-analysis-chart-wrap"><canvas id="risk-chart-status-pie" aria-label="风险状态饼图"></canvas></div>
-        </section>
-
-        <!-- 严重级别分布 -->
-        <section class="manpower-analysis-section" id="risk-analysis-section-level">
-          <h3>严重级别分布</h3>
-          <div class="manpower-analysis-chart-wrap"><canvas id="risk-chart-level-pie" aria-label="风险级别饼图"></canvas></div>
+        <section class="manpower-analysis-section" id="risk-analysis-section-pies">
+          <div class="risk-pies-row">
+            <div class="risk-pie-col">
+              <h3>目前状态分布</h3>
+              <div class="manpower-analysis-chart-wrap"><canvas id="risk-chart-status-pie" aria-label="风险状态饼图"></canvas></div>
+            </div>
+            <div class="risk-pie-col">
+              <h3>严重级别分布</h3>
+              <div class="manpower-analysis-chart-wrap"><canvas id="risk-chart-level-pie" aria-label="风险级别饼图"></canvas></div>
+            </div>
+          </div>
         </section>
 
         <section class="manpower-analysis-section" id="risk-analysis-section-groups">
