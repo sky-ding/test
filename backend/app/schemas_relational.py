@@ -412,7 +412,7 @@ class ProjectRiskDetailOut(ProjectRiskOut):
 
 # --- 项目信息（聚合读写） ---
 
-_PROJECT_STATUSES = frozenset({"active", "archived", "paused", "cancelled"})
+_PROJECT_STATUSES = frozenset({"active", "archived", "paused", "cancelled", "planning"})
 _TASK_STATUSES = frozenset({"pending", "in-progress", "completed", "overdue"})
 _PARTICIPATION = frozenset({"核心成员", "兼职参与", "外部协作"})
 
