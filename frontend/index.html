@@ -4654,7 +4654,7 @@
       var barCanvas = document.getElementById('manpower-chart-proj-bar');
       var barWrap = document.querySelector('#manpower-analysis-body .manpower-analysis-bar-wrap');
       if (barCanvas && barWrap && stats.allProj.length > 0) {
-        var labels = stats.allProj.map(function (x) { return x.label; });
+        var labels = stats.allProj.map(function (x) { var parts = x.label.split(' · '); return parts[parts.length - 1]; });
         var vals = stats.allProj.map(function (x) { return x.total; });
         var barTotal = vals.reduce(function (a, b) { return a + b; }, 0);
         var h = Math.min(560, Math.max(200, labels.length * 26));
