@@ -8140,10 +8140,31 @@
     function renderPhaseHealthGrid(stats) {
       var el = document.getElementById('phase-health-grid');
       if (!el) return;
+
+      // Determine flat sets: if every project-set under a set has only 1 sub-project,
+      // merge them into a single row grouped by set name.
+      var setAnalysis = {};
+      stats.projects.forEach(function(p) {
+        if (!setAnalysis[p.setName]) setAnalysis[p.setName] = { total: 0, psetNames: {} };
+        setAnalysis[p.setName].total++;
+        setAnalysis[p.setName].psetNames[p.projectSetName] = true;
+      });
+      var flatSets = {};
+      Object.keys(setAnalysis).forEach(function(sn) {
+        var sa = setAnalysis[sn];
+        if (sa.total === Object.keys(sa.psetNames).length) flatSets[sn] = true;
+      });
+
       var groups = {};
       stats.projects.forEach(function(p) {
-        var key = p.setName + '|' + p.projectSetName;
-        if (!groups[key]) groups[key] = { setName: p.setName, projectSetName: p.projectSetName, projects: [] };
+        var key, isFlat = !!flatSets[p.setName];
+        if (isFlat) {
+          key = p.setName;
+          if (!groups[key]) groups[key] = { setName: p.setName, isFlat: true, projects: [] };
+        } else {
+          key = p.setName + '|' + p.projectSetName;
+          if (!groups[key]) groups[key] = { setName: p.setName, projectSetName: p.projectSetName, isFlat: false, projects: [] };
+        }
         groups[key].projects.push(p);
       });
       var html = '';
@@ -8154,8 +8175,9 @@
           var itemCls = p.health;
           return '<span class="phase-hg-item ' + itemCls + '"><span class="phase-hg-dot ' + dotCls + '"></span>' + escapeHtml(p.name) + '</span>';
         });
+        var title = g.isFlat ? g.setName : (g.setName + ' · ' + g.projectSetName);
         html += '<div class="phase-hg-group">' +
-          '<div class="phase-hg-group-title">' + escapeHtml(g.setName + ' · ' + g.projectSetName) + '</div>' +
+          '<div class="phase-hg-group-title">' + escapeHtml(title) + '</div>' +
           '<div class="phase-hg-row">' + dots.join('') + '</div>' +
         '</div>';
       });
