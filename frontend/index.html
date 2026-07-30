@@ -9568,7 +9568,14 @@
             }
           }
           if (target === 'panel-phase') {
-            renderPhaseTable();
+            if (!window._phaseInitialRenderDone) {
+              window._phaseInitialRenderDone = true;
+              renderPhaseTable();
+              fetchRelationalPeriodSlices();
+            } else {
+              updatePhaseTableBodyValues();
+              fetchRelationalPeriodSlices();
+            }
           }
           if (target === 'panel-project-info' && window.ProjectInfoModule) {
             window.ProjectInfoModule.onTabShow();
@@ -9617,7 +9624,9 @@
         initRiskFilterUi();
         renderTable();
         renderRiskTable();
-        renderPhaseTable();
+        if (document.getElementById('panel-phase').classList.contains('active')) {
+          renderPhaseTable();
+        }
         fetchRelationalPeriodSlices();
         applyPermissionToAllUI();
         initSettingsPanelOnce();
@@ -9647,7 +9656,9 @@
           initRiskFilterUi();
           renderTable();
           renderRiskTable();
-          renderPhaseTable();
+          if (document.getElementById('panel-phase').classList.contains('active')) {
+            renderPhaseTable();
+          }
           applyPermissionToAllUI();
           initSettingsPanelOnce();
           updateSettingsPanelRoleUi();
