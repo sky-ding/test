@@ -3662,6 +3662,7 @@
       weakness: '问题分析',
       nextNote: '改进计划'
     };
+    var AUTO_LABEL_MAP = { on_track: '达标', at_risk: '有风险', behind: '落后', not_started: '未开始' };
 
     /** 按 pmDataYear 记住阶段/人力面板所选月份；刷新后 loadRegistryData 仍用正确 period 拉取 API */
     var PM_PERIOD_PREFS_KEY = 'pmPeriodPrefsV1';
@@ -3836,6 +3837,92 @@
             p._phaseSlice = getPhaseMonthSlice(p, phaseSelYear, phaseSelMonth);
           });
         });
+      });
+    }
+
+    /** 扁平化 phaseData 为子项目数组，保持渲染顺序一致 */
+    function flattenPhaseProjects() {
+      var flat = [];
+      phaseData.forEach(function (set) {
+        getProgramProjectSets(set).forEach(function (ps) {
+          getSubProjects(ps).forEach(function (p) {
+            flat.push(p);
+          });
+        });
+      });
+      return flat;
+    }
+
+    /**
+     * 轻量更新阶段表字段值，不重建 DOM
+     * 用于月份切换和异步数据加载完成后的值刷新
+     * 如果 DOM 行数与数据结构不匹配（结构有变更），回退到完整重建
+     */
+    function updatePhaseTableBodyValues() {
+      var tb = document.getElementById('phase-table-body');
+      if (!tb) return;
+      var trs = tb.querySelectorAll('tr');
+      var flat = flattenPhaseProjects();
+      if (trs.length !== flat.length) {
+        // 结构变更（增/删项目），回退到完整重建
+        renderPhaseTable();
+        return;
+      }
+      trs.forEach(function (tr, ri) {
+        var p = flat[ri];
+        if (!p) return;
+        var slice = getPhaseMonthSlice(p, phaseSelYear, phaseSelMonth);
+        p._phaseSlice = slice;
+        var fields = tr.querySelectorAll('textarea.phase-field-input, select.phase-field-select');
+        if (fields.length < PHASE_FIELD_KEYS.length) return;
+        PHASE_FIELD_KEYS.forEach(function (key, j) {
+          var field = fields[j];
+          if (!field) return;
+          if (key === 'goal') {
+            var userValue = slice.goal || '';
+            var autoText = p._autoGoalText || '';
+            var isAuto = !userValue;
+            field.value = isAuto ? autoText : userValue;
+            field.setAttribute('data-auto-text', autoText);
+            if (isAuto) {
+              field.classList.add('phase-field-auto');
+              field.setAttribute('title', '自动填充（来自里程碑/任务拆解）');
+            } else {
+              field.classList.remove('phase-field-auto');
+              field.setAttribute('title', '用户自定义');
+            }
+            // 同步重置按钮可见性
+            var tdGoal = field.parentNode;
+            if (tdGoal) {
+              var resetBtn = tdGoal.querySelector('.phase-reset-btn');
+              if (resetBtn) resetBtn.style.display = isAuto ? 'none' : '';
+            }
+          } else if (key === 'planMatch') {
+            var userStatus = slice.planMatch || '';
+            var autoStatus = p._autoStatus || 'not_started';
+            var autoEmoji = p._autoStatusEmoji || '⏳';
+            var isAutoStatus = !userStatus;
+            if (isAutoStatus) {
+              field.value = '';
+              if (field.options && field.options[0]) {
+                var autoLabel = AUTO_LABEL_MAP[autoStatus] || '未开始';
+                field.options[0].textContent = autoEmoji + ' 自动（' + autoLabel + '）';
+              }
+              field.classList.add('phase-field-auto');
+              field.setAttribute('title', '自动计算（来自目标达成状态）');
+            } else {
+              field.value = userStatus;
+              field.classList.remove('phase-field-auto');
+              field.setAttribute('title', '用户自定义');
+            }
+          } else {
+            field.value = slice[key] || '';
+          }
+        });
+      });
+      requestAnimationFrame(function () {
+        applyStickyPinLeftFromDom(document.getElementById('phase-table'));
+        schedulePhaseTextareaAutoResize();
       });
     }
 
@@ -5984,13 +6071,8 @@
       var y = pmDataYear;
       try {
         var pkey = ymKey(phaseSelYear, phaseSelMonth);
-        var pr = await pmFetch(
-          '/api/v1/phase-assessments?year=' + y + '&period=' + encodeURIComponent(pkey),
-          { method: 'GET' }
-        );
-        if (pr.ok) mergePhaseRowsIntoPhaseData(await pr.json(), pkey);
 
-        // 加载月度自动填充数据（里程碑/任务/目标状态）
+        // 提前收集 subProjectIds（不依赖任何 await）
         var subProjectIds = [];
         (phaseData || []).forEach(function (set) {
           getProgramProjectSets(set).forEach(function (ps) {
@@ -5999,35 +6081,52 @@
             });
           });
         });
-        if (subProjectIds.length > 0) {
-          try {
-            var ids = subProjectIds.join(',');
-            var mr = await pmFetch(
+
+        var mkey = ymKey(manpowerSelYear, manpowerSelMonth);
+
+        // 3 个 API 并行发起
+        var p1 = pmFetch(
+          '/api/v1/phase-assessments?year=' + y + '&period=' + encodeURIComponent(pkey),
+          { method: 'GET' }
+        );
+        var p2 = (subProjectIds.length > 0)
+          ? pmFetch(
               '/api/v1/project-info/phase-monthly-data?year=' + phaseSelYear +
-              '&month=' + phaseSelMonth + '&sub_project_ids=' + ids
-            );
-            if (mr.ok) {
-              var mdata = await mr.json();
-              var dataMap = {};
-              mdata.forEach(function (d) { dataMap[d.sub_project_id] = d; });
-              (phaseData || []).forEach(function (set) {
-                getProgramProjectSets(set).forEach(function (ps) {
-                  getSubProjects(ps).forEach(function (p) {
-                    var d = dataMap[p._subProjectId];
-                    if (d) {
-                      p._autoGoalText = d.auto_goal_text || '';
-                      p._autoStatus = d.auto_status || 'not_started';
-                      p._autoStatusEmoji = d.auto_status_emoji || '⏳';
-                    }
-                  });
+              '&month=' + phaseSelMonth + '&sub_project_ids=' + subProjectIds.join(',')
+            )
+          : Promise.resolve(null);
+        var p3 = tryMergeManpowerMatrixForYearPeriod(y, mkey);
+
+        var results = await Promise.all([p1, p2, p3]);
+
+        // 处理 API 1：阶段评估数据
+        var pr = results[0];
+        if (pr && pr.ok) mergePhaseRowsIntoPhaseData(await pr.json(), pkey);
+
+        // 处理 API 2：月度自动填充数据
+        var mr = results[1];
+        if (mr && mr.ok) {
+          try {
+            var mdata = await mr.json();
+            var dataMap = {};
+            mdata.forEach(function (d) { dataMap[d.sub_project_id] = d; });
+            (phaseData || []).forEach(function (set) {
+              getProgramProjectSets(set).forEach(function (ps) {
+                getSubProjects(ps).forEach(function (p) {
+                  var d = dataMap[p._subProjectId];
+                  if (d) {
+                    p._autoGoalText = d.auto_goal_text || '';
+                    p._autoStatus = d.auto_status || 'not_started';
+                    p._autoStatusEmoji = d.auto_status_emoji || '⏳';
+                  }
                 });
               });
-            }
+            });
           } catch (e) { /* 静默失败 */ }
         }
 
-        var mkey = ymKey(manpowerSelYear, manpowerSelMonth);
-        var mxAuth = await tryMergeManpowerMatrixForYearPeriod(y, mkey);
+        // 处理 API 3：人力矩阵
+        var mxAuth = results[2];
         if (mxAuth === null) {
           window.__pmAuthRedirecting = true;
           window.location.href = 'login.html';
@@ -6037,7 +6136,7 @@
           throw new Error('manpower matrix HTTP failed');
         }
         renderTable();
-        renderPhaseTable();
+        updatePhaseTableBodyValues();
       } catch (e) {
         console.warn('[PM-tool] fetchRelationalPeriodSlices', e);
       }
@@ -7950,7 +8049,7 @@
           if (!isNaN(v) && v >= 1 && v <= 12) {
             phaseSelMonth = v;
             pmSavePeriodPrefsForYear(pmDataYear, phaseSelMonth, manpowerSelMonth);
-            renderPhaseTable();
+            updatePhaseTableBodyValues();
             fetchRelationalPeriodSlices();
           }
         });
