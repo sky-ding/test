@@ -3863,6 +3863,7 @@
       if (!tb) return;
       var trs = tb.querySelectorAll('tr');
       var flat = flattenPhaseProjects();
+      if (trs.length === 0) return;
       if (trs.length !== flat.length) {
         // 结构变更（增/删项目），回退到完整重建
         renderPhaseTable();
@@ -6137,6 +6138,7 @@
         }
         renderTable();
         updatePhaseTableBodyValues();
+        window._phaseSliceDataReady = true;
       } catch (e) {
         console.warn('[PM-tool] fetchRelationalPeriodSlices', e);
       }
@@ -9571,7 +9573,11 @@
             if (!window._phaseInitialRenderDone) {
               window._phaseInitialRenderDone = true;
               renderPhaseTable();
-              fetchRelationalPeriodSlices();
+              if (window._phaseSliceDataReady) {
+                updatePhaseTableBodyValues();
+              } else {
+                fetchRelationalPeriodSlices();
+              }
             } else {
               updatePhaseTableBodyValues();
             }
