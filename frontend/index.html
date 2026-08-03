@@ -3961,13 +3961,10 @@
     }
 
     function schedulePhaseTextareaAutoResize() {
-      autoResizeAllPhaseTextareas();
+      // 只跑 1 轮 rAF 初始化，后续靠 ResizeObserver 自动响应
       requestAnimationFrame(function () {
         autoResizeAllPhaseTextareas();
-        requestAnimationFrame(function () {
-          autoResizeAllPhaseTextareas();
-          setTimeout(autoResizeAllPhaseTextareas, 120);
-        });
+        applyStickyPinLeftFromDom(document.getElementById('phase-table'));
       });
     }
 
@@ -5014,7 +5011,7 @@
           manpowerSelMonth = v;
           pmSavePeriodPrefsForYear(pmDataYear, phaseSelMonth, manpowerSelMonth);
           renderTable();
-          fetchRelationalPeriodSlices();
+          fetchManpowerMatrixData();
         }
       });
       if (sq) sq.addEventListener('change', function () {
@@ -6141,6 +6138,92 @@
         window._phaseSliceDataReady = true;
       } catch (e) {
         console.warn('[PM-tool] fetchRelationalPeriodSlices', e);
+      }
+    }
+
+    /**
+     * 仅加载阶段评估 + 自动填充数据，只更新阶段表，不碰人力表。
+     */
+    async function fetchPhaseMonthData() {
+      if (!pmUsesRelationalRegistry) return;
+      var me = window.__pmCurrentUser;
+      if (!me || me.username === 'offline' || me.username === 'unknown') return;
+      var y = pmDataYear;
+      try {
+        var pkey = ymKey(phaseSelYear, phaseSelMonth);
+        var subProjectIds = [];
+        (phaseData || []).forEach(function (set) {
+          getProgramProjectSets(set).forEach(function (ps) {
+            getSubProjects(ps).forEach(function (p) {
+              if (p._subProjectId) subProjectIds.push(p._subProjectId);
+            });
+          });
+        });
+
+        var p1 = pmFetch(
+          '/api/v1/phase-assessments?year=' + y + '&period=' + encodeURIComponent(pkey),
+          { method: 'GET' }
+        );
+        var p2 = (subProjectIds.length > 0)
+          ? pmFetch(
+              '/api/v1/project-info/phase-monthly-data?year=' + phaseSelYear +
+              '&month=' + phaseSelMonth + '&sub_project_ids=' + subProjectIds.join(',')
+            )
+          : Promise.resolve(null);
+
+        var results = await Promise.all([p1, p2]);
+
+        var pr = results[0];
+        if (pr && pr.ok) mergePhaseRowsIntoPhaseData(await pr.json(), pkey);
+
+        var mr = results[1];
+        if (mr && mr.ok) {
+          try {
+            var mdata = await mr.json();
+            var dataMap = {};
+            mdata.forEach(function (d) { dataMap[d.sub_project_id] = d; });
+            (phaseData || []).forEach(function (set) {
+              getProgramProjectSets(set).forEach(function (ps) {
+                getSubProjects(ps).forEach(function (p) {
+                  var d = dataMap[p._subProjectId];
+                  if (d) {
+                    p._autoGoalText = d.auto_goal_text || '';
+                    p._autoStatus = d.auto_status || 'not_started';
+                    p._autoStatusEmoji = d.auto_status_emoji || '⏳';
+                  }
+                });
+              });
+            });
+          } catch (e) { /* 静默失败 */ }
+        }
+
+        updatePhaseTableBodyValues();
+        window._phaseSliceDataReady = true;
+      } catch (e) {
+        console.warn('[PM-tool] fetchPhaseMonthData', e);
+      }
+    }
+
+    /**
+     * 仅加载人力矩阵数据，只更新人力表，不碰阶段表。
+     */
+    async function fetchManpowerMatrixData() {
+      if (!pmUsesRelationalRegistry) return;
+      var me = window.__pmCurrentUser;
+      if (!me || me.username === 'offline' || me.username === 'unknown') return;
+      var y = pmDataYear;
+      var mkey = ymKey(manpowerSelYear, manpowerSelMonth);
+      try {
+        var mxAuth = await tryMergeManpowerMatrixForYearPeriod(y, mkey);
+        if (mxAuth === null) {
+          window.__pmAuthRedirecting = true;
+          window.location.href = 'login.html';
+          return;
+        }
+        if (!mxAuth) throw new Error('manpower matrix HTTP failed');
+        renderTable();
+      } catch (e) {
+        console.warn('[PM-tool] fetchManpowerMatrixData', e);
       }
     }
 
@@ -8052,7 +8135,7 @@
             phaseSelMonth = v;
             pmSavePeriodPrefsForYear(pmDataYear, phaseSelMonth, manpowerSelMonth);
             updatePhaseTableBodyValues();
-            fetchRelationalPeriodSlices();
+            fetchPhaseMonthData();
           }
         });
       }
@@ -9576,7 +9659,7 @@
               if (window._phaseSliceDataReady) {
                 updatePhaseTableBodyValues();
               } else {
-                fetchRelationalPeriodSlices();
+                fetchPhaseMonthData();
               }
             } else {
               updatePhaseTableBodyValues();
@@ -9632,7 +9715,8 @@
         if (document.getElementById('panel-phase').classList.contains('active')) {
           renderPhaseTable();
         }
-        fetchRelationalPeriodSlices();
+        fetchPhaseMonthData();
+        fetchManpowerMatrixData();
         applyPermissionToAllUI();
         initSettingsPanelOnce();
         updateSettingsPanelRoleUi();
